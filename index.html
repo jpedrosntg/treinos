@@ -16,7 +16,7 @@
 body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0f1115;color:#eee;padding:env(safe-area-inset-top) 12px 24px;transition:padding-top .3s}
 body.ilhaOn{padding-top:calc(env(safe-area-inset-top) + 64px)}
 body.navOn{padding-bottom:calc(var(--nav) + 16px)}
-body.navOn.timerOn{padding-bottom:calc(var(--nav) + 160px)}
+body.navOn.timerOn{padding-bottom:calc(var(--nav) + 76px)}
 h1{font-size:22px;margin:14px 0}
 h2{font-size:18px;margin:24px 0 10px}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
@@ -58,13 +58,12 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .status.andamento{color:#22c55e;border:1px solid #22c55e55}
 .status.encerrado{color:#f59e0b}
 .item{padding:10px 0;border-top:1px solid #2a2f3a;margin-top:8px}
-/* Cronômetro (fica acima da barra inferior) */
+/* Controles do cronômetro (acima da barra inferior) */
 .timer{position:fixed;left:0;right:0;bottom:var(--nav);background:#161920;border-top:1px solid #2a2f3a;padding:10px 16px;text-align:center;z-index:10}
 .timer.off .tb button{opacity:.45}
-.tm{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .25s}
-.tm.pause,.itm.pause{color:#f59e0b}
-.tm.desc,.itm.desc{color:#facc15}
-.tm.over,.itm.over{color:#ef4444}
+.itm.pause{color:#f59e0b}
+.itm.desc{color:#facc15}
+.itm.over{color:#ef4444}
 .lbl{color:#9aa;font-size:13px}
 .tb{display:flex;gap:8px;margin-top:6px}.tb button{flex:1;padding:10px 4px;border:0;border-radius:10px;background:#2a2f3a;color:#fff;font-size:15px}
 .tb .acao{background:#3b82f6;font-weight:700}
@@ -193,8 +192,6 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
       <button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
       <button class="btn add" onclick="tela('telaCadastro')">✏️ Editar treino</button>
       <div class="timer" id="timerBar">
-        <div class="lbl" id="tlbl">Treino A</div>
-        <div class="tm" id="tm">00:00</div>
         <div class="tb">
           <button onclick="parar()">■ Parar</button>
           <button id="bPausa" onclick="pausar()">⏸ Pausar</button>
@@ -639,9 +636,8 @@ function parar(){
 function tick(){
   const ativo=!!(tStart||pausado), s=Math.floor(decorrido()/1000);
   const rest=ativo&&fase==='descanso', over=rest&&s>=target;
-  $('tlbl').textContent=nomeTreino()+(ativo?(rest?' • descanso '+target+'s':' • em execução')+(pausado?' • ⏸ pausado':''):'');
-  ['tm','iTm'].forEach(id=>{ const x=$(id); x.textContent=ativo?mmss(s):'00:00';
-    x.classList.toggle('over',over); x.classList.toggle('desc',rest&&!over); x.classList.toggle('pause',pausado&&!rest); });
+  const x=$('iTm'); x.textContent=ativo?mmss(s):'00:00';
+  x.classList.toggle('over',over); x.classList.toggle('desc',rest&&!over); x.classList.toggle('pause',pausado&&!rest);
   const e=(data[cur]||[])[pos.i];
   $('iNome').textContent=fase==='fim'?'Treino '+cur+' concluído 🎉':(e?e.name:'Treino '+cur);
   $('iSub').textContent=fase==='fim'?'Toque em Encerrar'
