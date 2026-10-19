@@ -10,9 +10,13 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0f1115;color:#eee;padding:env(safe-area-inset-top) 12px 170px}
 h1{font-size:22px;margin:14px 0}
+h2{font-size:18px;margin:24px 0 10px}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
-.tabs button{flex:1;padding:14px;font-size:20px;font-weight:700;border:0;border-radius:12px;background:#1d2129;color:#aaa}
+.tabs button{flex:1;padding:14px 4px;font-size:20px;font-weight:700;border:0;border-radius:12px;background:#1d2129;color:#aaa}
 .tabs button.on{background:#3b82f6;color:#fff}
+.nav{display:flex;gap:6px;margin-bottom:12px}
+.nav button{flex:1;padding:10px 4px;border:0;border-radius:10px;background:#1d2129;color:#aaa;font-size:15px;font-weight:600}
+.nav button.on{background:#2a2f3a;color:#fff;box-shadow:inset 0 -3px #3b82f6}
 .card{background:#1a1d24;border-radius:14px;padding:14px;margin-bottom:10px}
 .top{display:flex;justify-content:space-between;align-items:center}
 .nm{font-size:18px;font-weight:600}
@@ -21,94 +25,140 @@ h1{font-size:22px;margin:14px 0}
 .ser button{width:48px;height:48px;border-radius:50%;border:2px solid #3b82f6;background:none;color:#fff;font-size:16px}
 .ser button.ok{background:#22c55e;border-color:#22c55e}
 .ser button.cur{outline:3px solid #f59e0b;outline-offset:2px}
+.bloq .ser button{opacity:.5}
 .drag{touch-action:none;cursor:grab;color:#666;font-size:22px;padding:4px 10px 4px 0;user-select:none}
 .card.arr{opacity:.6;border:1px dashed #3b82f6}
 .ic{background:none;border:0;color:#888;font-size:20px;padding:4px 8px}
 .btn{width:100%;padding:14px;border:0;border-radius:12px;font-size:16px;font-weight:600;margin-top:8px}
 .add{background:#1d2129;color:#3b82f6}.fin{background:#22c55e;color:#fff}
-.iniciar{background:#3b82f6;color:#fff;font-size:18px;font-weight:800;margin:0 0 12px}
-.iniciar.ativo{background:#ef4444}
+.ini{background:#3b82f6;color:#fff;font-size:18px;font-weight:800;letter-spacing:.5px;margin-bottom:12px}
+.ini.enc{background:#ef4444}
+.del{background:#3a1d1d;color:#f87171}
+.status{font-size:14px;padding:10px 12px;border-radius:10px;background:#1a1d24;color:#9aa}
+.status.andamento{color:#22c55e;border:1px solid #22c55e55}
+.status.encerrado{color:#f59e0b}
+.item{padding:10px 0;border-top:1px solid #2a2f3a;margin-top:8px}
 .timer{position:fixed;left:0;right:0;bottom:0;background:#161920;border-top:1px solid #2a2f3a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));text-align:center}
+.timer.off .tb button{opacity:.45}
 .tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums}
 .tm.over{color:#ef4444}.lbl{color:#9aa;font-size:13px}
 .tb{display:flex;gap:8px;margin-top:6px}.tb button{flex:1;padding:10px;border:0;border-radius:10px;background:#2a2f3a;color:#fff;font-size:15px}
 .tb .acao{background:#3b82f6;font-weight:700}
 .tb .acao.prox{background:#22c55e}
-.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:20}
 .modal.on{display:flex}
 .box{background:#1a1d24;width:100%;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
 label{display:block;font-size:13px;color:#9aa;margin-top:10px}
 input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid #333;background:#0f1115;color:#fff}
 .row{display:flex;gap:8px}.row>div{flex:1}
 .hist{font-size:14px;color:#bbb}.hist .card div{margin-top:4px}
-#telaLogin{min-height:90vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
-.head{display:flex;justify-content:space-between;align-items:center}
+.tela{display:none}
+#telaLogin{min-height:90vh;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.head{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .sair{background:#2a2f3a;color:#fff;border:0;border-radius:10px;padding:8px 12px}
 .adm{background:#2b1f0f;border:1px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px}
-#telaAdmin{display:none}
 .aluno{background:#1a1d24;border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;border:1px solid #2a2f3a}
 .aluno:active{background:#232733}
 .aluno.eu{border-color:#f59e0b}
 .voltar{background:#2a2f3a;color:#fff;border:0;border-radius:10px;padding:10px 12px;width:100%;font-size:15px;margin-top:6px}
 </style></head><body>
 
-<!-- TELA DE LOGIN -->
-<div id="telaLogin">
+<!-- LOGIN -->
+<div id="telaLogin" class="tela" style="display:flex">
   <div style="font-size:64px">🏋️</div>
   <h1>Meus Treinos</h1>
   <div class="info" id="msgLogin">Carregando...</div>
   <button id="btnLogin" class="btn fin" onclick="entrar()" style="display:none;max-width:320px">🔐 Entrar com Google</button>
 </div>
 
-<!-- TELA DO ADMIN -->
-<div id="telaAdmin">
-  <div class="head">
-    <h1>👑 Painel do Admin</h1>
-    <button class="sair" onclick="sair()">Sair</button>
-  </div>
+<!-- ADMIN -->
+<div id="telaAdmin" class="tela">
+  <div class="head"><h1>👑 Painel do Admin</h1><button class="sair" onclick="sair()">Sair</button></div>
   <div class="info" style="margin-bottom:10px">Escolha qual treino deseja ver:</div>
   <input id="buscaAluno" placeholder="🔍 Buscar por nome ou e-mail" oninput="renderAlunos(this.value)" style="margin-bottom:12px">
   <div id="listaAlunos"></div>
 </div>
 
-<!-- APP -->
-<div id="app" style="display:none">
-  <div class="head">
-    <h1>🏋️ Meus Treinos</h1>
-    <button class="sair" onclick="sair()">Sair</button>
-  </div>
-  <div id="userInfo" class="info" style="margin-bottom:10px"></div>
-
-  <div id="adminBar" class="adm" style="display:none">
+<!-- INÍCIO -->
+<div id="telaInicio" class="tela">
+  <div class="head"><h1>🏋️ Meus Treinos</h1><button class="sair" onclick="sair()">Sair</button></div>
+  <div class="info uinfo" style="margin-bottom:10px"></div>
+  <div class="adm admOnly" style="display:none">
     <div class="lbl">👑 Modo administrador</div>
     <button class="voltar" onclick="voltarAdmin()">⬅ Voltar para lista de alunos</button>
   </div>
+  <button class="btn fin" style="font-size:18px" onclick="novoTreino()">＋ Cadastrar novo treino</button>
+  <h2>Selecionar treino existente</h2>
+  <div id="listaTreinos"></div>
+</div>
 
-  <div class="tabs" id="tabs"></div>
-  <button id="bTreino" class="btn iniciar" onclick="toggleTreino()">▶ INICIAR TREINO</button>
-  <div id="list"></div>
-  <button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
-  <button class="btn fin" onclick="finish()">✔ Finalizar treino</button>
-  <h1 style="font-size:18px;margin-top:24px">Histórico</h1>
-  <div id="hist" class="hist"></div>
-  <h1 style="font-size:18px;margin-top:24px">Backup</h1>
-  <div class="row">
-    <div><button class="btn add" onclick="exportar()">⬇ Tudo</button></div>
-    <div><button class="btn add" onclick="exportarHist()">⬇ Histórico</button></div>
-    <div><button class="btn add" onclick="$('imp').click()">⬆ Importar</button></div>
+<!-- ESCOLHA DA DIVISÃO -->
+<div id="telaDivisao" class="tela">
+  <h1>Novo treino</h1>
+  <div class="info" style="margin-bottom:12px">Escolha a divisão do treino:</div>
+  <div id="opcDiv"></div>
+  <button class="voltar" onclick="tela('telaInicio')">⬅ Voltar</button>
+</div>
+
+<!-- CADASTRO -->
+<div id="telaCadastro" class="tela">
+  <h1>✏️ Cadastro do treino</h1>
+  <div class="info" style="margin-bottom:12px">Cadastre os exercícios de cada divisão.</div>
+  <div id="cadList"></div>
+  <button id="bCadIni" class="btn ini" onclick="iniciarDoCadastro()">▶ INICIAR TREINO</button>
+  <button class="btn add" onclick="irInicio()">✔ Concluir e voltar ao início</button>
+</div>
+
+<!-- APP / EXECUÇÃO -->
+<div id="app" class="tela">
+  <div class="head">
+    <h1>🏋️ Meus Treinos</h1>
+    <div><button class="sair" onclick="irInicio()">⌂ Início</button> <button class="sair" onclick="sair()">Sair</button></div>
   </div>
-  <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
+  <div class="info uinfo" style="margin-bottom:10px"></div>
+  <div class="adm admOnly" style="display:none">
+    <div class="lbl">👑 Modo administrador</div>
+    <button class="voltar" onclick="voltarAdmin()">⬅ Voltar para lista de alunos</button>
+  </div>
+  <div class="nav" id="nav"></div>
 
-  <div class="timer">
-    <div class="lbl" id="tlbl">Treino A</div>
-    <div class="tm" id="tm">00:00</div>
-    <div class="tb">
-      <button onclick="parar()">■ Parar</button>
-      <button id="bAcao" class="acao" onclick="acao()">⏱ Descanso</button>
+  <div id="p_treino">
+    <div id="semTreino" class="card info">Nenhum treino cadastrado.
+      <button class="btn fin" onclick="novoTreino()">＋ Cadastrar novo treino</button></div>
+    <div id="comTreino">
+      <div class="tabs" id="tabs"></div>
+      <button id="bSessao" class="btn ini" onclick="botaoSessao()">▶ INICIAR TREINO</button>
+      <div id="status" class="status" style="margin-bottom:12px"></div>
+      <div id="list"></div>
+      <button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
+      <button class="btn add" onclick="tela('telaCadastro')">✏️ Editar treino</button>
+      <div class="timer" id="timerBar">
+        <div class="lbl" id="tlbl">Treino A</div>
+        <div class="tm" id="tm">00:00</div>
+        <div class="tb">
+          <button onclick="parar()">■ Parar</button>
+          <button id="bAcao" class="acao" onclick="acao()">⏱ Descanso</button>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div id="p_hist" style="display:none">
+    <label>Filtrar por divisão</label>
+    <select id="fHist" onchange="renderHist()" style="margin-bottom:12px"></select>
+    <div id="hist" class="hist"></div>
+  </div>
+
+  <div id="p_backup" style="display:none">
+    <div class="info">Salve uma cópia dos seus dados ou restaure um backup.</div>
+    <button class="btn add" onclick="exportar()">⬇ Exportar tudo (treino + histórico)</button>
+    <button class="btn add" onclick="exportarHist()">⬇ Exportar só o histórico</button>
+    <button class="btn add" onclick="$('imp').click()">⬆ Importar backup</button>
+    <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
   </div>
 </div>
 
+<!-- MODAL EXERCÍCIO -->
 <div class="modal" id="modal"><div class="box">
   <div class="nm" id="ftitle">Exercício</div>
   <label>Nome</label><input id="fn" placeholder="Ex: Supino reto">
@@ -124,154 +174,238 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
   <button class="btn add" onclick="closeForm()">Cancelar</button>
 </div></div>
 
+<!-- DIÁLOGO ENCERRAR -->
+<div class="modal" id="dlgFim"><div class="box">
+  <div class="nm">Encerrar treino</div>
+  <div class="info">Deseja salvar esta sessão no histórico?</div>
+  <button class="btn fin" onclick="encerrar(true)">💾 Salvar no histórico</button>
+  <button class="btn del" onclick="encerrar(false)">Não salvar</button>
+  <button class="btn add" onclick="$('dlgFim').classList.remove('on')">Continuar treinando</button>
+</div></div>
+
 <script>
 const KEY='treinos_v1';
-const VAZIO=()=>({A:[],B:[],C:[],hist:[]});
-let data=VAZIO(), cur='A', done={}, edit=-1;
+const LETRAS=['A','B','C','D','E'];
+const VAZIO=()=>({divs:[],A:[],B:[],C:[],D:[],E:[],hist:[]});
+let data=VAZIO(), cur='A', done={}, edit=-1, formDiv='A';
 let tStart=null, target=60, tInt=null, beeped=false;
 let pos={i:0,j:0}, fase='descanso';
-let ativo=false, audio=null, bip=null, ultMeta='';
+let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino';
 const $=id=>document.getElementById(id);
-const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const info=e=>`${e.sets}x${esc(e.reps)} • ${e.weight} kg • ${e.rest}s descanso`;
+function divLabel(n){ const l=LETRAS.slice(0,n); return l.length>1?l.slice(0,-1).join(', ')+' e '+l.at(-1):l[0]; }
 
-function setData(d){ data=d&&d.A?d:VAZIO(); data.hist=data.hist||[]; done={}; pos={i:0,j:0}; fase='descanso'; render(); }
+// Normaliza dados (compatível com formato antigo A/B/C)
+function norm(d){
+  const n=VAZIO(); if(!d||!(d.A||d.divs)) return n;
+  LETRAS.forEach(l=>n[l]=Array.isArray(d[l])?d[l]:[]);
+  n.hist=Array.isArray(d.hist)?d.hist:[];
+  if(Array.isArray(d.divs)) n.divs=d.divs.filter(l=>LETRAS.includes(l));
+  else { let u=-1; LETRAS.forEach((l,k)=>{ if(n[l].length) u=k; }); n.divs=LETRAS.slice(0,u+1); }
+  return n;
+}
+function setData(d){ data=norm(d); done={}; pos={i:0,j:0}; fase='descanso'; resetSessao(); stopTimer(); cur=data.divs[0]||'A'; renderAll(); }
 function save(){ window.salvarNuvem && window.salvarNuvem(); }
+function renderAll(){ render(); renderCad(); renderInicio(); }
 
-function nomeTreino(){
-  const e=data[cur][pos.i];
-  return 'Treino '+cur+(e?' • '+e.name+' — série '+(pos.j+1)+'/'+e.sets:'');
+// ===== Telas =====
+const TELAS=['telaLogin','telaAdmin','telaInicio','telaDivisao','telaCadastro','app'];
+function tela(t){
+  TELAS.forEach(id=>$(id).style.display=id===t?(id==='telaLogin'?'flex':'block'):'none');
+  if(t==='telaInicio') renderInicio();
+  if(t==='telaCadastro') renderCad();
+  if(t==='app') render();
+  scrollTo(0,0);
+}
+function setTopo(txt,adm){
+  document.querySelectorAll('.uinfo').forEach(e=>e.textContent=txt);
+  document.querySelectorAll('.admOnly').forEach(e=>e.style.display=adm?'block':'none');
+}
+function sairDaSessao(){
+  if(sessao==='andamento'&&!confirm('Há um treino em andamento. Sair vai descartá-lo sem salvar. Continuar?')) return false;
+  resetSessao(); stopTimer(); return true;
+}
+function irInicio(){ if(sairDaSessao()) tela('telaInicio'); }
+
+function renderInicio(){
+  $('listaTreinos').innerHTML=data.divs.length
+    ?`<div class="aluno" onclick="abrirExec()"><div class="nm">📋 Treino ${divLabel(data.divs.length)}</div>
+      <div class="info">${data.divs.map(l=>l+': '+data[l].length+' exercício(s)').join(' • ')}</div>
+      <div class="info">Toque para abrir</div></div>`
+    :'<div class="info">Nenhum treino cadastrado. Toque em "Cadastrar novo treino".</div>';
 }
 
-function trocar(t){ cur=t; pos={i:0,j:0}; fase='descanso'; stopTimer(); render(); }
+// ===== Cadastro =====
+$('opcDiv').innerHTML=[1,2,3,4,5].map(n=>`<div class="aluno" onclick="escolherDiv(${n})"><div class="nm">${divLabel(n)}</div><div class="info">${n} divisão(ões)</div></div>`).join('');
+function novoTreino(){ if(sairDaSessao()) tela('telaDivisao'); }
+function escolherDiv(n){
+  if(data.divs.some(l=>data[l].length)&&!confirm('Isso substituirá os exercícios do treino atual. O histórico será mantido. Continuar?')) return;
+  LETRAS.forEach(l=>data[l]=[]); data.divs=LETRAS.slice(0,n);
+  cur='A'; done={}; pos={i:0,j:0}; resetSessao(); stopTimer(); save(); tela('telaCadastro');
+}
+function renderCad(){
+  $('cadList').innerHTML=data.divs.map(l=>`<div class="card"><div class="nm">Treino ${l}</div>
+    ${data[l].map((e,i)=>`<div class="top item"><div><div>${esc(e.name)}</div><div class="info">${info(e)}</div></div>
+      <div style="white-space:nowrap"><button class="ic" onclick="openForm(${i},'${l}')">✏️</button><button class="ic" onclick="del(${i},'${l}')">🗑</button></div></div>`).join('')
+      ||'<div class="info">Nenhum exercício ainda.</div>'}
+    <button class="btn add" onclick="openForm(-1,'${l}')">+ Adicionar exercício no Treino ${l}</button></div>`).join('')
+    ||'<div class="info">Nenhuma divisão escolhida.</div>';
+  $('bCadIni').textContent=sessao==='andamento'?'▶ Voltar ao treino em andamento':'▶ INICIAR TREINO';
+}
+function iniciarDoCadastro(){
+  if(!data.divs.some(l=>data[l].length)) return alert('Cadastre ao menos um exercício.');
+  if(sessao==='andamento') return abrirExec();
+  if(!(data[cur]||[]).length) cur=data.divs.find(l=>data[l].length);
+  abrirExec(); iniciarSessao();
+}
+function abrirExec(){
+  if(!data.divs.length) return alert('Nenhum treino cadastrado.');
+  if(!data.divs.includes(cur)) cur=data.divs[0];
+  tela('app'); mudarAba('treino');
+}
+function mudarAba(a){ aba=a; ['treino','hist','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none'); render(); scrollTo(0,0); }
+
+// ===== Sessão =====
+function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; }
+function botaoSessao(){ sessao==='andamento'?$('dlgFim').classList.add('on'):iniciarSessao(); }
+function iniciarSessao(){
+  if(!(data[cur]||[]).length) return alert('Adicione exercícios ao Treino '+cur+' antes de iniciar.');
+  Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
+  pos={i:0,j:0}; fase='descanso'; sessao='andamento'; sIni=Date.now();
+  clearInterval(sInt); sInt=setInterval(status,1000); stopTimer(); render();
+}
+function encerrar(salvar){
+  $('dlgFim').classList.remove('on');
+  if(salvar){
+    const ex=data[cur].map((e,i)=>({...e,feitas:(done[cur+i]||[]).filter(Boolean).length}));
+    data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex});
+    save();
+  }
+  Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
+  pos={i:0,j:0}; fase='descanso'; stopTimer(); clearInterval(sInt); sIni=null;
+  sessao='encerrado'; sMsg=salvar?'✅ Treino encerrado e salvo no histórico.':'Treino encerrado sem salvar.';
+  render();
+}
+function status(){
+  const st=$('status'); st.className='status '+sessao;
+  st.textContent=sessao==='andamento'?'🟢 Treino '+cur+' em andamento • '+mmss(Math.floor((Date.now()-sIni)/1000))
+    :sessao==='encerrado'?sMsg+' Toque em INICIAR TREINO para uma nova sessão.'
+    :'⚪ Treino não iniciado. Toque em INICIAR TREINO para começar.';
+}
+const aviso=()=>alert('Toque em "INICIAR TREINO" para começar a sessão.');
+
+function nomeTreino(){
+  const e=(data[cur]||[])[pos.i];
+  return 'Treino '+cur+(e?' • '+e.name+' — série '+(pos.j+1)+'/'+e.sets:'');
+}
+function trocar(t){
+  if(t===cur) return;
+  if(sessao==='andamento') return alert('Encerre o treino em andamento antes de trocar de divisão.');
+  cur=t; pos={i:0,j:0}; fase='descanso'; if(sessao==='encerrado') sessao='nao'; stopTimer(); render();
+}
 
 function render(){
-  const ex=data[cur];
+  if(!data.divs.includes(cur)) cur=data.divs[0]||'A';
+  const ex=data[cur]||[], on=sessao==='andamento';
   if(pos.i>=ex.length) pos={i:0,j:0};
-  if(ex[pos.i] && pos.j>=ex[pos.i].sets) pos.j=0;
+  if(ex[pos.i]&&pos.j>=ex[pos.i].sets) pos.j=0;
 
-  $('tabs').innerHTML=['A','B','C'].map(t=>`<button class="${t==cur?'on':''}" onclick="trocar('${t}')">Treino ${t}</button>`).join('');
+  $('nav').innerHTML=[['treino','🏋️ Treino'],['hist','📜 Histórico'],['backup','💾 Backup']]
+    .map(([k,t])=>`<button class="${k==aba?'on':''}" onclick="mudarAba('${k}')">${t}</button>`).join('');
+  $('semTreino').style.display=data.divs.length?'none':'block';
+  $('comTreino').style.display=data.divs.length?'block':'none';
+
+  $('tabs').innerHTML=data.divs.map(t=>`<button class="${t==cur?'on':''}" onclick="trocar('${t}')">${data.divs.length>3?t:'Treino '+t}</button>`).join('');
+  $('list').className=on?'':'bloq';
   $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
-    for(let j=0;j<e.sets;j++) s+=`<button class="${d[j]?'ok':''} ${i==pos.i&&j==pos.j?'cur':''}" onclick="tog(${i},${j})">${j+1}</button>`;
+    for(let j=0;j<e.sets;j++) s+=`<button class="${d[j]?'ok':''} ${on&&i==pos.i&&j==pos.j?'cur':''}" onclick="tog(${i},${j})">${j+1}</button>`;
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
-      <span class="drag">☰</span><div><div class="nm">${e.name}</div>
-      <div class="info">${e.sets}x${e.reps} • ${e.weight} kg • ${e.rest}s descanso</div></div></div>
-      <div><button class="ic" onclick="openForm(${i})">✏️</button><button class="ic" onclick="del(${i})">🗑</button></div></div>
+      <span class="drag">☰</span><div><div class="nm">${esc(e.name)}</div>
+      <div class="info">${info(e)}</div></div></div>
+      <div style="white-space:nowrap"><button class="ic" onclick="openForm(${i})">✏️</button><button class="ic" onclick="del(${i})">🗑</button></div></div>
       <div class="ser">${s}</div></div>`;
-  }).join('') || '<div class="info">Nenhum exercício no treino '+cur+'.</div>';
-  $('hist').innerHTML=data.hist.slice().reverse().slice(0,15).map(h=>
-    `<div class="card"><b>Treino ${h.tipo}</b> — ${h.data}${h.ex.map(e=>`<div>• ${e.name}: ${e.feitas}/${e.sets} séries x${e.reps} @ ${e.weight}kg</div>`).join('')}</div>`).join('');
+  }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
 
+  const bs=$('bSessao'); bs.textContent=on?'■ ENCERRAR TREINO':'▶ INICIAR TREINO'; bs.classList.toggle('enc',on);
+  $('timerBar').classList.toggle('off',!on);
   const b=$('bAcao');
   b.textContent=fase==='descanso'?'⏱ Descanso':'⏭ Próximo';
   b.classList.toggle('prox',fase!=='descanso');
-  const bt=$('bTreino');
-  bt.textContent=ativo?'■ ENCERRAR TREINO':'▶ INICIAR TREINO';
-  bt.classList.toggle('ativo',ativo);
-  tick();
+  status(); renderHist(); tick();
 }
 
-// Selecionar série: marca/desmarca e define etapa atual (sem iniciar cronômetro)
 function tog(i,j){
+  if(sessao!=='andamento') return aviso();
   const k=cur+i; done[k]=done[k]||[]; done[k][j]=!done[k][j];
   pos={i,j}; fase='descanso'; stopTimer(); render();
 }
-
-// Botão único Descanso / Próximo
-function acao(){ fase==='descanso'?descansar():proximo(); }
-function descansar(){
+function acao(){
+  if(sessao!=='andamento') return aviso();
   const ex=data[cur]; if(!ex.length) return;
-  const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=true;
-  target=+ex[pos.i].rest||60; startTimer(); fase='proximo'; render();
-}
-function proximo(){
-  const ex=data[cur]; if(!ex.length) return;
-  stopTimer();
-  if(pos.j+1<ex[pos.i].sets) pos.j++;
-  else if(pos.i+1<ex.length) pos={i:pos.i+1,j:0};
-  else if(!document.hidden) alert('Último exercício concluído! Toque em "Finalizar treino".');
-  fase='descanso'; render();
-}
-function anterior(){
-  const ex=data[cur]; if(!ex.length) return;
-  stopTimer();
-  if(pos.j>0) pos.j--;
-  else if(pos.i>0){ pos.i--; pos.j=ex[pos.i].sets-1; }
-  fase='descanso'; render();
+  if(fase==='descanso'){
+    const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=true;
+    target=+ex[pos.i].rest||60; startTimer(); fase='proximo';
+  } else {
+    stopTimer();
+    if(pos.j+1<ex[pos.i].sets) pos.j++;
+    else if(pos.i+1<ex.length) pos={i:pos.i+1,j:0};
+    else alert('Último exercício concluído! Toque em "ENCERRAR TREINO".');
+    fase='descanso';
+  }
+  render();
 }
 function parar(){ stopTimer(); fase='descanso'; render(); }
 
-// ===== INICIAR TREINO + TELA DE BLOQUEIO (Media Session) =====
-function wav(seg,comBip){
-  const sr=8000,n=sr*seg,b=new ArrayBuffer(44+n*2),v=new DataView(b);
-  const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
-  w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');
-  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
-  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
-  w(36,'data');v.setUint32(40,n*2,true);
-  for(let k=0;k<n;k++){
-    const t=k/sr, on=comBip&&[0,.3,.6].some(x=>t>=x&&t<x+.2);
-    v.setInt16(44+k*2,on?Math.sin(2*Math.PI*880*t)*20000:0,true);
-  }
-  return URL.createObjectURL(new Blob([b],{type:'audio/wav'}));
+// ===== Exercícios =====
+function del(i,dv=cur){
+  if(!confirm('Excluir exercício?')) return;
+  data[dv].splice(i,1);
+  const nd={};
+  Object.keys(done).forEach(k=>{
+    if(k[0]!==dv){ nd[k]=done[k]; return; }
+    const n=+k.slice(1); if(n<i) nd[k]=done[k]; else if(n>i) nd[dv+(n-1)]=done[k];
+  });
+  done=nd;
+  if(dv===cur){ if(pos.i>i) pos.i--; else if(pos.i===i){ pos.j=0; fase='descanso'; stopTimer(); } }
+  save(); renderAll();
 }
-function acaoMidia(){ acao(); audio&&audio.play().catch(()=>{}); }
-function setHandlers(on){
-  const ms=navigator.mediaSession; if(!ms) return;
-  const h={play:acaoMidia,pause:acaoMidia,nexttrack:proximo,previoustrack:anterior};
-  for(const k in h){ try{ ms.setActionHandler(k,on?h[k]:null); }catch(e){} }
-  for(const k of ['seekbackward','seekforward','seekto']){ try{ ms.setActionHandler(k,null); }catch(e){} }
-}
-function iniciarTreino(){
-  if(!data[cur].length) return alert('Adicione exercícios ao Treino '+cur+' primeiro.');
-  ativo=true; pos={i:0,j:0}; fase='descanso'; ultMeta=''; stopTimer();
-  if(!audio){ audio=new Audio(wav(10)); audio.loop=true; }
-  audio.play().catch(()=>{});
-  if(!bip){ bip=new Audio(wav(1,true)); bip.muted=true; bip.play().then(()=>{bip.pause();bip.currentTime=0;bip.muted=false;}).catch(()=>{bip.muted=false;}); }
-  setHandlers(true); render();
-}
-function encerrarTreino(){
-  ativo=false; stopTimer(); fase='descanso';
-  if(audio) audio.pause();
-  setHandlers(false);
-  if(navigator.mediaSession){ navigator.mediaSession.metadata=null; navigator.mediaSession.playbackState='none'; }
-  render();
-}
-function toggleTreino(){ if(!ativo) iniciarTreino(); else if(confirm('Encerrar treino?')) encerrarTreino(); }
-
-function atualizarMidia(s){
-  const ms=navigator.mediaSession; if(!ativo||!ms||!window.MediaMetadata) return;
-  const e=data[cur][pos.i], ser=e?e.name+' — série '+(pos.j+1)+'/'+e.sets:'Treino '+cur;
-  const title=tStart?'⏱ '+fmt(s)+' / '+target+'s':ser;
-  const artist=tStart?ser+' • ⏭ Próximo':'Treino '+cur+' • ▶ Descanso';
-  if(title+artist!==ultMeta){ ultMeta=title+artist; ms.metadata=new MediaMetadata({title,artist,album:'Meus Treinos'}); }
-  ms.playbackState=tStart?'playing':'paused';
-  try{ tStart?ms.setPositionState({duration:Math.max(target,s+1),playbackRate:1,position:Math.min(s,Math.max(target,s+1))}):ms.setPositionState(); }catch(err){}
-}
-
-function del(i){ if(confirm('Excluir exercício?')){ data[cur].splice(i,1); done={}; pos={i:0,j:0}; save(); render(); } }
-function openForm(i=-1){
-  edit=i; const e=i>=0?data[cur][i]:{name:'',sets:3,reps:12,weight:0,rest:60};
-  $('ftitle').textContent=(i>=0?'Editar':'Novo')+' exercício — Treino '+cur;
+function openForm(i=-1,dv=cur){
+  edit=i; formDiv=dv; const e=i>=0?data[dv][i]:{name:'',sets:3,reps:12,weight:0,rest:60};
+  $('ftitle').textContent=(i>=0?'Editar':'Novo')+' exercício — Treino '+dv;
   $('fn').value=e.name;$('fs').value=e.sets;$('fr').value=e.reps;$('fp').value=e.weight;$('fd').value=e.rest;
   $('modal').classList.add('on');
 }
 function closeForm(){ $('modal').classList.remove('on'); }
 function saveForm(){
   const e={name:$('fn').value.trim()||'Exercício',sets:+$('fs').value||1,reps:$('fr').value,weight:+$('fp').value||0,rest:+$('fd').value||60};
-  edit>=0?data[cur][edit]=e:data[cur].push(e); save(); closeForm(); render();
-}
-function finish(){
-  if(!confirm('Finalizar treino '+cur+'?'))return;
-  const ex=data[cur].map((e,i)=>({...e,feitas:(done[cur+i]||[]).filter(Boolean).length}));
-  data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),ex});
-  data[cur].forEach((_,i)=>delete done[cur+i]); pos={i:0,j:0}; fase='descanso'; encerrarTreino(); save(); render();
+  edit>=0?data[formDiv][edit]=e:data[formDiv].push(e); save(); closeForm(); renderAll();
 }
 
-// Arrastar para reordenar (toque e mouse)
+// ===== Histórico =====
+function renderHist(){
+  const ops=[...new Set([...data.divs,...data.hist.map(h=>h.tipo)])].sort();
+  const sel=$('fHist'), v=ops.includes(sel.value)?sel.value:'';
+  sel.innerHTML='<option value="">Todas as divisões</option>'+ops.map(l=>`<option value="${esc(l)}">Treino ${esc(l)}</option>`).join('');
+  sel.value=v;
+  const it=data.hist.map((h,k)=>({h,k})).filter(o=>!v||o.h.tipo===v).reverse();
+  $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • ⏳ '+mmss(h.dur):''}</div>
+    <button class="ic" onclick="delHist(${k})">🗑</button></div>
+    ${(h.ex||[]).map(e=>`<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${e.weight}kg</div>`).join('')}</div>`).join('')
+    ||`<div class="info">${data.hist.length?'Nenhum registro para o Treino '+esc(v)+'.':'Nenhum treino registrado ainda.'}</div>`;
+}
+function delHist(k){
+  const h=data.hist[k];
+  if(!h||!confirm(`Apagar definitivamente o registro do Treino ${h.tipo} de ${h.data}?\nEssa ação não pode ser desfeita.`)) return;
+  data.hist.splice(k,1); save(); renderHist();
+}
+
+// ===== Arrastar para reordenar =====
 let drag=null;
 document.addEventListener('pointerdown',e=>{
-  const h=e.target.closest('.drag'); if(!h) return;
+  const h=e.target.closest('#list .drag'); if(!h) return;
   e.preventDefault(); drag=h.closest('.card'); drag.classList.add('arr');
 });
 document.addEventListener('pointermove',e=>{
@@ -279,7 +413,7 @@ document.addEventListener('pointermove',e=>{
   const sob=document.elementFromPoint(e.clientX,e.clientY)?.closest('#list .card');
   if(!sob||sob===drag) return;
   const r=sob.getBoundingClientRect();
-  sob.parentNode.insertBefore(drag, e.clientY<r.top+r.height/2?sob:sob.nextSibling);
+  sob.parentNode.insertBefore(drag,e.clientY<r.top+r.height/2?sob:sob.nextSibling);
 });
 document.addEventListener('pointerup',()=>{
   if(!drag) return;
@@ -294,7 +428,7 @@ document.addEventListener('pointerup',()=>{
   save(); render();
 });
 
-// Backup
+// ===== Backup =====
 async function compartilhar(obj,nome){
   const file=new File([JSON.stringify(obj,null,2)],nome,{type:'application/json'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file]}); return; }catch(e){ return; } }
@@ -304,31 +438,26 @@ function hoje(){ return new Date().toISOString().slice(0,10); }
 function exportar(){ compartilhar(data,'treinos-'+hoje()+'.json'); }
 function exportarHist(){ compartilhar({hist:data.hist},'historico-'+hoje()+'.json'); }
 function importar(inp){
-  const f=inp.files[0]; if(!f)return;
-  f.text().then(t=>{ try{ const d=JSON.parse(t); if(!d.A||!d.hist)throw 0;
-    if(confirm('Substituir dados atuais pelo backup?')){ setData(d); save(); } }catch(e){ alert('Arquivo inválido (use o arquivo do botão "Tudo")'); } inp.value=''; });
+  const f=inp.files[0]; if(!f) return;
+  f.text().then(t=>{ try{ const d=JSON.parse(t); if(!(d.A||d.divs)||!d.hist) throw 0;
+    if(confirm('Substituir dados atuais pelo backup?')){ setData(d); save(); } }catch(e){ alert('Arquivo inválido (use o arquivo de "Exportar tudo")'); } inp.value=''; });
 }
 
-// Cronômetro
+// ===== Cronômetro =====
 let actx;
-function beep(){
-  if(navigator.vibrate) navigator.vibrate([300,150,300]);
-  if(bip){ bip.currentTime=0; bip.play().catch(()=>{}); return; }
-  try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.frequency.value=880;o.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);}); }catch(e){}
-}
+function beep(){ try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.frequency.value=880;o.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);}); if(navigator.vibrate)navigator.vibrate(500);}catch(e){} }
 function startTimer(){
   try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
   tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
 }
-function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent=nomeTreino(); atualizarMidia(0); }
+function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent=nomeTreino(); }
 function tick(){
-  if(!tStart){ $('tlbl').textContent=nomeTreino(); atualizarMidia(0); return; }
+  if(!tStart){ $('tlbl').textContent=nomeTreino(); return; }
   const s=Math.floor((Date.now()-tStart)/1000);
-  $('tm').textContent=fmt(s);
+  $('tm').textContent=mmss(s);
   $('tlbl').textContent=nomeTreino()+' • descanso '+target+'s';
   const over=s>=target; $('tm').classList.toggle('over',over);
   if(over&&!beeped){ beeped=true; beep(); }
-  atualizarMidia(s);
 }
 </script>
 
@@ -354,16 +483,9 @@ const db = getFirestore(app);
 const el = id => document.getElementById(id);
 let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
 
-function mostrar(tela) {
-  el('telaLogin').style.display = tela === 'login' ? 'flex' : 'none';
-  el('telaAdmin').style.display = tela === 'admin' ? 'block' : 'none';
-  el('app').style.display = tela === 'app' ? 'block' : 'none';
-  window.scrollTo(0, 0);
-}
-
 window.entrar = () => signInWithPopup(auth, new GoogleAuthProvider())
   .catch(e => alert('Erro no login: ' + e.message));
-window.sair = () => { if (confirm('Sair da conta?')) { encerrarTreino(); signOut(auth); } };
+window.sair = () => { if (confirm('Sair da conta?')) { resetSessao(); stopTimer(); signOut(auth); } };
 
 window.salvarNuvem = async () => {
   if (!usuario || !alvo) return;
@@ -386,7 +508,7 @@ async function abrirUsuario(uid) {
   return false;
 }
 
-// ===== TELA DO ADMIN =====
+// ===== ADMIN =====
 async function carregarAlunos() {
   const lista = await getDocs(collection(db, COLECAO));
   alunos = lista.docs.map(d => ({ uid: d.id, ...d.data() }));
@@ -415,32 +537,31 @@ window.renderAlunos = (filtro = '') => {
 window.abrirTreino = async (uid) => {
   alvo = uid;
   try { await abrirUsuario(uid); } catch (e) { return alert('Erro: ' + e.message); }
-  el('userInfo').textContent = uid === usuario.uid ? '☁️ ' + usuario.email : '👁 Editando treino de: ' + alvoInfo.email;
-  el('adminBar').style.display = ehAdmin ? 'block' : 'none';
-  mostrar('app');
+  setTopo(uid === usuario.uid ? '☁️ ' + usuario.email : '👁 Editando treino de: ' + alvoInfo.email, ehAdmin);
+  tela('telaInicio');
 };
 
 window.voltarAdmin = async () => {
-  encerrarTreino();
+  if (!sairDaSessao()) return;
   el('buscaAluno').value = '';
   try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }
-  mostrar('admin');
+  tela('telaAdmin');
 };
 
 // ===== LOGIN =====
 onAuthStateChanged(auth, async (u) => {
   usuario = u; ehAdmin = false;
-  el('adminBar').style.display = 'none';
+  setTopo('', false);
 
   if (!u) {
     el('msgLogin').textContent = 'Entre para acessar seus treinos';
     el('btnLogin').style.display = 'block';
-    setData(null); mostrar('login'); return;
+    setData(null); tela('telaLogin'); return;
   }
 
   el('msgLogin').textContent = 'Carregando...';
   el('btnLogin').style.display = 'none';
-  mostrar('login');
+  tela('telaLogin');
 
   alvo = u.uid;
   alvoInfo = { email: u.email, nome: u.displayName || '' };
@@ -458,10 +579,10 @@ onAuthStateChanged(auth, async (u) => {
 
   if (ehAdmin) {
     try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }
-    mostrar('admin');
+    tela('telaAdmin');
   } else {
-    el('userInfo').textContent = '☁️ ' + u.email;
-    mostrar('app');
+    setTopo('☁️ ' + u.email, false);
+    tela('telaInicio');
   }
 });
 </script>
