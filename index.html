@@ -44,7 +44,8 @@ input{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid
 <div id="hist" class="hist"></div>
 <h1 style="font-size:18px;margin-top:24px">Backup</h1>
 <div class="row">
-  <div><button class="btn add" onclick="exportar()">⬇ Exportar</button></div>
+  <div><button class="btn add" onclick="exportar()">⬇ Tudo</button></div>
+  <div><button class="btn add" onclick="exportarHist()">⬇ Histórico</button></div>
   <div><button class="btn add" onclick="$('imp').click()">⬆ Importar</button></div>
 </div>
 <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
@@ -123,16 +124,18 @@ function finish(){
 }
 
 // Backup
-async function exportar(){
-  const txt=JSON.stringify(data,null,2), nome='treinos-'+new Date().toISOString().slice(0,10)+'.json';
-  const file=new File([txt],nome,{type:'application/json'});
+async function compartilhar(obj,nome){
+  const file=new File([JSON.stringify(obj,null,2)],nome,{type:'application/json'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file]}); return; }catch(e){ return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=nome; a.click();
 }
+function hoje(){ return new Date().toISOString().slice(0,10); }
+function exportar(){ compartilhar(data,'treinos-'+hoje()+'.json'); }
+function exportarHist(){ compartilhar({hist:data.hist},'historico-'+hoje()+'.json'); }
 function importar(inp){
   const f=inp.files[0]; if(!f)return;
   f.text().then(t=>{ try{ const d=JSON.parse(t); if(!d.A||!d.hist)throw 0;
-    if(confirm('Substituir dados atuais pelo backup?')){ data=d; save(); render(); } }catch(e){ alert('Arquivo inválido'); } inp.value=''; });
+    if(confirm('Substituir dados atuais pelo backup?')){ data=d; save(); render(); } }catch(e){ alert('Arquivo inválido (use o arquivo do botão "Tudo")'); } inp.value=''; });
 }
 
 // Cronômetro
