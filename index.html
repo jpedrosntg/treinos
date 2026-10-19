@@ -317,9 +317,9 @@ onAuthStateChanged(auth, async (u) => {
     const existe = await abrirUsuario(u.uid);
     alvoInfo = { email: u.email, nome: u.displayName || '' };
     if (!existe) {
-      let antigo = null; try { antigo = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
-      setData(antigo);
+      setData(null); // usuário novo começa com o treino vazio
     }
+    localStorage.removeItem(KEY); // apaga os dados antigos que ficaram no aparelho
     await window.salvarNuvem();
 
     const adm = await getDoc(doc(db, 'admins', u.email));
