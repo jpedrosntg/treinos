@@ -36,6 +36,8 @@ input{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid
 .hist{font-size:14px;color:#bbb}.hist .card div{margin-top:4px}
 </style></head><body>
 <h1>🏋️ Meus Treinos</h1>
+<button id="btnLogin" class="btn add" onclick="entrar()" style="display:none;margin-bottom:10px">🔐 Entrar com Google</button>
+<div id="userInfo" class="info" style="text-align:center;margin-bottom:10px"></div>
 <div class="tabs" id="tabs"></div>
 <div id="list"></div>
 <button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
@@ -82,8 +84,8 @@ let data, cur='A', done={}, edit=-1;
 let tStart=null, target=60, tInt=null, beeped=false;
 const $=id=>document.getElementById(id);
 
-function load(){ try{ data=JSON.parse(localStorage.getItem(KEY)); }catch(e){} data=data||{A:[],B:[],C:[],hist:[]}; render(); }
-function save(){ localStorage.setItem(KEY,JSON.stringify(data)); }
+function load(){ data=null; try{ data=JSON.parse(localStorage.getItem(KEY)); }catch(e){} data=data||{A:[],B:[],C:[],hist:[]}; render(); }
+function save(){ localStorage.setItem(KEY,JSON.stringify(data)); window.salvarNuvem && window.salvarNuvem(); }
 
 function render(){
   $('tabs').innerHTML=['A','B','C'].map(t=>`<button class="${t==cur?'on':''}" onclick="cur='${t}';render()">Treino ${t}</button>`).join('');
@@ -156,4 +158,52 @@ function tick(){
   if(over&&!beeped){ beeped=true; beep(); }
 }
 load();
-</script></body></html>
+</script>
+
+<!-- ===== FIREBASE ===== -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBExeZ9Vf2vwM2z_uWzNYZGOlZ34Befiig",
+  authDomain: "treinos-teste.firebaseapp.com",
+  projectId: "treinos-teste",
+  storageBucket: "treinos-teste.firebasestorage.app",
+  messagingSenderId: "846488130737",
+  appId: "1:846488130737:web:36e06bff4eb998475a3e90"
+};
+
+const COLECAO = 'treinos_teste';
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let usuario = null;
+
+window.entrar = () => signInWithPopup(auth, new GoogleAuthProvider())
+  .catch(e => alert('Erro no login: ' + e.message));
+
+window.salvarNuvem = async () => {
+  if (!usuario) return;
+  try {
+    await setDoc(doc(db, COLECAO, usuario.uid), {
+      dados: localStorage.getItem(KEY) || '{}',
+      atualizado: Date.now()
+    });
+  } catch (e) { console.error('Erro ao salvar na nuvem:', e); }
+};
+
+onAuthStateChanged(auth, async (u) => {
+  usuario = u;
+  document.getElementById('btnLogin').style.display = u ? 'none' : 'block';
+  document.getElementById('userInfo').textContent = u ? '☁️ Sincronizado: ' + u.email : '';
+  if (!u) return;
+  try {
+    const snap = await getDoc(doc(db, COLECAO, u.uid));
+    if (snap.exists()) { localStorage.setItem(KEY, snap.data().dados); load(); }
+    else { await window.salvarNuvem(); }
+  } catch (e) { alert('Erro ao acessar a nuvem: ' + e.message); }
+});
+</script>
+</body></html>
