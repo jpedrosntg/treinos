@@ -38,6 +38,11 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 .head{display:flex;justify-content:space-between;align-items:center}
 .sair{background:#2a2f3a;color:#fff;border:0;border-radius:10px;padding:8px 12px}
 .adm{background:#2b1f0f;border:1px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px}
+#telaAdmin{display:none}
+.aluno{background:#1a1d24;border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;border:1px solid #2a2f3a}
+.aluno:active{background:#232733}
+.aluno.eu{border-color:#f59e0b}
+.voltar{background:#2a2f3a;color:#fff;border:0;border-radius:10px;padding:10px 12px;width:100%;font-size:15px;margin-top:6px}
 </style></head><body>
 
 <!-- TELA DE LOGIN -->
@@ -46,6 +51,17 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
   <h1>Meus Treinos</h1>
   <div class="info" id="msgLogin">Carregando...</div>
   <button id="btnLogin" class="btn fin" onclick="entrar()" style="display:none;max-width:320px">🔐 Entrar com Google</button>
+</div>
+
+<!-- TELA DO ADMIN -->
+<div id="telaAdmin">
+  <div class="head">
+    <h1>👑 Painel do Admin</h1>
+    <button class="sair" onclick="sair()">Sair</button>
+  </div>
+  <div class="info" style="margin-bottom:10px">Escolha qual treino deseja ver:</div>
+  <input id="buscaAluno" placeholder="🔍 Buscar por nome ou e-mail" oninput="renderAlunos(this.value)" style="margin-bottom:12px">
+  <div id="listaAlunos"></div>
 </div>
 
 <!-- APP -->
@@ -57,8 +73,8 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
   <div id="userInfo" class="info" style="margin-bottom:10px"></div>
 
   <div id="adminBar" class="adm" style="display:none">
-    <div class="lbl">👑 Administrador — ver treino de:</div>
-    <select id="selUser" onchange="trocarUsuario(this.value)"></select>
+    <div class="lbl">👑 Modo administrador</div>
+    <button class="voltar" onclick="voltarAdmin()">⬅ Voltar para lista de alunos</button>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -203,7 +219,15 @@ const COLECAO = 'treinos_teste';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-let usuario = null, alvo = null, alvoInfo = {};
+const el = id => document.getElementById(id);
+let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
+
+function mostrar(tela) {
+  el('telaLogin').style.display = tela === 'login' ? 'flex' : 'none';
+  el('telaAdmin').style.display = tela === 'admin' ? 'block' : 'none';
+  el('app').style.display = tela === 'app' ? 'block' : 'none';
+  window.scrollTo(0, 0);
+}
 
 window.entrar = () => signInWithPopup(auth, new GoogleAuthProvider())
   .catch(e => alert('Erro no login: ' + e.message));
@@ -230,56 +254,85 @@ async function abrirUsuario(uid) {
   return false;
 }
 
-window.trocarUsuario = async (uid) => {
-  alvo = uid;
-  try { await abrirUsuario(uid); } catch (e) { alert('Erro: ' + e.message); }
-  document.getElementById('userInfo').textContent =
-    uid === usuario.uid ? '☁️ ' + usuario.email : '👁 Editando treino de: ' + alvoInfo.email;
-};
-
-async function carregarListaAdmin() {
-  const sel = document.getElementById('selUser');
+// ===== TELA DO ADMIN =====
+async function carregarAlunos() {
   const lista = await getDocs(collection(db, COLECAO));
-  sel.innerHTML = '';
-  lista.forEach(d => {
-    const x = d.data();
-    const o = document.createElement('option');
-    o.value = d.id;
-    o.textContent = (d.id === usuario.uid ? '⭐ Eu — ' : '') + (x.nome || '') + ' (' + (x.email || d.id) + ')';
-    sel.appendChild(o);
-  });
-  sel.value = usuario.uid;
+  alunos = lista.docs.map(d => ({ uid: d.id, ...d.data() }));
+  alunos.sort((a, b) => (b.uid === usuario.uid) - (a.uid === usuario.uid) ||
+    (a.nome || '').localeCompare(b.nome || ''));
+  window.renderAlunos(el('buscaAluno').value);
 }
 
+window.renderAlunos = (filtro = '') => {
+  const f = filtro.toLowerCase(), box = el('listaAlunos');
+  box.innerHTML = '';
+  alunos.filter(a => `${a.nome} ${a.email}`.toLowerCase().includes(f)).forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'aluno' + (a.uid === usuario.uid ? ' eu' : '');
+    const nm = document.createElement('div'); nm.className = 'nm';
+    nm.textContent = (a.uid === usuario.uid ? '⭐ Meu treino — ' : '') + (a.nome || 'Sem nome');
+    const em = document.createElement('div'); em.className = 'info';
+    em.textContent = a.email || a.uid;
+    div.append(nm, em);
+    div.onclick = () => window.abrirTreino(a.uid);
+    box.appendChild(div);
+  });
+  if (!box.children.length) box.innerHTML = '<div class="info">Nenhum aluno encontrado.</div>';
+};
+
+window.abrirTreino = async (uid) => {
+  alvo = uid;
+  try { await abrirUsuario(uid); } catch (e) { return alert('Erro: ' + e.message); }
+  el('userInfo').textContent = uid === usuario.uid ? '☁️ ' + usuario.email : '👁 Editando treino de: ' + alvoInfo.email;
+  el('adminBar').style.display = ehAdmin ? 'block' : 'none';
+  mostrar('app');
+};
+
+window.voltarAdmin = async () => {
+  stopTimer();
+  el('buscaAluno').value = '';
+  try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }
+  mostrar('admin');
+};
+
+// ===== LOGIN =====
 onAuthStateChanged(auth, async (u) => {
-  usuario = u;
-  document.getElementById('telaLogin').style.display = u ? 'none' : 'flex';
-  document.getElementById('app').style.display = u ? 'block' : 'none';
-  document.getElementById('adminBar').style.display = 'none';
-  document.getElementById('msgLogin').textContent = 'Entre para acessar seus treinos';
-  document.getElementById('btnLogin').style.display = 'block';
-  if (!u) { setData(null); return; }
+  usuario = u; ehAdmin = false;
+  el('adminBar').style.display = 'none';
+
+  if (!u) {
+    el('msgLogin').textContent = 'Entre para acessar seus treinos';
+    el('btnLogin').style.display = 'block';
+    setData(null); mostrar('login'); return;
+  }
+
+  el('msgLogin').textContent = 'Carregando...';
+  el('btnLogin').style.display = 'none';
+  mostrar('login');
 
   alvo = u.uid;
   alvoInfo = { email: u.email, nome: u.displayName || '' };
-  document.getElementById('userInfo').textContent = '☁️ ' + u.email;
 
   try {
     const existe = await abrirUsuario(u.uid);
     alvoInfo = { email: u.email, nome: u.displayName || '' };
     if (!existe) {
-      // primeiro acesso: migra dados antigos do aparelho, se houver
       let antigo = null; try { antigo = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
       setData(antigo);
     }
-    await window.salvarNuvem(); // garante nome/e-mail salvos
+    await window.salvarNuvem();
 
     const adm = await getDoc(doc(db, 'admins', u.email));
-    if (adm.exists()) {
-      document.getElementById('adminBar').style.display = 'block';
-      await carregarListaAdmin();
-    }
+    ehAdmin = adm.exists();
   } catch (e) { alert('Erro ao acessar a nuvem: ' + e.message); }
+
+  if (ehAdmin) {
+    try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }
+    mostrar('admin');
+  } else {
+    el('userInfo').textContent = '☁️ ' + u.email;
+    mostrar('app');
+  }
 });
 </script>
 </body></html>
