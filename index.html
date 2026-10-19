@@ -20,6 +20,9 @@ h1{font-size:22px;margin:14px 0}
 .ser{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .ser button{width:48px;height:48px;border-radius:50%;border:2px solid #3b82f6;background:none;color:#fff;font-size:16px}
 .ser button.ok{background:#22c55e;border-color:#22c55e}
+.ser button.cur{outline:3px solid #f59e0b;outline-offset:2px}
+.drag{touch-action:none;cursor:grab;color:#666;font-size:22px;padding:4px 10px 4px 0;user-select:none}
+.card.arr{opacity:.6;border:1px dashed #3b82f6}
 .ic{background:none;border:0;color:#888;font-size:20px;padding:4px 8px}
 .btn{width:100%;padding:14px;border:0;border-radius:12px;font-size:16px;font-weight:600;margin-top:8px}
 .add{background:#1d2129;color:#3b82f6}.fin{background:#22c55e;color:#fff}
@@ -27,6 +30,8 @@ h1{font-size:22px;margin:14px 0}
 .tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums}
 .tm.over{color:#ef4444}.lbl{color:#9aa;font-size:13px}
 .tb{display:flex;gap:8px;margin-top:6px}.tb button{flex:1;padding:10px;border:0;border-radius:10px;background:#2a2f3a;color:#fff;font-size:15px}
+.tb .acao{background:#3b82f6;font-weight:700}
+.tb .acao.prox{background:#22c55e}
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end}
 .modal.on{display:flex}
 .box{background:#1a1d24;width:100%;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
@@ -92,13 +97,11 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
   <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
 
   <div class="timer">
-    <div class="lbl" id="tlbl">Descanso</div>
+    <div class="lbl" id="tlbl">Treino A</div>
     <div class="tm" id="tm">00:00</div>
     <div class="tb">
-      <button onclick="startTimer()">▶ Iniciar</button>
-      <button onclick="stopTimer()">■ Parar</button>
-      <button onclick="adj(-15)">-15s</button>
-      <button onclick="adj(15)">+15s</button>
+      <button onclick="parar()">■ Parar</button>
+      <button id="bAcao" class="acao" onclick="acao()">⏱ Descanso</button>
     </div>
   </div>
 </div>
@@ -123,31 +126,67 @@ const KEY='treinos_v1';
 const VAZIO=()=>({A:[],B:[],C:[],hist:[]});
 let data=VAZIO(), cur='A', done={}, edit=-1;
 let tStart=null, target=60, tInt=null, beeped=false;
+let pos={i:0,j:0}, fase='descanso';
 const $=id=>document.getElementById(id);
 
-function setData(d){ data=d&&d.A?d:VAZIO(); data.hist=data.hist||[]; done={}; render(); }
+function setData(d){ data=d&&d.A?d:VAZIO(); data.hist=data.hist||[]; done={}; pos={i:0,j:0}; fase='descanso'; render(); }
 function save(){ window.salvarNuvem && window.salvarNuvem(); }
 
+function nomeTreino(){
+  const e=data[cur][pos.i];
+  return 'Treino '+cur+(e?' • '+e.name+' — série '+(pos.j+1)+'/'+e.sets:'');
+}
+
+function trocar(t){ cur=t; pos={i:0,j:0}; fase='descanso'; stopTimer(); render(); }
+
 function render(){
-  $('tabs').innerHTML=['A','B','C'].map(t=>`<button class="${t==cur?'on':''}" onclick="cur='${t}';render()">Treino ${t}</button>`).join('');
-  $('list').innerHTML=data[cur].map((e,i)=>{
+  const ex=data[cur];
+  if(pos.i>=ex.length) pos={i:0,j:0};
+  if(ex[pos.i] && pos.j>=ex[pos.i].sets) pos.j=0;
+
+  $('tabs').innerHTML=['A','B','C'].map(t=>`<button class="${t==cur?'on':''}" onclick="trocar('${t}')">Treino ${t}</button>`).join('');
+  $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
-    for(let j=0;j<e.sets;j++) s+=`<button class="${d[j]?'ok':''}" onclick="tog(${i},${j})">${j+1}</button>`;
-    return `<div class="card"><div class="top"><div><div class="nm">${e.name}</div>
-      <div class="info">${e.sets}x${e.reps} • ${e.weight} kg • ${e.rest}s descanso</div></div>
+    for(let j=0;j<e.sets;j++) s+=`<button class="${d[j]?'ok':''} ${i==pos.i&&j==pos.j?'cur':''}" onclick="tog(${i},${j})">${j+1}</button>`;
+    return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
+      <span class="drag">☰</span><div><div class="nm">${e.name}</div>
+      <div class="info">${e.sets}x${e.reps} • ${e.weight} kg • ${e.rest}s descanso</div></div></div>
       <div><button class="ic" onclick="openForm(${i})">✏️</button><button class="ic" onclick="del(${i})">🗑</button></div></div>
       <div class="ser">${s}</div></div>`;
   }).join('') || '<div class="info">Nenhum exercício no treino '+cur+'.</div>';
   $('hist').innerHTML=data.hist.slice().reverse().slice(0,15).map(h=>
     `<div class="card"><b>Treino ${h.tipo}</b> — ${h.data}${h.ex.map(e=>`<div>• ${e.name}: ${e.feitas}/${e.sets} séries x${e.reps} @ ${e.weight}kg</div>`).join('')}</div>`).join('');
+
+  const b=$('bAcao');
+  b.textContent=fase==='descanso'?'⏱ Descanso':'⏭ Próximo';
+  b.classList.toggle('prox',fase!=='descanso');
+  tick();
 }
 
+// Selecionar série: marca/desmarca e define etapa atual (sem iniciar cronômetro)
 function tog(i,j){
   const k=cur+i; done[k]=done[k]||[]; done[k][j]=!done[k][j];
-  if(done[k][j]){ target=+data[cur][i].rest||60; startTimer(); }
+  pos={i,j}; fase='descanso'; stopTimer(); render();
+}
+
+// Botão único Descanso / Próximo
+function acao(){
+  const ex=data[cur]; if(!ex.length) return;
+  if(fase==='descanso'){
+    const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=true;
+    target=+ex[pos.i].rest||60; startTimer(); fase='proximo';
+  } else {
+    stopTimer();
+    if(pos.j+1<ex[pos.i].sets) pos.j++;
+    else if(pos.i+1<ex.length) pos={i:pos.i+1,j:0};
+    else alert('Último exercício concluído! Toque em "Finalizar treino".');
+    fase='descanso';
+  }
   render();
 }
-function del(i){ if(confirm('Excluir exercício?')){ data[cur].splice(i,1); save(); render(); } }
+function parar(){ stopTimer(); fase='descanso'; render(); }
+
+function del(i){ if(confirm('Excluir exercício?')){ data[cur].splice(i,1); done={}; pos={i:0,j:0}; save(); render(); } }
 function openForm(i=-1){
   edit=i; const e=i>=0?data[cur][i]:{name:'',sets:3,reps:12,weight:0,rest:60};
   $('ftitle').textContent=(i>=0?'Editar':'Novo')+' exercício — Treino '+cur;
@@ -163,8 +202,34 @@ function finish(){
   if(!confirm('Finalizar treino '+cur+'?'))return;
   const ex=data[cur].map((e,i)=>({...e,feitas:(done[cur+i]||[]).filter(Boolean).length}));
   data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),ex});
-  data[cur].forEach((_,i)=>delete done[cur+i]); stopTimer(); save(); render();
+  data[cur].forEach((_,i)=>delete done[cur+i]); pos={i:0,j:0}; fase='descanso'; stopTimer(); save(); render();
 }
+
+// Arrastar para reordenar (toque e mouse)
+let drag=null;
+document.addEventListener('pointerdown',e=>{
+  const h=e.target.closest('.drag'); if(!h) return;
+  e.preventDefault(); drag=h.closest('.card'); drag.classList.add('arr');
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag) return; e.preventDefault();
+  const sob=document.elementFromPoint(e.clientX,e.clientY)?.closest('#list .card');
+  if(!sob||sob===drag) return;
+  const r=sob.getBoundingClientRect();
+  sob.parentNode.insertBefore(drag, e.clientY<r.top+r.height/2?sob:sob.nextSibling);
+});
+document.addEventListener('pointerup',()=>{
+  if(!drag) return;
+  drag.classList.remove('arr'); drag=null;
+  const ordem=[...$('list').children].map(c=>+c.dataset.i);
+  const ex=data[cur], atual=ex[pos.i], nd={};
+  ordem.forEach((old,n)=>{ if(done[cur+old]) nd[cur+n]=done[cur+old]; });
+  Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
+  Object.assign(done,nd);
+  data[cur]=ordem.map(o=>ex[o]);
+  pos.i=Math.max(0,data[cur].indexOf(atual));
+  save(); render();
+});
 
 // Backup
 async function compartilhar(obj,nome){
@@ -188,13 +253,12 @@ function startTimer(){
   try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
   tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
 }
-function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent='Descanso'; }
-function adj(s){ target=Math.max(5,target+s); tick(); }
+function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent=nomeTreino(); }
 function tick(){
-  if(!tStart){ $('tlbl').textContent='Descanso (meta '+target+'s)'; return; }
+  if(!tStart){ $('tlbl').textContent=nomeTreino(); return; }
   const s=Math.floor((Date.now()-tStart)/1000);
   $('tm').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-  $('tlbl').textContent='Descansando — meta '+target+'s';
+  $('tlbl').textContent=nomeTreino()+' • descanso '+target+'s';
   const over=s>=target; $('tm').classList.toggle('over',over);
   if(over&&!beeped){ beeped=true; beep(); }
 }
@@ -231,7 +295,7 @@ function mostrar(tela) {
 
 window.entrar = () => signInWithPopup(auth, new GoogleAuthProvider())
   .catch(e => alert('Erro no login: ' + e.message));
-window.sair = () => { if (confirm('Sair da conta?')) signOut(auth); };
+window.sair = () => { if (confirm('Sair da conta?')) { stopTimer(); signOut(auth); } };
 
 window.salvarNuvem = async () => {
   if (!usuario || !alvo) return;
@@ -316,10 +380,8 @@ onAuthStateChanged(auth, async (u) => {
   try {
     const existe = await abrirUsuario(u.uid);
     alvoInfo = { email: u.email, nome: u.displayName || '' };
-    if (!existe) {
-      setData(null); // usuário novo começa com o treino vazio
-    }
-    localStorage.removeItem(KEY); // apaga os dados antigos que ficaram no aparelho
+    if (!existe) setData(null);          // usuário novo começa vazio
+    localStorage.removeItem(KEY);        // remove dados antigos do aparelho
     await window.salvarNuvem();
 
     const adm = await getDoc(doc(db, 'admins', u.email));
