@@ -11,17 +11,24 @@
 <link rel="apple-touch-icon" href="icone.png">
 <title>Treinos</title>
 <style>
+:root{--nav:calc(62px + env(safe-area-inset-bottom))}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0f1115;color:#eee;padding:env(safe-area-inset-top) 12px 170px;transition:padding-top .3s}
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0f1115;color:#eee;padding:env(safe-area-inset-top) 12px 24px;transition:padding-top .3s}
 body.ilhaOn{padding-top:calc(env(safe-area-inset-top) + 64px)}
+body.navOn{padding-bottom:calc(var(--nav) + 16px)}
+body.navOn.timerOn{padding-bottom:calc(var(--nav) + 160px)}
 h1{font-size:22px;margin:14px 0}
 h2{font-size:18px;margin:24px 0 10px}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
 .tabs button{flex:1;padding:14px 4px;font-size:20px;font-weight:700;border:0;border-radius:12px;background:#1d2129;color:#aaa}
 .tabs button.on{background:#3b82f6;color:#fff}
-.nav{display:flex;gap:6px;margin-bottom:12px}
-.nav button{flex:1;padding:10px 4px;border:0;border-radius:10px;background:#1d2129;color:#aaa;font-size:15px;font-weight:600}
-.nav button.on{background:#2a2f3a;color:#fff;box-shadow:inset 0 -3px #3b82f6}
+/* Barra de navegação inferior */
+.bnav{position:fixed;left:0;right:0;bottom:0;display:none;justify-content:center;gap:8px;background:#161920f2;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid #2a2f3a;padding:5px 12px env(safe-area-inset-bottom);z-index:12}
+body.navOn .bnav{display:flex}
+.bnav button{flex:1;max-width:150px;height:52px;border:0;border-radius:14px;background:none;font-size:24px;opacity:.45;position:relative;transition:opacity .2s,background .2s,transform .15s}
+.bnav button:active{transform:scale(.92)}
+.bnav button.on{opacity:1;background:#1d2129}
+.bnav button.on::after{content:'';position:absolute;left:50%;bottom:4px;width:22px;height:3px;margin-left:-11px;border-radius:2px;background:#3b82f6}
 .card{background:#1a1d24;border-radius:14px;padding:14px;margin-bottom:10px}
 .top{display:flex;justify-content:space-between;align-items:center}
 .nm{font-size:18px;font-weight:600}
@@ -51,10 +58,10 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .status.andamento{color:#22c55e;border:1px solid #22c55e55}
 .status.encerrado{color:#f59e0b}
 .item{padding:10px 0;border-top:1px solid #2a2f3a;margin-top:8px}
-/* Cronômetro */
-.timer{position:fixed;left:0;right:0;bottom:0;background:#161920;border-top:1px solid #2a2f3a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));text-align:center;z-index:10}
+/* Cronômetro (fica acima da barra inferior) */
+.timer{position:fixed;left:0;right:0;bottom:var(--nav);background:#161920;border-top:1px solid #2a2f3a;padding:10px 16px;text-align:center;z-index:10}
 .timer.off .tb button{opacity:.45}
-.tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .25s}
+.tm{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .25s}
 .tm.pause,.itm.pause{color:#f59e0b}
 .tm.desc,.itm.desc{color:#facc15}
 .tm.over,.itm.over{color:#ef4444}
@@ -73,6 +80,16 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .itx div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .isub{color:#9aa;font-size:12px;font-weight:400}
 .itm{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .25s}
+/* Perfil */
+.perfil .top{justify-content:flex-start;gap:12px}
+.perfil .top>div:last-child{min-width:0}
+.perfil .info{word-break:break-all}
+.avatar{width:56px;height:56px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;overflow:hidden;flex:none}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.kv{margin-top:12px}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #2a2f3a;font-size:14px}
+.kv span{color:#9aa}
+.kv b{font-weight:500;text-align:right;word-break:break-word}
 /* Diversos */
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:40}
 .modal.on{display:flex}
@@ -110,7 +127,7 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 
 <!-- ADMIN -->
 <div id="telaAdmin" class="tela">
-  <div class="head"><h1>👑 Painel do Admin</h1><button class="sair" onclick="sair()">Sair</button></div>
+  <div class="head"><h1>👑 Painel do Admin</h1></div>
   <div class="info" style="margin-bottom:10px">Escolha qual treino deseja ver:</div>
   <input id="buscaAluno" placeholder="🔍 Buscar por nome ou e-mail" oninput="renderAlunos(this.value)" style="margin-bottom:12px">
   <div id="listaAlunos"></div>
@@ -118,7 +135,7 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 
 <!-- INÍCIO -->
 <div id="telaInicio" class="tela">
-  <div class="head"><h1>🏋️ Meus Treinos</h1><button class="sair" onclick="sair()">Sair</button></div>
+  <div class="head"><h1>🏋️ Meus Treinos</h1></div>
   <div class="info uinfo" style="margin-bottom:10px"></div>
   <div class="adm admOnly" style="display:none">
     <div class="lbl">👑 Modo administrador</div>
@@ -156,15 +173,14 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 <!-- APP / EXECUÇÃO -->
 <div id="app" class="tela">
   <div class="head">
-    <h1>🏋️ Meus Treinos</h1>
-    <div><button class="sair" onclick="irInicio()">⌂ Início</button> <button class="sair" onclick="sair()">Sair</button></div>
+    <h1 id="tituloApp">🏋️ Meus Treinos</h1>
+    <button class="sair" onclick="irInicio()">⌂ Início</button>
   </div>
   <div class="info uinfo" style="margin-bottom:10px"></div>
   <div class="adm admOnly" style="display:none">
     <div class="lbl">👑 Modo administrador</div>
     <button class="voltar" onclick="voltarAdmin()">⬅ Voltar para lista de alunos</button>
   </div>
-  <div class="nav" id="nav"></div>
 
   <div id="p_treino">
     <div id="semTreino" class="card info">Nenhum treino cadastrado.
@@ -195,6 +211,13 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
   </div>
 
   <div id="p_backup" style="display:none">
+    <div class="card perfil">
+      <div class="top">
+        <div id="pFoto" class="avatar">?</div>
+        <div><div class="nm" id="pNome">—</div><div class="info" id="pEmail"></div></div>
+      </div>
+      <div class="kv" id="pDados"></div>
+    </div>
     <div class="card">
       <div class="nm">🔔 Aviso de fim do descanso</div>
       <div class="info" id="nInfo">Carregando...</div>
@@ -209,8 +232,19 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
       <button class="btn add" onclick="$('imp').click()">⬆ Importar backup</button>
       <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
     </div>
+    <div class="card">
+      <div class="nm">👤 Conta</div>
+      <button class="btn del" onclick="sair()">🚪 Sair da conta</button>
+    </div>
   </div>
 </div>
+
+<!-- BARRA DE NAVEGAÇÃO INFERIOR -->
+<nav id="bnav" class="bnav">
+  <button data-a="treino" aria-label="Treino" onclick="irAba('treino')">🏋️</button>
+  <button data-a="hist" aria-label="Histórico" onclick="irAba('hist')">📜</button>
+  <button data-a="backup" aria-label="Ajustes" onclick="irAba('backup')">⚙️</button>
+</nav>
 
 <!-- MODAL EXERCÍCIO -->
 <div class="modal" id="modal"><div class="box">
@@ -245,7 +279,7 @@ const VAZIO=()=>({divs:[],A:[],B:[],C:[],D:[],E:[],hist:[]});
 let data=VAZIO(), cur='A', done={}, edit=-1, formDiv='A';
 let tStart=null, tAcc=0, pausado=false, target=60, tInt=null, beeped=false;
 let pos={i:0,j:0}, fase='serie'; // 'serie' | 'descanso' | 'fim'
-let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', agendada=false;
+let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', agendada=false, telaAtual='telaLogin';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
@@ -269,15 +303,32 @@ function renderAll(){ render(); renderCad(); renderInicio(); }
 // ===== Telas =====
 const TELAS=['telaLogin','telaAdmin','telaInicio','telaDivisao','telaCadastro','app'];
 function tela(t){
+  telaAtual=t;
   TELAS.forEach(id=>$(id).style.display=id===t?(id==='telaLogin'?'flex':'block'):'none');
   if(t==='telaInicio') renderInicio();
   if(t==='telaCadastro') renderCad();
   if(t==='app') render();
-  ilha(); scrollTo(0,0);
+  ilha(); renderNav(); scrollTo(0,0);
 }
 function ilha(){
   const v=sessao==='andamento'&&$('app').style.display==='block';
   $('ilha').classList.toggle('on',v); document.body.classList.toggle('ilhaOn',v);
+}
+// ===== Navegação inferior =====
+function renderNav(){
+  const logado=telaAtual!=='telaLogin';
+  const sel=telaAtual==='app'?aba:telaAtual==='telaAdmin'?'':'treino';
+  document.body.classList.toggle('navOn',logado);
+  document.body.classList.toggle('timerOn',telaAtual==='app'&&aba==='treino'&&data.divs.length>0);
+  document.querySelectorAll('#bnav button').forEach(b=>{
+    const on=b.dataset.a===sel; b.classList.toggle('on',on);
+    on?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current');
+  });
+}
+function irAba(a){
+  if(a==='treino'&&!data.divs.length) return tela('telaInicio');
+  if(telaAtual!=='app'){ if(!data.divs.includes(cur)) cur=data.divs[0]||'A'; tela('app'); }
+  mudarAba(a);
 }
 function setTopo(txt,adm){
   document.querySelectorAll('.uinfo').forEach(e=>e.textContent=txt);
@@ -341,7 +392,13 @@ function abrirExec(){
   if(!data.divs.includes(cur)) cur=data.divs[0];
   tela('app'); mudarAba('treino');
 }
-function mudarAba(a){ aba=a; ['treino','hist','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none'); render(); window.atualizarNotifUI&&atualizarNotifUI(); scrollTo(0,0); }
+function mudarAba(a){
+  aba=a; ['treino','hist','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none');
+  $('tituloApp').textContent=a==='hist'?'📜 Histórico':a==='backup'?'⚙️ Ajustes':'🏋️ Meus Treinos';
+  render(); renderNav();
+  if(a==='backup'){ window.atualizarNotifUI&&atualizarNotifUI(); window.renderPerfil&&renderPerfil(); }
+  scrollTo(0,0);
+}
 
 // ===== Sessão =====
 function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; }
@@ -393,8 +450,6 @@ function render(){
   if(pos.i>=ex.length) pos={i:0,j:0};
   if(ex[pos.i]&&pos.j>=ex[pos.i].sets) pos.j=ex[pos.i].sets-1;
 
-  $('nav').innerHTML=[['treino','🏋️ Treino'],['hist','📜 Histórico'],['backup','⚙️ Ajustes']]
-    .map(([k,t])=>`<button class="${k==aba?'on':''}" onclick="mudarAba('${k}')">${t}</button>`).join('');
   $('semTreino').style.display=data.divs.length?'none':'block';
   $('comTreino').style.display=data.divs.length?'block':'none';
 
@@ -418,7 +473,7 @@ function render(){
   b.classList.toggle('prox',fase==='descanso');
   b.classList.toggle('fim',fase==='fim');
   $('bPausa').textContent=pausado?'▶ Retomar':'⏸ Pausar';
-  status(); renderHist(); tick(); ilha();
+  status(); renderHist(); tick(); ilha(); renderNav();
 }
 
 // Fluxo controlado só pelo botão do cronômetro
@@ -511,13 +566,12 @@ document.addEventListener('pointerdown',e=>{
 document.addEventListener('pointermove',e=>{
   if(!drag) return; e.preventDefault();
   drag.card.style.top=(e.clientY-drag.dy)+'px';
-  if(e.clientY<90) scrollBy(0,-12); else if(e.clientY>innerHeight-200) scrollBy(0,12);
+  if(e.clientY<90) scrollBy(0,-12); else if(e.clientY>innerHeight-260) scrollBy(0,12);
   const outros=[...$('list').querySelectorAll('.card:not(.arr)')];
   let ref=null;
   for(const o of outros){ const r=o.getBoundingClientRect(); if(e.clientY<r.top+r.height/2){ ref=o; break; } }
   const atual=drag.ph.nextElementSibling===drag.card?drag.card.nextElementSibling:drag.ph.nextElementSibling;
   if(ref===atual||ref===drag.ph) return;
-  // Animação FLIP dos cards vizinhos
   const antes=new Map(outros.map(o=>[o,o.getBoundingClientRect().top]));
   $('list').insertBefore(drag.ph,ref);
   outros.forEach(o=>{ const d=antes.get(o)-o.getBoundingClientRect().top; if(!d) return;
@@ -588,7 +642,6 @@ function tick(){
   $('tlbl').textContent=nomeTreino()+(ativo?(rest?' • descanso '+target+'s':' • em execução')+(pausado?' • ⏸ pausado':''):'');
   ['tm','iTm'].forEach(id=>{ const x=$(id); x.textContent=ativo?mmss(s):'00:00';
     x.classList.toggle('over',over); x.classList.toggle('desc',rest&&!over); x.classList.toggle('pause',pausado&&!rest); });
-  // Ilha
   const e=(data[cur]||[])[pos.i];
   $('iNome').textContent=fase==='fim'?'Treino '+cur+' concluído 🎉':(e?e.name:'Treino '+cur);
   $('iSub').textContent=fase==='fim'?'Toque em Encerrar'
@@ -631,7 +684,38 @@ let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
 const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 window.entrar = () => (standalone ? signInWithRedirect : signInWithPopup)(auth, new GoogleAuthProvider())
   .catch(e => alert('Erro no login: ' + e.message));
-window.sair = () => { if (confirm('Sair da conta?')) { resetSessao(); stopTimer(); signOut(auth); } };
+window.sair = () => {
+  if (sessao === 'andamento' && !confirm('Há um treino em andamento que será descartado. Sair mesmo assim?')) return;
+  if (confirm('Sair da conta?')) { resetSessao(); stopTimer(); signOut(auth); }
+};
+
+// ===== PERFIL (tela de Ajustes) =====
+window.renderPerfil = () => {
+  const u = usuario; if (!u) return;
+  const nome = u.displayName || 'Sem nome', ini = (nome[0] || '?').toUpperCase();
+  el('pNome').textContent = nome;
+  el('pEmail').textContent = u.email || '';
+  const f = el('pFoto'); f.textContent = '';
+  if (u.photoURL) {
+    const img = new Image(); img.alt = ''; img.referrerPolicy = 'no-referrer';
+    img.onerror = () => { f.textContent = ini; };
+    img.src = u.photoURL; f.append(img);
+  } else f.textContent = ini;
+  const dt = s => s ? new Date(s).toLocaleString('pt-BR') : '—';
+  const linhas = [
+    ['Tipo de conta', ehAdmin ? '👑 Administrador' : 'Aluno'],
+    ['Login via', 'Google'],
+    ['E-mail verificado', u.emailVerified ? 'Sim' : 'Não'],
+    ['Conta criada em', dt(u.metadata?.creationTime)],
+    ['Último acesso', dt(u.metadata?.lastSignInTime)]
+  ];
+  if (alvo && alvo !== u.uid) linhas.push(['Editando treino de', alvoInfo.email || alvo]);
+  const box = el('pDados'); box.innerHTML = '';
+  linhas.forEach(([k, v]) => {
+    const d = document.createElement('div'), s = document.createElement('span'), b = document.createElement('b');
+    s.textContent = k; b.textContent = v; d.append(s, b); box.append(d);
+  });
+};
 
 // ===== NOTIFICAÇÕES (Web Push via FCM + Cloud Function) =====
 const NKEY = 'notif_descanso';
@@ -782,6 +866,7 @@ onAuthStateChanged(auth, async (u) => {
     ehAdmin = adm.exists();
   } catch (e) { alert('Erro ao acessar a nuvem: ' + e.message); }
 
+  window.renderPerfil();
   if (notifOn()) obterToken(false).catch(() => {});
 
   if (ehAdmin) {
