@@ -3,12 +3,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Treinos">
+<meta name="theme-color" content="#0f1115">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icone.png">
 <title>Treinos</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0f1115;color:#eee;padding:env(safe-area-inset-top) 12px 170px}
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0f1115;color:#eee;padding:env(safe-area-inset-top) 12px 170px;transition:padding-top .3s}
+body.ilhaOn{padding-top:calc(env(safe-area-inset-top) + 64px)}
 h1{font-size:22px;margin:14px 0}
 h2{font-size:18px;margin:24px 0 10px}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
@@ -26,9 +31,16 @@ h2{font-size:18px;margin:24px 0 10px}
 .ser span.ok{background:#22c55e;border-color:#22c55e}
 .ser span.cur{outline:3px solid #f59e0b;outline-offset:2px}
 .bloq .ser span{opacity:.5}
-.tempos{color:#22c55e;font-size:13px;margin-top:8px}
-.drag{touch-action:none;cursor:grab;color:#666;font-size:22px;padding:4px 10px 4px 0;user-select:none}
-.card.arr{opacity:.6;border:1px dashed #3b82f6}
+.tempos{color:#22c55e;font-size:13px;margin-top:8px;line-height:1.5}
+.tempos .d{color:#facc15}
+/* Arrastar */
+.drag{touch-action:none;cursor:grab;color:#666;font-size:22px;padding:4px 10px 4px 0;user-select:none;-webkit-user-select:none}
+#list .card{transition:box-shadow .2s,transform .2s}
+.card.arr{z-index:30;transform:scale(1.04) rotate(-.6deg);box-shadow:0 18px 40px #000d,0 0 0 2px #3b82f6;pointer-events:none;transition:transform .2s,box-shadow .2s!important}
+.card.arr .drag{color:#3b82f6}
+.ph{border:2px dashed #3b82f6;border-radius:14px;background:repeating-linear-gradient(45deg,#3b82f610 0 10px,#3b82f622 10px 20px);margin-bottom:10px;animation:phIn .18s ease-out}
+@keyframes phIn{from{opacity:0;transform:scaleY(.6)}to{opacity:1;transform:none}}
+body.arrastando{user-select:none;-webkit-user-select:none}
 .ic{background:none;border:0;color:#888;font-size:20px;padding:4px 8px}
 .btn{width:100%;padding:14px;border:0;border-radius:12px;font-size:16px;font-weight:600;margin-top:8px}
 .add{background:#1d2129;color:#3b82f6}.fin{background:#22c55e;color:#fff}
@@ -39,21 +51,36 @@ h2{font-size:18px;margin:24px 0 10px}
 .status.andamento{color:#22c55e;border:1px solid #22c55e55}
 .status.encerrado{color:#f59e0b}
 .item{padding:10px 0;border-top:1px solid #2a2f3a;margin-top:8px}
-.timer{position:fixed;left:0;right:0;bottom:0;background:#161920;border-top:1px solid #2a2f3a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));text-align:center}
+/* Cronômetro */
+.timer{position:fixed;left:0;right:0;bottom:0;background:#161920;border-top:1px solid #2a2f3a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));text-align:center;z-index:10}
 .timer.off .tb button{opacity:.45}
-.tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums}
-.tm.over{color:#ef4444}.tm.pause{color:#f59e0b}.lbl{color:#9aa;font-size:13px}
+.tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .25s}
+.tm.pause,.itm.pause{color:#f59e0b}
+.tm.desc,.itm.desc{color:#facc15}
+.tm.over,.itm.over{color:#ef4444}
+.lbl{color:#9aa;font-size:13px}
 .tb{display:flex;gap:8px;margin-top:6px}.tb button{flex:1;padding:10px 4px;border:0;border-radius:10px;background:#2a2f3a;color:#fff;font-size:15px}
 .tb .acao{background:#3b82f6;font-weight:700}
 .tb .acao.prox{background:#22c55e}
 .tb .acao.fim{background:#ef4444}
-.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:20}
+/* Ilha (estilo Live Activity) */
+.ilha{position:fixed;top:calc(env(safe-area-inset-top) + 6px);left:50%;width:min(92vw,420px);display:flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:40px;background:#000000e0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 24px #0009;z-index:15;transform:translate(-50%,-150%);transition:transform .4s cubic-bezier(.2,.9,.3,1.15)}
+.ilha.on{transform:translate(-50%,0)}
+.ilha svg{width:38px;height:38px;transform:rotate(-90deg);flex:none}
+.trk{fill:none;stroke:#2a2f3a;stroke-width:3.5}
+.prg{fill:none;stroke:#3b82f6;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:100.5;stroke-dashoffset:100.5;transition:stroke-dashoffset .25s linear,stroke .25s}
+.itx{flex:1;min-width:0;font-size:14px;font-weight:600}
+.itx div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.isub{color:#9aa;font-size:12px;font-weight:400}
+.itm{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .25s}
+/* Diversos */
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:40}
 .modal.on{display:flex}
 .box{background:#1a1d24;width:100%;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
 label{display:block;font-size:13px;color:#9aa;margin-top:10px}
 input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid #333;background:#0f1115;color:#fff}
 .row{display:flex;gap:8px}.row>div{flex:1}
-.hist{font-size:14px;color:#bbb}.hist .card div{margin-top:4px}
+.hist{font-size:14px;color:#bbb}.hist .card>div{margin-top:4px}
 .tela{display:none}
 #telaLogin{min-height:90vh;flex-direction:column;justify-content:center;align-items:center;text-align:center}
 .head{display:flex;justify-content:space-between;align-items:center;gap:6px}
@@ -63,7 +90,15 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 .aluno:active{background:#232733}
 .aluno.eu{border-color:#f59e0b}
 .voltar{background:#2a2f3a;color:#fff;border:0;border-radius:10px;padding:10px 12px;width:100%;font-size:15px;margin-top:6px}
+.btn.ativo{background:#22c55e;color:#fff}
 </style></head><body>
+
+<!-- ILHA DO CRONÔMETRO -->
+<div id="ilha" class="ilha">
+  <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" class="trk"/><circle id="anel" cx="18" cy="18" r="16" class="prg"/></svg>
+  <div class="itx"><div id="iNome">Treino</div><div id="iSub" class="isub"></div></div>
+  <div id="iTm" class="itm">00:00</div>
+</div>
 
 <!-- LOGIN -->
 <div id="telaLogin" class="tela" style="display:flex">
@@ -160,11 +195,20 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
   </div>
 
   <div id="p_backup" style="display:none">
-    <div class="info">Salve uma cópia dos seus dados ou restaure um backup.</div>
-    <button class="btn add" onclick="exportar()">⬇ Exportar tudo (treino + histórico)</button>
-    <button class="btn add" onclick="exportarHist()">⬇ Exportar só o histórico</button>
-    <button class="btn add" onclick="$('imp').click()">⬆ Importar backup</button>
-    <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
+    <div class="card">
+      <div class="nm">🔔 Aviso de fim do descanso</div>
+      <div class="info" id="nInfo">Carregando...</div>
+      <button id="bNotif" class="btn add" onclick="notifToggle()">Ativar notificações</button>
+      <button class="btn add" onclick="notifTeste()">🧪 Testar (5 s — bloqueie o celular)</button>
+    </div>
+    <div class="card">
+      <div class="nm">💾 Backup</div>
+      <div class="info">Salve uma cópia dos seus dados ou restaure um backup.</div>
+      <button class="btn add" onclick="exportar()">⬇ Exportar tudo (treino + histórico)</button>
+      <button class="btn add" onclick="exportarHist()">⬇ Exportar só o histórico</button>
+      <button class="btn add" onclick="$('imp').click()">⬆ Importar backup</button>
+      <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
+    </div>
   </div>
 </div>
 
@@ -197,16 +241,17 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 const KEY='treinos_v1';
 const LETRAS=['A','B','C','D','E'];
 const VAZIO=()=>({divs:[],A:[],B:[],C:[],D:[],E:[],hist:[]});
-// done[div+i][j] = segundos da série (null/undefined = não feita)
+// done[div+i][j] = {t: segundos da série, d: segundos de descanso | null}
 let data=VAZIO(), cur='A', done={}, edit=-1, formDiv='A';
 let tStart=null, tAcc=0, pausado=false, target=60, tInt=null, beeped=false;
 let pos={i:0,j:0}, fase='serie'; // 'serie' | 'descanso' | 'fim'
-let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino';
+let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', agendada=false;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 const info=e=>`${e.sets}x${esc(e.reps)} • ${e.weight} kg • ${e.rest}s descanso`;
 const feita=v=>v!=null;
+const linhaTempo=(j,t,d)=>`S${j+1} ${mmss(t)}${d!=null?` <span class="d">• desc ${mmss(d)}</span>`:''}`;
 function divLabel(n){ const l=LETRAS.slice(0,n); return l.length>1?l.slice(0,-1).join(', ')+' e '+l.at(-1):l[0]; }
 
 function norm(d){
@@ -228,7 +273,11 @@ function tela(t){
   if(t==='telaInicio') renderInicio();
   if(t==='telaCadastro') renderCad();
   if(t==='app') render();
-  scrollTo(0,0);
+  ilha(); scrollTo(0,0);
+}
+function ilha(){
+  const v=sessao==='andamento'&&$('app').style.display==='block';
+  $('ilha').classList.toggle('on',v); document.body.classList.toggle('ilhaOn',v);
 }
 function setTopo(txt,adm){
   document.querySelectorAll('.uinfo').forEach(e=>e.textContent=txt);
@@ -292,7 +341,7 @@ function abrirExec(){
   if(!data.divs.includes(cur)) cur=data.divs[0];
   tela('app'); mudarAba('treino');
 }
-function mudarAba(a){ aba=a; ['treino','hist','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none'); render(); scrollTo(0,0); }
+function mudarAba(a){ aba=a; ['treino','hist','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none'); render(); window.atualizarNotifUI&&atualizarNotifUI(); scrollTo(0,0); }
 
 // ===== Sessão =====
 function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; }
@@ -302,13 +351,16 @@ function iniciarSessao(){
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
   pos={i:0,j:0}; fase='serie'; sessao='andamento'; sIni=Date.now();
   clearInterval(sInt); sInt=setInterval(status,1000);
-  startTimer(); render(); // cronômetro já começa na 1ª série
+  startTimer(); render();
 }
 function encerrar(salvar){
   $('dlgFim').classList.remove('on');
+  if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
   if(salvar){
     const ex=data[cur].map((e,i)=>{ const d=done[cur+i]||[];
-      return {...e,feitas:d.filter(feita).length,tempos:Array.from({length:e.sets},(_,j)=>feita(d[j])?d[j]:null)}; });
+      return {...e,feitas:d.filter(feita).length,
+        tempos:Array.from({length:e.sets},(_,j)=>feita(d[j])?d[j].t:null),
+        descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; });
     data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex});
     save();
   }
@@ -341,7 +393,7 @@ function render(){
   if(pos.i>=ex.length) pos={i:0,j:0};
   if(ex[pos.i]&&pos.j>=ex[pos.i].sets) pos.j=ex[pos.i].sets-1;
 
-  $('nav').innerHTML=[['treino','🏋️ Treino'],['hist','📜 Histórico'],['backup','💾 Backup']]
+  $('nav').innerHTML=[['treino','🏋️ Treino'],['hist','📜 Histórico'],['backup','⚙️ Ajustes']]
     .map(([k,t])=>`<button class="${k==aba?'on':''}" onclick="mudarAba('${k}')">${t}</button>`).join('');
   $('semTreino').style.display=data.divs.length?'none':'block';
   $('comTreino').style.display=data.divs.length?'block':'none';
@@ -350,9 +402,8 @@ function render(){
   $('list').className=on?'':'bloq';
   $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
-    // Séries apenas indicativas: não são clicáveis
     for(let j=0;j<e.sets;j++) s+=`<span class="${feita(d[j])?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${j+1}</span>`;
-    const tp=d.map((v,j)=>feita(v)?'S'+(j+1)+' '+mmss(v):null).filter(Boolean).join(' • ');
+    const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
       <span class="drag">☰</span><div><div class="nm">${esc(e.name)}</div>
       <div class="info">${info(e)}</div></div></div>
@@ -367,24 +418,33 @@ function render(){
   b.classList.toggle('prox',fase==='descanso');
   b.classList.toggle('fim',fase==='fim');
   $('bPausa').textContent=pausado?'▶ Retomar':'⏸ Pausar';
-  status(); renderHist(); tick();
+  status(); renderHist(); tick(); ilha();
 }
 
 // Fluxo controlado só pelo botão do cronômetro
 function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
+function proxima(){ const ex=data[cur]; return pos.j+1<ex[pos.i].sets?{i:pos.i,j:pos.j+1}:{i:pos.i+1,j:0}; }
 function acao(){
   if(sessao!=='andamento') return aviso();
   const ex=data[cur]; if(!ex.length) return;
   if(fase==='serie'){
-    const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=Math.floor(decorrido()/1000);
+    const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]={t:Math.floor(decorrido()/1000),d:null};
     if(ultimaSerie()){ stopTimer(); fase='fim'; render(); return alert('Última série concluída! Toque em "Encerrar" para finalizar.'); }
-    target=+ex[pos.i].rest||60; startTimer(); fase='descanso';
+    target=+ex[pos.i].rest||60; fase='descanso'; startTimer(); agendar(target);
   } else if(fase==='descanso'){
-    if(pos.j+1<ex[pos.i].sets) pos.j++; else pos={i:pos.i+1,j:0};
-    fase='serie'; startTimer();
+    const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000);
+    pos=proxima(); fase='serie'; startTimer();
   } else return $('dlgFim').classList.add('on');
   render();
 }
+
+// ===== Notificação de descanso =====
+function agendar(seg){
+  if(!window.notifAgendar||seg<=0) return;
+  const n=proxima(), e=data[cur][n.i];
+  agendada=window.notifAgendar(seg, e?`Próximo: ${e.name} — série ${n.j+1}/${e.sets}`:'Bora para a próxima!');
+}
+function cancelar(){ if(agendada&&window.notifCancelar) window.notifCancelar(); agendada=false; }
 
 // ===== Exercícios =====
 function del(i,dv=cur){
@@ -398,7 +458,7 @@ function del(i,dv=cur){
   done=nd;
   if(dv===cur){
     if(pos.i>i) pos.i--;
-    else if(pos.i===i){ pos.j=0; if(sessao==='andamento'&&data[cur].length){ fase='serie'; startTimer(); } else { fase='serie'; stopTimer(); } }
+    else if(pos.i===i){ pos.j=0; fase='serie'; if(sessao==='andamento'&&data[cur].length) startTimer(); else stopTimer(); }
   }
   save(); renderAll();
 }
@@ -412,10 +472,7 @@ function closeForm(){ $('modal').classList.remove('on'); }
 function saveForm(){
   const e={name:$('fn').value.trim()||'Exercício',sets:+$('fs').value||1,reps:$('fr').value,weight:+$('fp').value||0,rest:+$('fd').value||60};
   edit>=0?data[formDiv][edit]=e:data[formDiv].push(e);
-  if(fase==='fim'&&formDiv===cur&&!ultimaSerie()){ // novas séries/exercícios após o fim
-    const ex=data[cur]; if(pos.j+1<ex[pos.i].sets) pos.j++; else pos={i:pos.i+1,j:0};
-    fase='serie'; startTimer();
-  }
+  if(fase==='fim'&&formDiv===cur&&!ultimaSerie()){ pos=proxima(); fase='serie'; startTimer(); }
   save(); closeForm(); renderAll();
 }
 
@@ -428,7 +485,7 @@ function renderHist(){
   const it=data.hist.map((h,k)=>({h,k})).filter(o=>!v||o.h.tipo===v).reverse();
   $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • ⏳ '+mmss(h.dur):''}</div>
     <button class="ic" onclick="delHist(${k})">🗑</button></div>
-    ${(h.ex||[]).map(e=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?'S'+(j+1)+' '+mmss(t):null).filter(Boolean).join(', ');
+    ${(h.ex||[]).map(e=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?linhaTempo(j,t,(e.descansos||[])[j]):null).filter(Boolean).join('<br>');
       return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${e.weight}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">⏱ ${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
     ||`<div class="info">${data.hist.length?'Nenhum registro para o Treino '+esc(v)+'.':'Nenhum treino registrado ainda.'}</div>`;
 }
@@ -438,23 +495,42 @@ function delHist(k){
   data.hist.splice(k,1); save(); renderHist();
 }
 
-// ===== Arrastar para reordenar =====
+// ===== Arrastar para reordenar (card flutua + marcador de destino) =====
 let drag=null;
 document.addEventListener('pointerdown',e=>{
   const h=e.target.closest('#list .drag'); if(!h) return;
-  e.preventDefault(); drag=h.closest('.card'); drag.classList.add('arr');
+  e.preventDefault();
+  const card=h.closest('.card'), r=card.getBoundingClientRect();
+  const ph=document.createElement('div'); ph.className='ph'; ph.style.height=r.height+'px';
+  card.parentNode.insertBefore(ph,card);
+  Object.assign(card.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',margin:0});
+  card.classList.add('arr'); document.body.classList.add('arrastando');
+  drag={card,ph,dy:e.clientY-r.top};
+  navigator.vibrate&&navigator.vibrate(15);
 });
 document.addEventListener('pointermove',e=>{
   if(!drag) return; e.preventDefault();
-  const sob=document.elementFromPoint(e.clientX,e.clientY)?.closest('#list .card');
-  if(!sob||sob===drag) return;
-  const r=sob.getBoundingClientRect();
-  sob.parentNode.insertBefore(drag,e.clientY<r.top+r.height/2?sob:sob.nextSibling);
-});
-document.addEventListener('pointerup',()=>{
+  drag.card.style.top=(e.clientY-drag.dy)+'px';
+  if(e.clientY<90) scrollBy(0,-12); else if(e.clientY>innerHeight-200) scrollBy(0,12);
+  const outros=[...$('list').querySelectorAll('.card:not(.arr)')];
+  let ref=null;
+  for(const o of outros){ const r=o.getBoundingClientRect(); if(e.clientY<r.top+r.height/2){ ref=o; break; } }
+  const atual=drag.ph.nextElementSibling===drag.card?drag.card.nextElementSibling:drag.ph.nextElementSibling;
+  if(ref===atual||ref===drag.ph) return;
+  // Animação FLIP dos cards vizinhos
+  const antes=new Map(outros.map(o=>[o,o.getBoundingClientRect().top]));
+  $('list').insertBefore(drag.ph,ref);
+  outros.forEach(o=>{ const d=antes.get(o)-o.getBoundingClientRect().top; if(!d) return;
+    o.style.transition='none'; o.style.transform=`translateY(${d}px)`;
+    requestAnimationFrame(()=>{ o.style.transition='transform .2s ease'; o.style.transform=''; }); });
+  navigator.vibrate&&navigator.vibrate(5);
+},{passive:false});
+function soltar(){
   if(!drag) return;
-  drag.classList.remove('arr'); drag=null;
-  const ordem=[...$('list').children].map(c=>+c.dataset.i);
+  const {card,ph}=drag; drag=null;
+  ph.replaceWith(card);
+  card.classList.remove('arr'); card.removeAttribute('style'); document.body.classList.remove('arrastando');
+  const ordem=[...$('list').querySelectorAll('.card')].map(c=>+c.dataset.i);
   const ex=data[cur], atual=ex[pos.i], nd={};
   ordem.forEach((old,n)=>{ if(done[cur+old]) nd[cur+n]=done[cur+old]; });
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
@@ -462,7 +538,9 @@ document.addEventListener('pointerup',()=>{
   data[cur]=ordem.map(o=>ex[o]);
   pos.i=Math.max(0,data[cur].indexOf(atual));
   save(); render();
-});
+}
+document.addEventListener('pointerup',soltar);
+document.addEventListener('pointercancel',soltar);
 
 // ===== Backup =====
 async function compartilhar(obj,nome){
@@ -485,13 +563,16 @@ function beep(){ try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.fr
 const decorrido=()=>tAcc+(tStart?Date.now()-tStart:0);
 function startTimer(){
   try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
-  tAcc=0; pausado=false; tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
+  cancelar(); tAcc=0; pausado=false; tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
 }
-function stopTimer(){ clearInterval(tInt); tStart=null; tAcc=0; pausado=false; $('tm').textContent='00:00'; $('tm').classList.remove('over','pause'); $('tlbl').textContent=nomeTreino(); }
+function stopTimer(){ cancelar(); clearInterval(tInt); tStart=null; tAcc=0; pausado=false; tick(); }
 function pausar(){
   if(sessao!=='andamento') return aviso();
-  if(tStart){ tAcc+=Date.now()-tStart; tStart=null; pausado=true; clearInterval(tInt); }
-  else if(pausado){ tStart=Date.now(); pausado=false; clearInterval(tInt); tInt=setInterval(tick,250); }
+  if(tStart){ tAcc+=Date.now()-tStart; tStart=null; pausado=true; clearInterval(tInt); cancelar(); }
+  else if(pausado){
+    tStart=Date.now(); pausado=false; clearInterval(tInt); tInt=setInterval(tick,250);
+    if(fase==='descanso') agendar(target-Math.floor(decorrido()/1000));
+  }
   else return;
   render();
 }
@@ -499,15 +580,23 @@ function pausar(){
 function parar(){
   if(sessao!=='andamento') return aviso();
   if(fase==='fim') return;
-  clearInterval(tInt); tStart=null; tAcc=0; pausado=true; beeped=false; render();
+  cancelar(); clearInterval(tInt); tStart=null; tAcc=0; pausado=true; beeped=false; render();
 }
 function tick(){
-  if(!tStart&&!pausado){ $('tlbl').textContent=nomeTreino(); return; }
-  const s=Math.floor(decorrido()/1000);
-  $('tm').textContent=mmss(s);
-  $('tlbl').textContent=nomeTreino()+(fase==='descanso'?' • descanso '+target+'s':' • em execução')+(pausado?' • ⏸ pausado':'');
-  const over=fase==='descanso'&&s>=target;
-  $('tm').classList.toggle('over',over); $('tm').classList.toggle('pause',pausado&&!over);
+  const ativo=!!(tStart||pausado), s=Math.floor(decorrido()/1000);
+  const rest=ativo&&fase==='descanso', over=rest&&s>=target;
+  $('tlbl').textContent=nomeTreino()+(ativo?(rest?' • descanso '+target+'s':' • em execução')+(pausado?' • ⏸ pausado':''):'');
+  ['tm','iTm'].forEach(id=>{ const x=$(id); x.textContent=ativo?mmss(s):'00:00';
+    x.classList.toggle('over',over); x.classList.toggle('desc',rest&&!over); x.classList.toggle('pause',pausado&&!rest); });
+  // Ilha
+  const e=(data[cur]||[])[pos.i];
+  $('iNome').textContent=fase==='fim'?'Treino '+cur+' concluído 🎉':(e?e.name:'Treino '+cur);
+  $('iSub').textContent=fase==='fim'?'Toque em Encerrar'
+    :rest?(over?'Descanso excedido +'+mmss(s-target):'Descanso • faltam '+mmss(Math.max(0,target-s)))+(pausado?' • pausado':'')
+    :(e?'Série '+(pos.j+1)+'/'+e.sets:'')+(pausado?' • pausado':'');
+  const p=fase==='fim'?1:rest?Math.min(s/target,1):ativo?(s%60)/60:0, a=$('anel');
+  a.style.strokeDashoffset=100.5*(1-p);
+  a.style.stroke=fase==='fim'?'#22c55e':over?'#ef4444':rest?'#facc15':pausado?'#f59e0b':'#3b82f6';
   if(over&&!beeped&&tStart){ beeped=true; beep(); }
 }
 </script>
@@ -515,8 +604,10 @@ function tick(){
 <!-- ===== FIREBASE ===== -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBExeZ9Vf2vwM2z_uWzNYZGOlZ34Befiig",
@@ -526,17 +617,79 @@ const firebaseConfig = {
   messagingSenderId: "846488130737",
   appId: "1:846488130737:web:36e06bff4eb998475a3e90"
 };
+// Firebase Console > Configurações do projeto > Cloud Messaging > Certificados push da Web
+const VAPID_KEY = 'COLE_AQUI_SUA_CHAVE_VAPID';
 
 const COLECAO = 'treinos_teste';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const fns = getFunctions(app);
 const el = id => document.getElementById(id);
 let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
 
-window.entrar = () => signInWithPopup(auth, new GoogleAuthProvider())
+const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+window.entrar = () => (standalone ? signInWithRedirect : signInWithPopup)(auth, new GoogleAuthProvider())
   .catch(e => alert('Erro no login: ' + e.message));
 window.sair = () => { if (confirm('Sair da conta?')) { resetSessao(); stopTimer(); signOut(auth); } };
+
+// ===== NOTIFICAÇÕES (Web Push via FCM + Cloud Function) =====
+const NKEY = 'notif_descanso';
+const fAgendar = httpsCallable(fns, 'agendarDescanso', { timeout: 560000 });
+const fCancelar = httpsCallable(fns, 'cancelarDescanso');
+let fcmToken = null, idAtual = null;
+const notifOn = () => localStorage.getItem(NKEY) === '1' && 'Notification' in window && Notification.permission === 'granted';
+
+async function obterToken(pedir) {
+  if (!(await isSupported()) || !('Notification' in window))
+    throw new Error('Notificações não suportadas aqui. No iPhone: iOS 16.4+ e app instalado na Tela de Início.');
+  const perm = pedir ? await Notification.requestPermission() : Notification.permission;
+  if (perm !== 'granted') throw new Error('Permissão negada. Libere em Ajustes > Notificações > Treinos.');
+  const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+  await navigator.serviceWorker.ready;
+  fcmToken = await getToken(getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+  if (!fcmToken) throw new Error('Não foi possível obter o token de notificação.');
+  return fcmToken;
+}
+
+window.atualizarNotifUI = () => {
+  const on = notifOn(), b = el('bNotif');
+  b.textContent = on ? '🔔 Notificações ativadas (toque para desativar)' : '🔕 Ativar notificações';
+  b.classList.toggle('ativo', on);
+  el('nInfo').textContent = on
+    ? 'Você será avisado quando o descanso acabar, mesmo com a tela bloqueada.'
+    : (!standalone && /iPhone|iPad/.test(navigator.userAgent)
+      ? 'No iPhone, instale o app na Tela de Início (Compartilhar > Adicionar à Tela de Início) para ativar.'
+      : 'Receba um aviso quando o descanso terminar, mesmo com a tela bloqueada.');
+};
+
+window.notifToggle = async () => {
+  if (notifOn()) { localStorage.removeItem(NKEY); return atualizarNotifUI(); }
+  try { await obterToken(true); localStorage.setItem(NKEY, '1'); }
+  catch (e) { alert(e.message); localStorage.removeItem(NKEY); }
+  atualizarNotifUI();
+};
+
+window.notifAgendar = (seg, corpo) => {
+  if (!notifOn() || !usuario) return false;
+  const id = idAtual = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  (fcmToken ? Promise.resolve(fcmToken) : obterToken(false))
+    .then(token => fAgendar({ token, id, segundos: Math.round(seg), titulo: '⏰ Descanso terminou!', corpo }))
+    .catch(e => console.warn('Notificação:', e.message));
+  return true;
+};
+
+window.notifCancelar = () => {
+  if (!idAtual || !usuario) return;
+  const id = idAtual; idAtual = null;
+  fCancelar({ id }).catch(() => {});
+};
+
+window.notifTeste = () => {
+  if (!notifOn()) return alert('Ative as notificações primeiro.');
+  window.notifAgendar(5, 'Teste OK! As notificações estão funcionando. 💪');
+  alert('Bloqueie o celular agora. A notificação chega em ~5 segundos.');
+};
 
 window.salvarNuvem = async () => {
   if (!usuario || !alvo) return;
@@ -603,6 +756,7 @@ window.voltarAdmin = async () => {
 onAuthStateChanged(auth, async (u) => {
   usuario = u; ehAdmin = false;
   setTopo('', false);
+  atualizarNotifUI();
 
   if (!u) {
     el('msgLogin').textContent = 'Entre para acessar seus treinos';
@@ -627,6 +781,8 @@ onAuthStateChanged(auth, async (u) => {
     const adm = await getDoc(doc(db, 'admins', u.email));
     ehAdmin = adm.exists();
   } catch (e) { alert('Erro ao acessar a nuvem: ' + e.message); }
+
+  if (notifOn()) obterToken(false).catch(() => {});
 
   if (ehAdmin) {
     try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }
