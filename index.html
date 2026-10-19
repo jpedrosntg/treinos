@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Treinos">
+<title>Treinos</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0f1115;color:#eee;padding:env(safe-area-inset-top) 12px 170px}
+h1{font-size:22px;margin:14px 0}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tabs button{flex:1;padding:14px;font-size:20px;font-weight:700;border:0;border-radius:12px;background:#1d2129;color:#aaa}
+.tabs button.on{background:#3b82f6;color:#fff}
+.card{background:#1a1d24;border-radius:14px;padding:14px;margin-bottom:10px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.nm{font-size:18px;font-weight:600}
+.info{color:#9aa;font-size:14px;margin-top:4px}
+.ser{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ser button{width:48px;height:48px;border-radius:50%;border:2px solid #3b82f6;background:none;color:#fff;font-size:16px}
+.ser button.ok{background:#22c55e;border-color:#22c55e}
+.ic{background:none;border:0;color:#888;font-size:20px;padding:4px 8px}
+.btn{width:100%;padding:14px;border:0;border-radius:12px;font-size:16px;font-weight:600;margin-top:8px}
+.add{background:#1d2129;color:#3b82f6}.fin{background:#22c55e;color:#fff}
+.timer{position:fixed;left:0;right:0;bottom:0;background:#161920;border-top:1px solid #2a2f3a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));text-align:center}
+.tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums}
+.tm.over{color:#ef4444}.lbl{color:#9aa;font-size:13px}
+.tb{display:flex;gap:8px;margin-top:6px}.tb button{flex:1;padding:10px;border:0;border-radius:10px;background:#2a2f3a;color:#fff;font-size:15px}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end}
+.modal.on{display:flex}
+.box{background:#1a1d24;width:100%;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
+label{display:block;font-size:13px;color:#9aa;margin-top:10px}
+input{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid #333;background:#0f1115;color:#fff}
+.row{display:flex;gap:8px}.row>div{flex:1}
+.hist{font-size:14px;color:#bbb}.hist .card div{margin-top:4px}
+</style></head><body>
+<h1>🏋️ Meus Treinos</h1>
+<div class="tabs" id="tabs"></div>
+<div id="list"></div>
+<button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
+<button class="btn fin" onclick="finish()">✔ Finalizar treino</button>
+<h1 style="font-size:18px;margin-top:24px">Histórico</h1>
+<div id="hist" class="hist"></div>
+<h1 style="font-size:18px;margin-top:24px">Backup</h1>
+<div class="row">
+  <div><button class="btn add" onclick="exportar()">⬇ Exportar</button></div>
+  <div><button class="btn add" onclick="$('imp').click()">⬆ Importar</button></div>
+</div>
+<input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
+
+<div class="timer">
+  <div class="lbl" id="tlbl">Descanso</div>
+  <div class="tm" id="tm">00:00</div>
+  <div class="tb">
+    <button onclick="startTimer()">▶ Iniciar</button>
+    <button onclick="stopTimer()">■ Parar</button>
+    <button onclick="adj(-15)">-15s</button>
+    <button onclick="adj(15)">+15s</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="box">
+  <div class="nm" id="ftitle">Exercício</div>
+  <label>Nome</label><input id="fn" placeholder="Ex: Supino reto">
+  <div class="row">
+    <div><label>Séries</label><input id="fs" type="number" inputmode="numeric" value="3"></div>
+    <div><label>Repetições</label><input id="fr" inputmode="text" value="12"></div>
+  </div>
+  <div class="row">
+    <div><label>Peso (kg)</label><input id="fp" type="number" inputmode="decimal" step="0.5" value="0"></div>
+    <div><label>Descanso (s)</label><input id="fd" type="number" inputmode="numeric" value="60"></div>
+  </div>
+  <button class="btn fin" onclick="saveForm()">Salvar</button>
+  <button class="btn add" onclick="closeForm()">Cancelar</button>
+</div></div>
+
+<script>
+const KEY='treinos_v1';
+let data, cur='A', done={}, edit=-1;
+let tStart=null, target=60, tInt=null, beeped=false;
+const $=id=>document.getElementById(id);
+
+function load(){ try{ data=JSON.parse(localStorage.getItem(KEY)); }catch(e){} data=data||{A:[],B:[],C:[],hist:[]}; render(); }
+function save(){ localStorage.setItem(KEY,JSON.stringify(data)); }
+
+function render(){
+  $('tabs').innerHTML=['A','B','C'].map(t=>`<button class="${t==cur?'on':''}" onclick="cur='${t}';render()">Treino ${t}</button>`).join('');
+  $('list').innerHTML=data[cur].map((e,i)=>{
+    const d=done[cur+i]||[]; let s='';
+    for(let j=0;j<e.sets;j++) s+=`<button class="${d[j]?'ok':''}" onclick="tog(${i},${j})">${j+1}</button>`;
+    return `<div class="card"><div class="top"><div><div class="nm">${e.name}</div>
+      <div class="info">${e.sets}x${e.reps} • ${e.weight} kg • ${e.rest}s descanso</div></div>
+      <div><button class="ic" onclick="openForm(${i})">✏️</button><button class="ic" onclick="del(${i})">🗑</button></div></div>
+      <div class="ser">${s}</div></div>`;
+  }).join('') || '<div class="info">Nenhum exercício no treino '+cur+'.</div>';
+  $('hist').innerHTML=data.hist.slice().reverse().slice(0,15).map(h=>
+    `<div class="card"><b>Treino ${h.tipo}</b> — ${h.data}${h.ex.map(e=>`<div>• ${e.name}: ${e.feitas}/${e.sets} séries x${e.reps} @ ${e.weight}kg</div>`).join('')}</div>`).join('');
+}
+
+function tog(i,j){
+  const k=cur+i; done[k]=done[k]||[]; done[k][j]=!done[k][j];
+  if(done[k][j]){ target=+data[cur][i].rest||60; startTimer(); }
+  render();
+}
+function del(i){ if(confirm('Excluir exercício?')){ data[cur].splice(i,1); save(); render(); } }
+function openForm(i=-1){
+  edit=i; const e=i>=0?data[cur][i]:{name:'',sets:3,reps:12,weight:0,rest:60};
+  $('ftitle').textContent=(i>=0?'Editar':'Novo')+' exercício — Treino '+cur;
+  $('fn').value=e.name;$('fs').value=e.sets;$('fr').value=e.reps;$('fp').value=e.weight;$('fd').value=e.rest;
+  $('modal').classList.add('on');
+}
+function closeForm(){ $('modal').classList.remove('on'); }
+function saveForm(){
+  const e={name:$('fn').value.trim()||'Exercício',sets:+$('fs').value||1,reps:$('fr').value,weight:+$('fp').value||0,rest:+$('fd').value||60};
+  edit>=0?data[cur][edit]=e:data[cur].push(e); save(); closeForm(); render();
+}
+function finish(){
+  if(!confirm('Finalizar treino '+cur+'?'))return;
+  const ex=data[cur].map((e,i)=>({...e,feitas:(done[cur+i]||[]).filter(Boolean).length}));
+  data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),ex});
+  data[cur].forEach((_,i)=>delete done[cur+i]); stopTimer(); save(); render();
+}
+
+// Backup
+async function exportar(){
+  const txt=JSON.stringify(data,null,2), nome='treinos-'+new Date().toISOString().slice(0,10)+'.json';
+  const file=new File([txt],nome,{type:'application/json'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file]}); return; }catch(e){ return; } }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=nome; a.click();
+}
+function importar(inp){
+  const f=inp.files[0]; if(!f)return;
+  f.text().then(t=>{ try{ const d=JSON.parse(t); if(!d.A||!d.hist)throw 0;
+    if(confirm('Substituir dados atuais pelo backup?')){ data=d; save(); render(); } }catch(e){ alert('Arquivo inválido'); } inp.value=''; });
+}
+
+// Cronômetro
+let actx;
+function beep(){ try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.frequency.value=880;o.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);}); if(navigator.vibrate)navigator.vibrate(500);}catch(e){} }
+function startTimer(){
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
+  tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
+}
+function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent='Descanso'; }
+function adj(s){ target=Math.max(5,target+s); tick(); }
+function tick(){
+  if(!tStart){ $('tlbl').textContent='Descanso (meta '+target+'s)'; return; }
+  const s=Math.floor((Date.now()-tStart)/1000);
+  $('tm').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  $('tlbl').textContent='Descansando — meta '+target+'s';
+  const over=s>=target; $('tm').classList.toggle('over',over);
+  if(over&&!beeped){ beeped=true; beep(); }
+}
+load();
+</script></body></html>
