@@ -22,10 +22,11 @@ h2{font-size:18px;margin:24px 0 10px}
 .nm{font-size:18px;font-weight:600}
 .info{color:#9aa;font-size:14px;margin-top:4px}
 .ser{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.ser button{width:48px;height:48px;border-radius:50%;border:2px solid #3b82f6;background:none;color:#fff;font-size:16px}
-.ser button.ok{background:#22c55e;border-color:#22c55e}
-.ser button.cur{outline:3px solid #f59e0b;outline-offset:2px}
-.bloq .ser button{opacity:.5}
+.ser span{width:48px;height:48px;border-radius:50%;border:2px solid #3b82f6;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center}
+.ser span.ok{background:#22c55e;border-color:#22c55e}
+.ser span.cur{outline:3px solid #f59e0b;outline-offset:2px}
+.bloq .ser span{opacity:.5}
+.tempos{color:#22c55e;font-size:13px;margin-top:8px}
 .drag{touch-action:none;cursor:grab;color:#666;font-size:22px;padding:4px 10px 4px 0;user-select:none}
 .card.arr{opacity:.6;border:1px dashed #3b82f6}
 .ic{background:none;border:0;color:#888;font-size:20px;padding:4px 8px}
@@ -41,10 +42,11 @@ h2{font-size:18px;margin:24px 0 10px}
 .timer{position:fixed;left:0;right:0;bottom:0;background:#161920;border-top:1px solid #2a2f3a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));text-align:center}
 .timer.off .tb button{opacity:.45}
 .tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums}
-.tm.over{color:#ef4444}.lbl{color:#9aa;font-size:13px}
-.tb{display:flex;gap:8px;margin-top:6px}.tb button{flex:1;padding:10px;border:0;border-radius:10px;background:#2a2f3a;color:#fff;font-size:15px}
+.tm.over{color:#ef4444}.tm.pause{color:#f59e0b}.lbl{color:#9aa;font-size:13px}
+.tb{display:flex;gap:8px;margin-top:6px}.tb button{flex:1;padding:10px 4px;border:0;border-radius:10px;background:#2a2f3a;color:#fff;font-size:15px}
 .tb .acao{background:#3b82f6;font-weight:700}
 .tb .acao.prox{background:#22c55e}
+.tb .acao.fim{background:#ef4444}
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:20}
 .modal.on{display:flex}
 .box{background:#1a1d24;width:100%;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
@@ -104,6 +106,13 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 <div id="telaCadastro" class="tela">
   <h1>✏️ Cadastro do treino</h1>
   <div class="info" style="margin-bottom:12px">Cadastre os exercícios de cada divisão.</div>
+  <div class="card">
+    <div class="nm">Divisão do treino</div>
+    <label>Mudar divisão</label>
+    <select id="selDiv"></select>
+    <button class="btn add" onclick="mudarDiv(false)">🔄 Aplicar (manter exercícios)</button>
+    <button class="btn del" onclick="mudarDiv(true)">🗑 Recomeçar do zero</button>
+  </div>
   <div id="cadList"></div>
   <button id="bCadIni" class="btn ini" onclick="iniciarDoCadastro()">▶ INICIAR TREINO</button>
   <button class="btn add" onclick="irInicio()">✔ Concluir e voltar ao início</button>
@@ -137,6 +146,7 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
         <div class="tm" id="tm">00:00</div>
         <div class="tb">
           <button onclick="parar()">■ Parar</button>
+          <button id="bPausa" onclick="pausar()">⏸ Pausar</button>
           <button id="bAcao" class="acao" onclick="acao()">⏱ Descanso</button>
         </div>
       </div>
@@ -187,17 +197,18 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
 const KEY='treinos_v1';
 const LETRAS=['A','B','C','D','E'];
 const VAZIO=()=>({divs:[],A:[],B:[],C:[],D:[],E:[],hist:[]});
+// done[div+i][j] = segundos da série (null/undefined = não feita)
 let data=VAZIO(), cur='A', done={}, edit=-1, formDiv='A';
-let tStart=null, target=60, tInt=null, beeped=false;
-let pos={i:0,j:0}, fase='descanso';
+let tStart=null, tAcc=0, pausado=false, target=60, tInt=null, beeped=false;
+let pos={i:0,j:0}, fase='serie'; // 'serie' | 'descanso' | 'fim'
 let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 const info=e=>`${e.sets}x${esc(e.reps)} • ${e.weight} kg • ${e.rest}s descanso`;
+const feita=v=>v!=null;
 function divLabel(n){ const l=LETRAS.slice(0,n); return l.length>1?l.slice(0,-1).join(', ')+' e '+l.at(-1):l[0]; }
 
-// Normaliza dados (compatível com formato antigo A/B/C)
 function norm(d){
   const n=VAZIO(); if(!d||!(d.A||d.divs)) return n;
   LETRAS.forEach(l=>n[l]=Array.isArray(d[l])?d[l]:[]);
@@ -206,7 +217,7 @@ function norm(d){
   else { let u=-1; LETRAS.forEach((l,k)=>{ if(n[l].length) u=k; }); n.divs=LETRAS.slice(0,u+1); }
   return n;
 }
-function setData(d){ data=norm(d); done={}; pos={i:0,j:0}; fase='descanso'; resetSessao(); stopTimer(); cur=data.divs[0]||'A'; renderAll(); }
+function setData(d){ data=norm(d); done={}; pos={i:0,j:0}; fase='serie'; resetSessao(); stopTimer(); cur=data.divs[0]||'A'; renderAll(); }
 function save(){ window.salvarNuvem && window.salvarNuvem(); }
 function renderAll(){ render(); renderCad(); renderInicio(); }
 
@@ -225,7 +236,7 @@ function setTopo(txt,adm){
 }
 function sairDaSessao(){
   if(sessao==='andamento'&&!confirm('Há um treino em andamento. Sair vai descartá-lo sem salvar. Continuar?')) return false;
-  resetSessao(); stopTimer(); return true;
+  resetSessao(); stopTimer(); fase='serie'; return true;
 }
 function irInicio(){ if(sairDaSessao()) tela('telaInicio'); }
 
@@ -243,7 +254,7 @@ function novoTreino(){ if(sairDaSessao()) tela('telaDivisao'); }
 function escolherDiv(n){
   if(data.divs.some(l=>data[l].length)&&!confirm('Isso substituirá os exercícios do treino atual. O histórico será mantido. Continuar?')) return;
   LETRAS.forEach(l=>data[l]=[]); data.divs=LETRAS.slice(0,n);
-  cur='A'; done={}; pos={i:0,j:0}; resetSessao(); stopTimer(); save(); tela('telaCadastro');
+  cur='A'; done={}; pos={i:0,j:0}; fase='serie'; resetSessao(); stopTimer(); save(); tela('telaCadastro');
 }
 function renderCad(){
   $('cadList').innerHTML=data.divs.map(l=>`<div class="card"><div class="nm">Treino ${l}</div>
@@ -252,7 +263,23 @@ function renderCad(){
       ||'<div class="info">Nenhum exercício ainda.</div>'}
     <button class="btn add" onclick="openForm(-1,'${l}')">+ Adicionar exercício no Treino ${l}</button></div>`).join('')
     ||'<div class="info">Nenhuma divisão escolhida.</div>';
+  $('selDiv').innerHTML=[1,2,3,4,5].map(n=>`<option value="${n}" ${n==(data.divs.length||1)?'selected':''}>${divLabel(n)}</option>`).join('');
   $('bCadIni').textContent=sessao==='andamento'?'▶ Voltar ao treino em andamento':'▶ INICIAR TREINO';
+}
+function mudarDiv(limpar){
+  const n=+$('selDiv').value, novas=LETRAS.slice(0,n);
+  if(limpar){
+    if(!confirm('Apagar TODOS os exercícios e recomeçar com a divisão '+divLabel(n)+'?\nO histórico será mantido.')) return;
+    LETRAS.forEach(l=>data[l]=[]);
+  } else {
+    if(novas.join()===data.divs.join()) return alert('Essa já é a divisão atual.');
+    const perdidas=data.divs.filter(l=>!novas.includes(l)&&data[l].length);
+    if(perdidas.length&&!confirm('Os exercícios do(s) Treino(s) '+perdidas.join(', ')+' serão apagados. Continuar?')) return;
+  }
+  if(!sairDaSessao()) return;
+  LETRAS.forEach(l=>{ if(!novas.includes(l)) data[l]=[]; });
+  data.divs=novas; cur='A'; done={}; pos={i:0,j:0}; fase='serie';
+  save(); renderAll();
 }
 function iniciarDoCadastro(){
   if(!data.divs.some(l=>data[l].length)) return alert('Cadastre ao menos um exercício.');
@@ -273,18 +300,20 @@ function botaoSessao(){ sessao==='andamento'?$('dlgFim').classList.add('on'):ini
 function iniciarSessao(){
   if(!(data[cur]||[]).length) return alert('Adicione exercícios ao Treino '+cur+' antes de iniciar.');
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
-  pos={i:0,j:0}; fase='descanso'; sessao='andamento'; sIni=Date.now();
-  clearInterval(sInt); sInt=setInterval(status,1000); stopTimer(); render();
+  pos={i:0,j:0}; fase='serie'; sessao='andamento'; sIni=Date.now();
+  clearInterval(sInt); sInt=setInterval(status,1000);
+  startTimer(); render(); // cronômetro já começa na 1ª série
 }
 function encerrar(salvar){
   $('dlgFim').classList.remove('on');
   if(salvar){
-    const ex=data[cur].map((e,i)=>({...e,feitas:(done[cur+i]||[]).filter(Boolean).length}));
+    const ex=data[cur].map((e,i)=>{ const d=done[cur+i]||[];
+      return {...e,feitas:d.filter(feita).length,tempos:Array.from({length:e.sets},(_,j)=>feita(d[j])?d[j]:null)}; });
     data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex});
     save();
   }
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
-  pos={i:0,j:0}; fase='descanso'; stopTimer(); clearInterval(sInt); sIni=null;
+  pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null;
   sessao='encerrado'; sMsg=salvar?'✅ Treino encerrado e salvo no histórico.':'Treino encerrado sem salvar.';
   render();
 }
@@ -303,14 +332,14 @@ function nomeTreino(){
 function trocar(t){
   if(t===cur) return;
   if(sessao==='andamento') return alert('Encerre o treino em andamento antes de trocar de divisão.');
-  cur=t; pos={i:0,j:0}; fase='descanso'; if(sessao==='encerrado') sessao='nao'; stopTimer(); render();
+  cur=t; pos={i:0,j:0}; fase='serie'; if(sessao==='encerrado') sessao='nao'; stopTimer(); render();
 }
 
 function render(){
   if(!data.divs.includes(cur)) cur=data.divs[0]||'A';
   const ex=data[cur]||[], on=sessao==='andamento';
   if(pos.i>=ex.length) pos={i:0,j:0};
-  if(ex[pos.i]&&pos.j>=ex[pos.i].sets) pos.j=0;
+  if(ex[pos.i]&&pos.j>=ex[pos.i].sets) pos.j=ex[pos.i].sets-1;
 
   $('nav').innerHTML=[['treino','🏋️ Treino'],['hist','📜 Histórico'],['backup','💾 Backup']]
     .map(([k,t])=>`<button class="${k==aba?'on':''}" onclick="mudarAba('${k}')">${t}</button>`).join('');
@@ -321,43 +350,41 @@ function render(){
   $('list').className=on?'':'bloq';
   $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
-    for(let j=0;j<e.sets;j++) s+=`<button class="${d[j]?'ok':''} ${on&&i==pos.i&&j==pos.j?'cur':''}" onclick="tog(${i},${j})">${j+1}</button>`;
+    // Séries apenas indicativas: não são clicáveis
+    for(let j=0;j<e.sets;j++) s+=`<span class="${feita(d[j])?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${j+1}</span>`;
+    const tp=d.map((v,j)=>feita(v)?'S'+(j+1)+' '+mmss(v):null).filter(Boolean).join(' • ');
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
       <span class="drag">☰</span><div><div class="nm">${esc(e.name)}</div>
       <div class="info">${info(e)}</div></div></div>
       <div style="white-space:nowrap"><button class="ic" onclick="openForm(${i})">✏️</button><button class="ic" onclick="del(${i})">🗑</button></div></div>
-      <div class="ser">${s}</div></div>`;
+      <div class="ser">${s}</div>${tp?`<div class="tempos">⏱ ${tp}</div>`:''}</div>`;
   }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
 
   const bs=$('bSessao'); bs.textContent=on?'■ ENCERRAR TREINO':'▶ INICIAR TREINO'; bs.classList.toggle('enc',on);
   $('timerBar').classList.toggle('off',!on);
   const b=$('bAcao');
-  b.textContent=fase==='descanso'?'⏱ Descanso':'⏭ Próximo';
-  b.classList.toggle('prox',fase!=='descanso');
+  b.textContent=fase==='serie'?'⏱ Descanso':fase==='descanso'?'⏭ Próximo':'■ Encerrar';
+  b.classList.toggle('prox',fase==='descanso');
+  b.classList.toggle('fim',fase==='fim');
+  $('bPausa').textContent=pausado?'▶ Retomar':'⏸ Pausar';
   status(); renderHist(); tick();
 }
 
-function tog(i,j){
-  if(sessao!=='andamento') return aviso();
-  const k=cur+i; done[k]=done[k]||[]; done[k][j]=!done[k][j];
-  pos={i,j}; fase='descanso'; stopTimer(); render();
-}
+// Fluxo controlado só pelo botão do cronômetro
+function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
 function acao(){
   if(sessao!=='andamento') return aviso();
   const ex=data[cur]; if(!ex.length) return;
-  if(fase==='descanso'){
-    const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=true;
-    target=+ex[pos.i].rest||60; startTimer(); fase='proximo';
-  } else {
-    stopTimer();
-    if(pos.j+1<ex[pos.i].sets) pos.j++;
-    else if(pos.i+1<ex.length) pos={i:pos.i+1,j:0};
-    else alert('Último exercício concluído! Toque em "ENCERRAR TREINO".');
-    fase='descanso';
-  }
+  if(fase==='serie'){
+    const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=Math.floor(decorrido()/1000);
+    if(ultimaSerie()){ stopTimer(); fase='fim'; render(); return alert('Última série concluída! Toque em "Encerrar" para finalizar.'); }
+    target=+ex[pos.i].rest||60; startTimer(); fase='descanso';
+  } else if(fase==='descanso'){
+    if(pos.j+1<ex[pos.i].sets) pos.j++; else pos={i:pos.i+1,j:0};
+    fase='serie'; startTimer();
+  } else return $('dlgFim').classList.add('on');
   render();
 }
-function parar(){ stopTimer(); fase='descanso'; render(); }
 
 // ===== Exercícios =====
 function del(i,dv=cur){
@@ -369,7 +396,10 @@ function del(i,dv=cur){
     const n=+k.slice(1); if(n<i) nd[k]=done[k]; else if(n>i) nd[dv+(n-1)]=done[k];
   });
   done=nd;
-  if(dv===cur){ if(pos.i>i) pos.i--; else if(pos.i===i){ pos.j=0; fase='descanso'; stopTimer(); } }
+  if(dv===cur){
+    if(pos.i>i) pos.i--;
+    else if(pos.i===i){ pos.j=0; if(sessao==='andamento'&&data[cur].length){ fase='serie'; startTimer(); } else { fase='serie'; stopTimer(); } }
+  }
   save(); renderAll();
 }
 function openForm(i=-1,dv=cur){
@@ -381,7 +411,12 @@ function openForm(i=-1,dv=cur){
 function closeForm(){ $('modal').classList.remove('on'); }
 function saveForm(){
   const e={name:$('fn').value.trim()||'Exercício',sets:+$('fs').value||1,reps:$('fr').value,weight:+$('fp').value||0,rest:+$('fd').value||60};
-  edit>=0?data[formDiv][edit]=e:data[formDiv].push(e); save(); closeForm(); renderAll();
+  edit>=0?data[formDiv][edit]=e:data[formDiv].push(e);
+  if(fase==='fim'&&formDiv===cur&&!ultimaSerie()){ // novas séries/exercícios após o fim
+    const ex=data[cur]; if(pos.j+1<ex[pos.i].sets) pos.j++; else pos={i:pos.i+1,j:0};
+    fase='serie'; startTimer();
+  }
+  save(); closeForm(); renderAll();
 }
 
 // ===== Histórico =====
@@ -393,7 +428,8 @@ function renderHist(){
   const it=data.hist.map((h,k)=>({h,k})).filter(o=>!v||o.h.tipo===v).reverse();
   $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • ⏳ '+mmss(h.dur):''}</div>
     <button class="ic" onclick="delHist(${k})">🗑</button></div>
-    ${(h.ex||[]).map(e=>`<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${e.weight}kg</div>`).join('')}</div>`).join('')
+    ${(h.ex||[]).map(e=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?'S'+(j+1)+' '+mmss(t):null).filter(Boolean).join(', ');
+      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${e.weight}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">⏱ ${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
     ||`<div class="info">${data.hist.length?'Nenhum registro para o Treino '+esc(v)+'.':'Nenhum treino registrado ainda.'}</div>`;
 }
 function delHist(k){
@@ -446,18 +482,33 @@ function importar(inp){
 // ===== Cronômetro =====
 let actx;
 function beep(){ try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.frequency.value=880;o.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);}); if(navigator.vibrate)navigator.vibrate(500);}catch(e){} }
+const decorrido=()=>tAcc+(tStart?Date.now()-tStart:0);
 function startTimer(){
   try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
-  tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
+  tAcc=0; pausado=false; tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
 }
-function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent=nomeTreino(); }
+function stopTimer(){ clearInterval(tInt); tStart=null; tAcc=0; pausado=false; $('tm').textContent='00:00'; $('tm').classList.remove('over','pause'); $('tlbl').textContent=nomeTreino(); }
+function pausar(){
+  if(sessao!=='andamento') return aviso();
+  if(tStart){ tAcc+=Date.now()-tStart; tStart=null; pausado=true; clearInterval(tInt); }
+  else if(pausado){ tStart=Date.now(); pausado=false; clearInterval(tInt); tInt=setInterval(tick,250); }
+  else return;
+  render();
+}
+// Parar: zera o cronômetro da etapa atual e o deixa parado (Retomar recomeça do zero)
+function parar(){
+  if(sessao!=='andamento') return aviso();
+  if(fase==='fim') return;
+  clearInterval(tInt); tStart=null; tAcc=0; pausado=true; beeped=false; render();
+}
 function tick(){
-  if(!tStart){ $('tlbl').textContent=nomeTreino(); return; }
-  const s=Math.floor((Date.now()-tStart)/1000);
+  if(!tStart&&!pausado){ $('tlbl').textContent=nomeTreino(); return; }
+  const s=Math.floor(decorrido()/1000);
   $('tm').textContent=mmss(s);
-  $('tlbl').textContent=nomeTreino()+' • descanso '+target+'s';
-  const over=s>=target; $('tm').classList.toggle('over',over);
-  if(over&&!beeped){ beeped=true; beep(); }
+  $('tlbl').textContent=nomeTreino()+(fase==='descanso'?' • descanso '+target+'s':' • em execução')+(pausado?' • ⏸ pausado':'');
+  const over=fase==='descanso'&&s>=target;
+  $('tm').classList.toggle('over',over); $('tm').classList.toggle('pause',pausado&&!over);
+  if(over&&!beeped&&tStart){ beeped=true; beep(); }
 }
 </script>
 
