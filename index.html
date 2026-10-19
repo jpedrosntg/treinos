@@ -31,35 +31,59 @@ h1{font-size:22px;margin:14px 0}
 .modal.on{display:flex}
 .box{background:#1a1d24;width:100%;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
 label{display:block;font-size:13px;color:#9aa;margin-top:10px}
-input{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid #333;background:#0f1115;color:#fff}
+input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid #333;background:#0f1115;color:#fff}
 .row{display:flex;gap:8px}.row>div{flex:1}
 .hist{font-size:14px;color:#bbb}.hist .card div{margin-top:4px}
+#telaLogin{min-height:90vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.head{display:flex;justify-content:space-between;align-items:center}
+.sair{background:#2a2f3a;color:#fff;border:0;border-radius:10px;padding:8px 12px}
+.adm{background:#2b1f0f;border:1px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px}
 </style></head><body>
-<h1>🏋️ Meus Treinos</h1>
-<button id="btnLogin" class="btn add" onclick="entrar()" style="display:none;margin-bottom:10px">🔐 Entrar com Google</button>
-<div id="userInfo" class="info" style="text-align:center;margin-bottom:10px"></div>
-<div class="tabs" id="tabs"></div>
-<div id="list"></div>
-<button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
-<button class="btn fin" onclick="finish()">✔ Finalizar treino</button>
-<h1 style="font-size:18px;margin-top:24px">Histórico</h1>
-<div id="hist" class="hist"></div>
-<h1 style="font-size:18px;margin-top:24px">Backup</h1>
-<div class="row">
-  <div><button class="btn add" onclick="exportar()">⬇ Tudo</button></div>
-  <div><button class="btn add" onclick="exportarHist()">⬇ Histórico</button></div>
-  <div><button class="btn add" onclick="$('imp').click()">⬆ Importar</button></div>
-</div>
-<input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
 
-<div class="timer">
-  <div class="lbl" id="tlbl">Descanso</div>
-  <div class="tm" id="tm">00:00</div>
-  <div class="tb">
-    <button onclick="startTimer()">▶ Iniciar</button>
-    <button onclick="stopTimer()">■ Parar</button>
-    <button onclick="adj(-15)">-15s</button>
-    <button onclick="adj(15)">+15s</button>
+<!-- TELA DE LOGIN -->
+<div id="telaLogin">
+  <div style="font-size:64px">🏋️</div>
+  <h1>Meus Treinos</h1>
+  <div class="info" id="msgLogin">Carregando...</div>
+  <button id="btnLogin" class="btn fin" onclick="entrar()" style="display:none;max-width:320px">🔐 Entrar com Google</button>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="head">
+    <h1>🏋️ Meus Treinos</h1>
+    <button class="sair" onclick="sair()">Sair</button>
+  </div>
+  <div id="userInfo" class="info" style="margin-bottom:10px"></div>
+
+  <div id="adminBar" class="adm" style="display:none">
+    <div class="lbl">👑 Administrador — ver treino de:</div>
+    <select id="selUser" onchange="trocarUsuario(this.value)"></select>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="list"></div>
+  <button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
+  <button class="btn fin" onclick="finish()">✔ Finalizar treino</button>
+  <h1 style="font-size:18px;margin-top:24px">Histórico</h1>
+  <div id="hist" class="hist"></div>
+  <h1 style="font-size:18px;margin-top:24px">Backup</h1>
+  <div class="row">
+    <div><button class="btn add" onclick="exportar()">⬇ Tudo</button></div>
+    <div><button class="btn add" onclick="exportarHist()">⬇ Histórico</button></div>
+    <div><button class="btn add" onclick="$('imp').click()">⬆ Importar</button></div>
+  </div>
+  <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
+
+  <div class="timer">
+    <div class="lbl" id="tlbl">Descanso</div>
+    <div class="tm" id="tm">00:00</div>
+    <div class="tb">
+      <button onclick="startTimer()">▶ Iniciar</button>
+      <button onclick="stopTimer()">■ Parar</button>
+      <button onclick="adj(-15)">-15s</button>
+      <button onclick="adj(15)">+15s</button>
+    </div>
   </div>
 </div>
 
@@ -80,12 +104,13 @@ input{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1px solid
 
 <script>
 const KEY='treinos_v1';
-let data, cur='A', done={}, edit=-1;
+const VAZIO=()=>({A:[],B:[],C:[],hist:[]});
+let data=VAZIO(), cur='A', done={}, edit=-1;
 let tStart=null, target=60, tInt=null, beeped=false;
 const $=id=>document.getElementById(id);
 
-function load(){ data=null; try{ data=JSON.parse(localStorage.getItem(KEY)); }catch(e){} data=data||{A:[],B:[],C:[],hist:[]}; render(); }
-function save(){ localStorage.setItem(KEY,JSON.stringify(data)); window.salvarNuvem && window.salvarNuvem(); }
+function setData(d){ data=d&&d.A?d:VAZIO(); data.hist=data.hist||[]; done={}; render(); }
+function save(){ window.salvarNuvem && window.salvarNuvem(); }
 
 function render(){
   $('tabs').innerHTML=['A','B','C'].map(t=>`<button class="${t==cur?'on':''}" onclick="cur='${t}';render()">Treino ${t}</button>`).join('');
@@ -137,7 +162,7 @@ function exportarHist(){ compartilhar({hist:data.hist},'historico-'+hoje()+'.jso
 function importar(inp){
   const f=inp.files[0]; if(!f)return;
   f.text().then(t=>{ try{ const d=JSON.parse(t); if(!d.A||!d.hist)throw 0;
-    if(confirm('Substituir dados atuais pelo backup?')){ data=d; save(); render(); } }catch(e){ alert('Arquivo inválido (use o arquivo do botão "Tudo")'); } inp.value=''; });
+    if(confirm('Substituir dados atuais pelo backup?')){ setData(d); save(); } }catch(e){ alert('Arquivo inválido (use o arquivo do botão "Tudo")'); } inp.value=''; });
 }
 
 // Cronômetro
@@ -157,14 +182,13 @@ function tick(){
   const over=s>=target; $('tm').classList.toggle('over',over);
   if(over&&!beeped){ beeped=true; beep(); }
 }
-load();
 </script>
 
 <!-- ===== FIREBASE ===== -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBExeZ9Vf2vwM2z_uWzNYZGOlZ34Befiig",
@@ -179,30 +203,82 @@ const COLECAO = 'treinos_teste';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-let usuario = null;
+let usuario = null, alvo = null, alvoInfo = {};
 
 window.entrar = () => signInWithPopup(auth, new GoogleAuthProvider())
   .catch(e => alert('Erro no login: ' + e.message));
+window.sair = () => { if (confirm('Sair da conta?')) signOut(auth); };
 
 window.salvarNuvem = async () => {
-  if (!usuario) return;
+  if (!usuario || !alvo) return;
   try {
-    await setDoc(doc(db, COLECAO, usuario.uid), {
-      dados: localStorage.getItem(KEY) || '{}',
-      atualizado: Date.now()
+    await setDoc(doc(db, COLECAO, alvo), {
+      email: alvoInfo.email || '', nome: alvoInfo.nome || '',
+      dados: JSON.stringify(data), atualizado: Date.now()
     });
-  } catch (e) { console.error('Erro ao salvar na nuvem:', e); }
+  } catch (e) { alert('Erro ao salvar: ' + e.message); }
 };
+
+async function abrirUsuario(uid) {
+  const snap = await getDoc(doc(db, COLECAO, uid));
+  if (snap.exists()) {
+    const d = snap.data();
+    alvoInfo = { email: d.email, nome: d.nome };
+    setData(JSON.parse(d.dados || '{}'));
+    return true;
+  }
+  return false;
+}
+
+window.trocarUsuario = async (uid) => {
+  alvo = uid;
+  try { await abrirUsuario(uid); } catch (e) { alert('Erro: ' + e.message); }
+  document.getElementById('userInfo').textContent =
+    uid === usuario.uid ? '☁️ ' + usuario.email : '👁 Editando treino de: ' + alvoInfo.email;
+};
+
+async function carregarListaAdmin() {
+  const sel = document.getElementById('selUser');
+  const lista = await getDocs(collection(db, COLECAO));
+  sel.innerHTML = '';
+  lista.forEach(d => {
+    const x = d.data();
+    const o = document.createElement('option');
+    o.value = d.id;
+    o.textContent = (d.id === usuario.uid ? '⭐ Eu — ' : '') + (x.nome || '') + ' (' + (x.email || d.id) + ')';
+    sel.appendChild(o);
+  });
+  sel.value = usuario.uid;
+}
 
 onAuthStateChanged(auth, async (u) => {
   usuario = u;
-  document.getElementById('btnLogin').style.display = u ? 'none' : 'block';
-  document.getElementById('userInfo').textContent = u ? '☁️ Sincronizado: ' + u.email : '';
-  if (!u) return;
+  document.getElementById('telaLogin').style.display = u ? 'none' : 'flex';
+  document.getElementById('app').style.display = u ? 'block' : 'none';
+  document.getElementById('adminBar').style.display = 'none';
+  document.getElementById('msgLogin').textContent = 'Entre para acessar seus treinos';
+  document.getElementById('btnLogin').style.display = 'block';
+  if (!u) { setData(null); return; }
+
+  alvo = u.uid;
+  alvoInfo = { email: u.email, nome: u.displayName || '' };
+  document.getElementById('userInfo').textContent = '☁️ ' + u.email;
+
   try {
-    const snap = await getDoc(doc(db, COLECAO, u.uid));
-    if (snap.exists()) { localStorage.setItem(KEY, snap.data().dados); load(); }
-    else { await window.salvarNuvem(); }
+    const existe = await abrirUsuario(u.uid);
+    alvoInfo = { email: u.email, nome: u.displayName || '' };
+    if (!existe) {
+      // primeiro acesso: migra dados antigos do aparelho, se houver
+      let antigo = null; try { antigo = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+      setData(antigo);
+    }
+    await window.salvarNuvem(); // garante nome/e-mail salvos
+
+    const adm = await getDoc(doc(db, 'admins', u.email));
+    if (adm.exists()) {
+      document.getElementById('adminBar').style.display = 'block';
+      await carregarListaAdmin();
+    }
   } catch (e) { alert('Erro ao acessar a nuvem: ' + e.message); }
 });
 </script>
