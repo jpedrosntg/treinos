@@ -26,6 +26,8 @@ h1{font-size:22px;margin:14px 0}
 .ic{background:none;border:0;color:#888;font-size:20px;padding:4px 8px}
 .btn{width:100%;padding:14px;border:0;border-radius:12px;font-size:16px;font-weight:600;margin-top:8px}
 .add{background:#1d2129;color:#3b82f6}.fin{background:#22c55e;color:#fff}
+.iniciar{background:#3b82f6;color:#fff;font-size:18px;font-weight:800;margin:0 0 12px}
+.iniciar.ativo{background:#ef4444}
 .timer{position:fixed;left:0;right:0;bottom:0;background:#161920;border-top:1px solid #2a2f3a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));text-align:center}
 .tm{font-size:48px;font-weight:700;font-variant-numeric:tabular-nums}
 .tm.over{color:#ef4444}.lbl{color:#9aa;font-size:13px}
@@ -83,6 +85,7 @@ input,select{width:100%;padding:12px;font-size:17px;border-radius:10px;border:1p
   </div>
 
   <div class="tabs" id="tabs"></div>
+  <button id="bTreino" class="btn iniciar" onclick="toggleTreino()">▶ INICIAR TREINO</button>
   <div id="list"></div>
   <button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
   <button class="btn fin" onclick="finish()">✔ Finalizar treino</button>
@@ -127,7 +130,9 @@ const VAZIO=()=>({A:[],B:[],C:[],hist:[]});
 let data=VAZIO(), cur='A', done={}, edit=-1;
 let tStart=null, target=60, tInt=null, beeped=false;
 let pos={i:0,j:0}, fase='descanso';
+let ativo=false, audio=null, bip=null, ultMeta='';
 const $=id=>document.getElementById(id);
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 
 function setData(d){ data=d&&d.A?d:VAZIO(); data.hist=data.hist||[]; done={}; pos={i:0,j:0}; fase='descanso'; render(); }
 function save(){ window.salvarNuvem && window.salvarNuvem(); }
@@ -160,6 +165,9 @@ function render(){
   const b=$('bAcao');
   b.textContent=fase==='descanso'?'⏱ Descanso':'⏭ Próximo';
   b.classList.toggle('prox',fase!=='descanso');
+  const bt=$('bTreino');
+  bt.textContent=ativo?'■ ENCERRAR TREINO':'▶ INICIAR TREINO';
+  bt.classList.toggle('ativo',ativo);
   tick();
 }
 
@@ -170,21 +178,76 @@ function tog(i,j){
 }
 
 // Botão único Descanso / Próximo
-function acao(){
+function acao(){ fase==='descanso'?descansar():proximo(); }
+function descansar(){
   const ex=data[cur]; if(!ex.length) return;
-  if(fase==='descanso'){
-    const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=true;
-    target=+ex[pos.i].rest||60; startTimer(); fase='proximo';
-  } else {
-    stopTimer();
-    if(pos.j+1<ex[pos.i].sets) pos.j++;
-    else if(pos.i+1<ex.length) pos={i:pos.i+1,j:0};
-    else alert('Último exercício concluído! Toque em "Finalizar treino".');
-    fase='descanso';
-  }
-  render();
+  const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]=true;
+  target=+ex[pos.i].rest||60; startTimer(); fase='proximo'; render();
+}
+function proximo(){
+  const ex=data[cur]; if(!ex.length) return;
+  stopTimer();
+  if(pos.j+1<ex[pos.i].sets) pos.j++;
+  else if(pos.i+1<ex.length) pos={i:pos.i+1,j:0};
+  else if(!document.hidden) alert('Último exercício concluído! Toque em "Finalizar treino".');
+  fase='descanso'; render();
+}
+function anterior(){
+  const ex=data[cur]; if(!ex.length) return;
+  stopTimer();
+  if(pos.j>0) pos.j--;
+  else if(pos.i>0){ pos.i--; pos.j=ex[pos.i].sets-1; }
+  fase='descanso'; render();
 }
 function parar(){ stopTimer(); fase='descanso'; render(); }
+
+// ===== INICIAR TREINO + TELA DE BLOQUEIO (Media Session) =====
+function wav(seg,comBip){
+  const sr=8000,n=sr*seg,b=new ArrayBuffer(44+n*2),v=new DataView(b);
+  const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+  w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
+  w(36,'data');v.setUint32(40,n*2,true);
+  for(let k=0;k<n;k++){
+    const t=k/sr, on=comBip&&[0,.3,.6].some(x=>t>=x&&t<x+.2);
+    v.setInt16(44+k*2,on?Math.sin(2*Math.PI*880*t)*20000:0,true);
+  }
+  return URL.createObjectURL(new Blob([b],{type:'audio/wav'}));
+}
+function acaoMidia(){ acao(); audio&&audio.play().catch(()=>{}); }
+function setHandlers(on){
+  const ms=navigator.mediaSession; if(!ms) return;
+  const h={play:acaoMidia,pause:acaoMidia,nexttrack:proximo,previoustrack:anterior};
+  for(const k in h){ try{ ms.setActionHandler(k,on?h[k]:null); }catch(e){} }
+  for(const k of ['seekbackward','seekforward','seekto']){ try{ ms.setActionHandler(k,null); }catch(e){} }
+}
+function iniciarTreino(){
+  if(!data[cur].length) return alert('Adicione exercícios ao Treino '+cur+' primeiro.');
+  ativo=true; pos={i:0,j:0}; fase='descanso'; ultMeta=''; stopTimer();
+  if(!audio){ audio=new Audio(wav(10)); audio.loop=true; }
+  audio.play().catch(()=>{});
+  if(!bip){ bip=new Audio(wav(1,true)); bip.muted=true; bip.play().then(()=>{bip.pause();bip.currentTime=0;bip.muted=false;}).catch(()=>{bip.muted=false;}); }
+  setHandlers(true); render();
+}
+function encerrarTreino(){
+  ativo=false; stopTimer(); fase='descanso';
+  if(audio) audio.pause();
+  setHandlers(false);
+  if(navigator.mediaSession){ navigator.mediaSession.metadata=null; navigator.mediaSession.playbackState='none'; }
+  render();
+}
+function toggleTreino(){ if(!ativo) iniciarTreino(); else if(confirm('Encerrar treino?')) encerrarTreino(); }
+
+function atualizarMidia(s){
+  const ms=navigator.mediaSession; if(!ativo||!ms||!window.MediaMetadata) return;
+  const e=data[cur][pos.i], ser=e?e.name+' — série '+(pos.j+1)+'/'+e.sets:'Treino '+cur;
+  const title=tStart?'⏱ '+fmt(s)+' / '+target+'s':ser;
+  const artist=tStart?ser+' • ⏭ Próximo':'Treino '+cur+' • ▶ Descanso';
+  if(title+artist!==ultMeta){ ultMeta=title+artist; ms.metadata=new MediaMetadata({title,artist,album:'Meus Treinos'}); }
+  ms.playbackState=tStart?'playing':'paused';
+  try{ tStart?ms.setPositionState({duration:Math.max(target,s+1),playbackRate:1,position:Math.min(s,Math.max(target,s+1))}):ms.setPositionState(); }catch(err){}
+}
 
 function del(i){ if(confirm('Excluir exercício?')){ data[cur].splice(i,1); done={}; pos={i:0,j:0}; save(); render(); } }
 function openForm(i=-1){
@@ -202,7 +265,7 @@ function finish(){
   if(!confirm('Finalizar treino '+cur+'?'))return;
   const ex=data[cur].map((e,i)=>({...e,feitas:(done[cur+i]||[]).filter(Boolean).length}));
   data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),ex});
-  data[cur].forEach((_,i)=>delete done[cur+i]); pos={i:0,j:0}; fase='descanso'; stopTimer(); save(); render();
+  data[cur].forEach((_,i)=>delete done[cur+i]); pos={i:0,j:0}; fase='descanso'; encerrarTreino(); save(); render();
 }
 
 // Arrastar para reordenar (toque e mouse)
@@ -248,19 +311,24 @@ function importar(inp){
 
 // Cronômetro
 let actx;
-function beep(){ try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.frequency.value=880;o.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);}); if(navigator.vibrate)navigator.vibrate(500);}catch(e){} }
+function beep(){
+  if(navigator.vibrate) navigator.vibrate([300,150,300]);
+  if(bip){ bip.currentTime=0; bip.play().catch(()=>{}); return; }
+  try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.frequency.value=880;o.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);}); }catch(e){}
+}
 function startTimer(){
   try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
   tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
 }
-function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent=nomeTreino(); }
+function stopTimer(){ clearInterval(tInt); tStart=null; $('tm').textContent='00:00'; $('tm').classList.remove('over'); $('tlbl').textContent=nomeTreino(); atualizarMidia(0); }
 function tick(){
-  if(!tStart){ $('tlbl').textContent=nomeTreino(); return; }
+  if(!tStart){ $('tlbl').textContent=nomeTreino(); atualizarMidia(0); return; }
   const s=Math.floor((Date.now()-tStart)/1000);
-  $('tm').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  $('tm').textContent=fmt(s);
   $('tlbl').textContent=nomeTreino()+' • descanso '+target+'s';
   const over=s>=target; $('tm').classList.toggle('over',over);
   if(over&&!beeped){ beeped=true; beep(); }
+  atualizarMidia(s);
 }
 </script>
 
@@ -295,7 +363,7 @@ function mostrar(tela) {
 
 window.entrar = () => signInWithPopup(auth, new GoogleAuthProvider())
   .catch(e => alert('Erro no login: ' + e.message));
-window.sair = () => { if (confirm('Sair da conta?')) { stopTimer(); signOut(auth); } };
+window.sair = () => { if (confirm('Sair da conta?')) { encerrarTreino(); signOut(auth); } };
 
 window.salvarNuvem = async () => {
   if (!usuario || !alvo) return;
@@ -353,7 +421,7 @@ window.abrirTreino = async (uid) => {
 };
 
 window.voltarAdmin = async () => {
-  stopTimer();
+  encerrarTreino();
   el('buscaAluno').value = '';
   try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }
   mostrar('admin');
@@ -380,8 +448,8 @@ onAuthStateChanged(auth, async (u) => {
   try {
     const existe = await abrirUsuario(u.uid);
     alvoInfo = { email: u.email, nome: u.displayName || '' };
-    if (!existe) setData(null);          // usuário novo começa vazio
-    localStorage.removeItem(KEY);        // remove dados antigos do aparelho
+    if (!existe) setData(null);
+    localStorage.removeItem(KEY);
     await window.salvarNuvem();
 
     const adm = await getDoc(doc(db, 'admins', u.email));
