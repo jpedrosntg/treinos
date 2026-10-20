@@ -163,12 +163,9 @@
 <div class="modal" id="modal"><div class="box">
   <div class="nm" id="ftitle">Exercício</div>
   <label>Nome</label><input id="fn" placeholder="Ex: Supino reto">
-  <div class="row">
-    <div><label>Séries</label><input id="fs" type="number" inputmode="numeric" min="1" max="20" value="3" oninput="gerarSeries()"></div>
-    <div><label>Repetições</label><input id="fr" inputmode="text" value="12"></div>
-  </div>
-  <div class="shead"><span>#</span><span>Peso (kg)</span><span>Descanso (s)</span></div>
-  <div id="fSeries"></div>
+  <label>Séries</label><input id="fs" type="number" inputmode="numeric" min="1" max="20" value="3" oninput="gerarSeries()">
+  <div class="shead"><span>#</span><span>Reps</span><span>Peso (kg)</span><span>Descanso (s)</span></div>
+  <div id="fSeries" oninput="autoPeso(event)"></div>
   <div id="fErr" class="erro"></div>
   <button class="btn fin" onclick="saveForm()"><i data-lucide="check"></i>Salvar</button>
   <button class="btn add" onclick="closeForm()">Cancelar</button>

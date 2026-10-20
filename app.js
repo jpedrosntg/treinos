@@ -8,11 +8,12 @@ let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', agendada=false, t
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-// Série individual (compatível com treinos antigos que só têm weight/rest)
-const serie=(e,j)=>{ const s=(e.series||[])[j]||{}; return {w:+(s.w??e.weight)||0, r:+(s.r??e.rest??60)||0}; };
+// Série individual: w = peso, r = descanso, p = repetições (compatível com treinos antigos)
+const serie=(e,j)=>{ const s=(e.series||[])[j]||{}; return {w:+(s.w??e.weight)||0, r:+(s.r??e.rest??60)||0, p:String(s.p??e.reps??'')}; };
 const series=e=>Array.from({length:e.sets},(_,j)=>serie(e,j));
 const faixa=a=>{ if(!a.length) return 0; const mn=Math.min(...a), mx=Math.max(...a); return mn===mx?mn:mn+'–'+mx; };
-const info=e=>{ const s=series(e); return `${e.sets}x${esc(e.reps)} • ${faixa(s.map(x=>x.w))} kg • ${faixa(s.map(x=>x.r))}s descanso`; };
+const lista=a=>a.every(x=>x===a[0])?(a[0]??''):a.join('/');
+const info=e=>{ const s=series(e); return `${e.sets} séries • ${esc(lista(s.map(x=>x.p)))} reps • ${faixa(s.map(x=>x.w))} kg • ${faixa(s.map(x=>x.r))}s descanso`; };
 const feita=v=>v!=null;
 const linhaTempo=(j,t,d)=>`S${j+1} ${mmss(t)}${d!=null?` <span class="d">• desc ${mmss(d)}</span>`:''}`;
 function divLabel(n){ const l=LETRAS.slice(0,n); return l.length>1?l.slice(0,-1).join(', ')+' e '+l.at(-1):l[0]; }
@@ -196,7 +197,8 @@ function render(){
   $('list').className=on?'':'bloq';
   $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
-    for(let j=0;j<e.sets;j++) s+=`<span class="${feita(d[j])?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${j+1}<small>${serie(e,j).w}kg</small></span>`;
+    for(let j=0;j<e.sets;j++){ const sj=serie(e,j);
+      s+=`<span class="${feita(d[j])?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${esc(sj.p)||j+1}<small>${sj.w}kg</small></span>`; }
     const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
       <span class="drag">${ic('grip-vertical')}</span><div><div class="nm">${esc(e.name)}</div>
@@ -207,7 +209,6 @@ function render(){
 
   const bs=$('bSessao'); bs.innerHTML=on?ic('square')+'ENCERRAR TREINO':ic('play')+'INICIAR TREINO'; bs.classList.toggle('enc',on);
   $('timerBar').classList.toggle('off',!on);
-  // Na última série do último exercício o botão já vira "Encerrar"
   const fim=fase==='fim'||(fase==='serie'&&ex.length>0&&ultimaSerie());
   const b=$('bAcao');
   b.innerHTML=fase==='descanso'?ic('skip-forward')+'Próximo':fim?ic('square')+'Encerrar':ic('timer')+'Descanso';
@@ -220,7 +221,6 @@ function render(){
 
 function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
 function proxima(){ const ex=data[cur]; return pos.j+1<ex[pos.i].sets?{i:pos.i,j:pos.j+1}:{i:pos.i+1,j:0}; }
-// Guarda o estado antes de cada avanço para o botão Voltar
 function guardar(){ pilha.push({pos:{...pos},fase,target,el:decorrido(),done:JSON.parse(JSON.stringify(done))}); }
 function acao(){
   if(sessao!=='andamento') return aviso();
@@ -237,7 +237,6 @@ function acao(){
   } else return $('dlgFim').classList.add('on');
   render();
 }
-// Volta para a etapa anterior e retoma o cronômetro somando o tempo do avanço acidental
 function voltar(){
   if(sessao!=='andamento') return aviso();
   const s=pilha.pop(); if(!s) return;
@@ -257,7 +256,8 @@ function voltar(){
 function agendar(seg){
   if(!window.notifAgendar||seg<=0) return;
   const n=proxima(), e=data[cur][n.i];
-  agendada=window.notifAgendar(seg, e?`Próximo: ${e.name} — série ${n.j+1}/${e.sets} • ${serie(e,n.j).w} kg`:'Bora para a próxima!');
+  const s=e?serie(e,n.j):null;
+  agendada=window.notifAgendar(seg, e?`Próximo: ${e.name} — série ${n.j+1}/${e.sets} • ${s.p} reps • ${s.w} kg`:'Bora para a próxima!');
 }
 function cancelar(){ if(agendada&&window.notifCancelar) window.notifCancelar(); agendada=false; }
 
@@ -278,9 +278,11 @@ function del(i,dv=cur){
   }
   save(); renderAll();
 }
+// wm = peso editado manualmente (não é sobrescrito pelo preenchimento automático)
 function lerSeries(){
   document.querySelectorAll('#fSeries .srow').forEach((r,j)=>{
-    fSer[j]={w:parseFloat(r.querySelector('.w').value), r:parseInt(r.querySelector('.r').value,10)};
+    fSer[j]={...fSer[j], p:r.querySelector('.p').value.trim(),
+      w:parseFloat(r.querySelector('.w').value), r:parseInt(r.querySelector('.r').value,10)};
   });
 }
 function gerarSeries(){
@@ -289,17 +291,26 @@ function gerarSeries(){
   $('fs').classList.toggle('inv',!ok);
   $('fErr').textContent=ok?'':'Informe de 1 a 20 séries.';
   if(!ok) return;
-  // Novas séries copiam a última; as já preenchidas são mantidas no buffer
-  while(fSer.length<n) fSer.push({...(fSer.at(-1)||{w:0,r:60})});
+  while(fSer.length<n) fSer.push({...(fSer.at(-1)||{w:0,r:60,p:'12'}),wm:false});
   $('fSeries').innerHTML=fSer.slice(0,n).map((s,j)=>`<div class="srow"><span>${j+1}</span>
+    <input class="p" inputmode="text" placeholder="12" value="${esc(s.p)}">
     <input class="w" type="number" inputmode="decimal" step="0.5" min="0" value="${Number.isFinite(s.w)?s.w:''}">
     <input class="r" type="number" inputmode="numeric" min="0" value="${Number.isFinite(s.r)?s.r:''}"></div>`).join('');
 }
+// Peso da 1ª série replica nas seguintes que ainda não foram editadas à mão
+function autoPeso(ev){
+  const t=ev.target; if(!t.classList.contains('w')) return;
+  const rows=[...document.querySelectorAll('#fSeries .srow')], j=rows.indexOf(t.closest('.srow'));
+  if(j>0){ fSer[j]={...fSer[j],wm:true}; return; }
+  rows.slice(1).forEach((r,k)=>{ if(!fSer[k+1]?.wm) r.querySelector('.w').value=t.value; });
+  lerSeries();
+}
 function openForm(i=-1,dv=cur){
-  edit=i; formDiv=dv; const e=i>=0?data[dv][i]:{name:'',sets:3,reps:12,weight:0,rest:60};
+  edit=i; formDiv=dv; const e=i>=0?data[dv][i]:{name:'',sets:3,reps:'12',weight:0,rest:60};
   $('ftitle').textContent=(i>=0?'Editar':'Novo')+' exercício — Treino '+dv;
-  $('fn').value=e.name;$('fs').value=e.sets;$('fr').value=e.reps;
-  fSer=series(e); $('fSeries').innerHTML=''; gerarSeries();
+  $('fn').value=e.name; $('fs').value=e.sets;
+  const s=series(e); fSer=s.map((x,j)=>({...x,wm:j>0&&x.w!==s[0].w}));
+  $('fSeries').innerHTML=''; gerarSeries();
   $('modal').classList.add('on');
 }
 function closeForm(){ $('modal').classList.remove('on'); }
@@ -307,9 +318,10 @@ function saveForm(){
   const n=+$('fs').value;
   if(!(Number.isInteger(n)&&n>=1&&n<=20)) return $('fErr').textContent='Informe de 1 a 20 séries.';
   lerSeries();
-  const ser=fSer.slice(0,n), bad=ser.findIndex(s=>!(s.w>=0)||!(s.r>=0));
-  if(bad>=0) return $('fErr').textContent=`Série ${bad+1}: peso e descanso devem ser números iguais ou maiores que 0.`;
-  const e={name:$('fn').value.trim()||'Exercício',sets:n,reps:$('fr').value,series:ser.map(s=>({w:s.w,r:s.r})),weight:ser[0].w,rest:ser[0].r};
+  const ser=fSer.slice(0,n), bad=ser.findIndex(s=>numReps(s.p)==null||!(s.w>=0)||!(s.r>=0));
+  if(bad>=0) return $('fErr').textContent=`Série ${bad+1}: informe as repetições (ex: 12 ou 10-12), e peso e descanso maiores ou iguais a 0.`;
+  const sr=ser.map(({w,r,p})=>({w,r,p}));
+  const e={name:$('fn').value.trim()||'Exercício',sets:n,reps:lista(sr.map(s=>s.p)),series:sr,weight:sr[0].w,rest:sr[0].r};
   edit>=0?data[formDiv][edit]=e:data[formDiv].push(e);
   if(formDiv===cur) pilha=[];
   if(fase==='fim'&&formDiv===cur&&!ultimaSerie()){ pos=proxima(); fase='serie'; startTimer(); }
@@ -326,7 +338,8 @@ function renderHist(){
   $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • '+ic('clock')+mmss(h.dur):''}</div>
     <button class="ic" aria-label="Apagar" onclick="delHist(${k})">${ic('trash-2')}</button></div>
     ${(h.ex||[]).map(e=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?linhaTempo(j,t,(e.descansos||[])[j]):null).filter(Boolean).join('<br>');
-      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${faixa(series(e).map(s=>s.w))}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">${ic('timer')}${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
+      const s=series(e);
+      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(lista(s.map(x=>x.p)))} @ ${faixa(s.map(x=>x.w))}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">${ic('timer')}${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
     ||`<div class="info">${data.hist.length?'Nenhum registro para o Treino '+esc(v)+'.':'Nenhum treino registrado ainda.'}</div>`;
 }
 function delHist(k){
@@ -347,9 +360,11 @@ function calcAnalise(){
       const nome=String(e.name||'').trim(), key=nome.toLowerCase(); if(!key) return;
       const idx=(e.tempos||[]).map((t,j)=>feita(t)?j:-1).filter(j=>j>=0);
       const js=idx.length?idx:Array.from({length:e.feitas},(_,j)=>j);
-      const ws=js.map(j=>serie(e,j).w), r=numReps(e.reps), w=Math.max(...ws);
-      (ex[key]=ex[key]||{nome,s:[]}).s.push({k,data:h.data,tipo:h.tipo,peso:w,reps:r,series:e.feitas,
-        volume:r!=null?Math.round(ws.reduce((a,b)=>a+b,0)*r):null,tSerie:media(e.tempos),tDesc:media(e.descansos)});
+      const ss=js.map(j=>serie(e,j)), ws=ss.map(s=>s.w), rs=ss.map(s=>numReps(s.p));
+      const okR=rs.every(x=>x!=null);
+      (ex[key]=ex[key]||{nome,s:[]}).s.push({k,data:h.data,tipo:h.tipo,peso:Math.max(...ws),
+        reps:okR?Math.round(rs.reduce((a,b)=>a+b,0)/rs.length*10)/10:null,series:e.feitas,
+        volume:okR?Math.round(ss.reduce((a,s,n)=>a+s.w*rs[n],0)):null,tSerie:media(e.tempos),tDesc:media(e.descansos)});
     });
   });
   const comp=[], insuf=[];
@@ -361,8 +376,7 @@ function calcAnalise(){
   return {total:data.hist.length,divs,comp,insuf};
 }
 window.dadosAnalise=calcAnalise;
-// [campo, rótulo, unidade, direção: 1 = maior é melhor, -1 = menor é melhor, 0 = neutro]
-const METR=[['peso','Peso máximo','kg',1],['reps','Repetições (meta)','',1],['series','Séries concluídas','',1],
+const METR=[['peso','Peso máximo','kg',1],['reps','Repetições médias (meta)','',1],['series','Séries concluídas','',1],
   ['volume','Volume (Σ peso×reps)','kg',1],['tSerie','Tempo médio por série','t',0],['tDesc','Descanso médio','t',-1]];
 function linhaComp(lbl,a,b,u,dir){
   if(a==null||b==null) return '';
@@ -477,11 +491,11 @@ function tick(){
   const rest=ativo&&fase==='descanso', over=rest&&s>=target;
   const x=$('iTm'); x.textContent=ativo?mmss(s):'00:00';
   x.classList.toggle('over',over); x.classList.toggle('desc',rest&&!over); x.classList.toggle('pause',pausado&&!rest);
-  const e=(data[cur]||[])[pos.i];
+  const e=(data[cur]||[])[pos.i], sj=e?serie(e,pos.j):null;
   $('iNome').innerHTML=fase==='fim'?'Treino '+cur+' concluído'+ic('party-popper'):esc(e?e.name:'Treino '+cur);
   $('iSub').textContent=fase==='fim'?'Toque em Encerrar'
     :rest?(over?'Descanso excedido +'+mmss(s-target):'Descanso • faltam '+mmss(Math.max(0,target-s)))+(pausado?' • pausado':'')
-    :(e?'Série '+(pos.j+1)+'/'+e.sets+' • '+serie(e,pos.j).w+' kg':'')+(pausado?' • pausado':'');
+    :(e?'Série '+(pos.j+1)+'/'+e.sets+' • '+sj.p+' reps • '+sj.w+' kg':'')+(pausado?' • pausado':'');
   const p=fase==='fim'?1:rest?Math.min(s/target,1):ativo?(s%60)/60:0, a=$('anel');
   a.style.strokeDashoffset=100.5*(1-p);
   a.style.stroke=fase==='fim'?'#22c55e':over?'#ef4444':rest?'#facc15':pausado?'#f59e0b':'#3b82f6';

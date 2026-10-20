@@ -114,10 +114,11 @@ input,select,textarea{width:100%;padding:12px;font-size:16px;border-radius:8px;b
 input.inv{border-color:#ef4444}
 textarea{margin-top:8px;resize:vertical}
 .row{display:flex;gap:8px}.row>div{flex:1}
-.shead,.srow{display:grid;grid-template-columns:32px 1fr 1fr;gap:8px;align-items:center}
+.shead,.srow{display:grid;grid-template-columns:32px 1fr 1fr 1fr;gap:8px;align-items:center}
 .shead{margin-top:16px;font-size:12px;color:#9aa}
 .srow{margin-top:8px}
 .srow span{text-align:center;font-weight:700;color:var(--pri)}
+.srow input{padding:12px 8px;text-align:center}
 .erro{color:#f87171;font-size:14px;margin-top:8px}
 .erro:empty{display:none}
 .busca{position:relative;margin-bottom:12px}
