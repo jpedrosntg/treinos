@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app-check.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js";
@@ -28,6 +28,7 @@ initializeAppCheck(app, {
 });
 
 const auth = getAuth(app);
+setPersistence(auth, indexedDBLocalPersistence).catch(() => setPersistence(auth, browserLocalPersistence));
 const db = getFirestore(app);
 const fns = getFunctions(app);
 const ai = getAI(app, { backend: new GoogleAIBackend() });
@@ -38,7 +39,7 @@ const modelo = getGenerativeModel(ai, {
 const el = id => document.getElementById(id);
 let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
 
-// ===== IA: análise da evolução =====
+// ===== IA: análise da evolução (somente admin) =====
 window.analisarIA = async () => {
   if (!ehAdmin) return alert('Recurso disponível apenas para o administrador.');
   const a = window.dadosAnalise();
@@ -69,9 +70,22 @@ Dados: ${JSON.stringify(a)}`;
   }
 };
 
+// ===== LOGIN / LOGOUT =====
 const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
-window.entrar = () => (standalone ? signInWithRedirect : signInWithPopup)(auth, new GoogleAuthProvider())
-  .catch(e => alert('Erro no login: ' + e.message));
+window.entrar = async () => {
+  const prov = new GoogleAuthProvider();
+  prov.setCustomParameters({ prompt: 'select_account' });
+  try {
+    await signInWithPopup(auth, prov);
+  } catch (e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
+      return signInWithRedirect(auth, prov).catch(err => alert('Erro no login: ' + err.message));
+    }
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+      alert('Erro no login: ' + e.message);
+    }
+  }
+};
 window.sair = () => {
   if (sessao === 'andamento' && !confirm('Há um treino em andamento que será descartado. Sair mesmo assim?')) return;
   if (confirm('Sair da conta?')) { resetSessao(); stopTimer(); signOut(auth); }
@@ -163,6 +177,7 @@ window.notifTeste = () => {
   alert('Bloqueie o celular agora. A notificação chega em ~5 segundos.');
 };
 
+// ===== NUVEM =====
 window.salvarNuvem = async () => {
   if (!usuario || !alvo) return;
   try {
@@ -224,7 +239,7 @@ window.voltarAdmin = async () => {
   tela('telaAdmin');
 };
 
-// ===== LOGIN =====
+// ===== ESTADO DO LOGIN =====
 onAuthStateChanged(auth, async (u) => {
   usuario = u; ehAdmin = false;
   setTopo('', false);
