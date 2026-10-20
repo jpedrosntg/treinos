@@ -21,7 +21,11 @@ function norm(d){
   else { let u=-1; LETRAS.forEach((l,k)=>{ if(n[l].length) u=k; }); n.divs=LETRAS.slice(0,u+1); }
   return n;
 }
-function setData(d){ data=norm(d); done={}; pos={i:0,j:0}; fase='serie'; resetSessao(); stopTimer(); cur=data.divs[0]||'A'; renderAll(); }
+function setData(d){
+  data=norm(d); done={}; pos={i:0,j:0}; fase='serie'; resetSessao(); stopTimer(); cur=data.divs[0]||'A';
+  const r=$('iaRes'); if(r) r.innerHTML='';
+  renderAll();
+}
 function save(){ window.salvarNuvem && window.salvarNuvem(); }
 function renderAll(){ render(); renderCad(); renderInicio(); }
 
@@ -117,8 +121,8 @@ function abrirExec(){
   tela('app'); mudarAba('treino');
 }
 function mudarAba(a){
-  aba=a; ['treino','hist','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none');
-  $('tituloApp').textContent=a==='hist'?'📜 Histórico':a==='backup'?'⚙️ Ajustes':'🏋️ Meus Treinos';
+  aba=a; ['treino','hist','analise','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none');
+  $('tituloApp').textContent=a==='hist'?'📜 Histórico':a==='analise'?'📈 Análises':a==='backup'?'⚙️ Ajustes':'🏋️ Meus Treinos';
   render(); renderNav();
   if(a==='backup'){ window.atualizarNotifUI&&atualizarNotifUI(); window.renderPerfil&&renderPerfil(); }
   scrollTo(0,0);
@@ -193,7 +197,7 @@ function render(){
   b.classList.toggle('prox',fase==='descanso');
   b.classList.toggle('fim',fase==='fim');
   $('bPausa').textContent=pausado?'▶ Retomar':'⏸ Pausar';
-  status(); renderHist(); tick(); ilha(); renderNav();
+  status(); renderHist(); if(aba==='analise') renderAnalise(); tick(); ilha(); renderNav();
 }
 
 function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
@@ -267,6 +271,58 @@ function delHist(k){
   const h=data.hist[k];
   if(!h||!confirm(`Apagar definitivamente o registro do Treino ${h.tipo} de ${h.data}?\nEssa ação não pode ser desfeita.`)) return;
   data.hist.splice(k,1); save(); renderHist();
+}
+
+// ===== Análises =====
+const media=a=>{ const v=(a||[]).filter(x=>x!=null); return v.length?Math.round(v.reduce((s,x)=>s+x,0)/v.length):null; };
+const numReps=r=>{ const m=String(r??'').match(/\d+(\.\d+)?/g); if(!m) return null; const n=m.map(Number); return n.reduce((a,b)=>a+b,0)/n.length; };
+function calcAnalise(){
+  const ex={}, div={};
+  data.hist.forEach((h,k)=>{
+    (div[h.tipo]=div[h.tipo]||[]).push({k,data:h.data,dur:h.dur||null});
+    (h.ex||[]).forEach(e=>{
+      if(!e.feitas) return;
+      const nome=String(e.name||'').trim(), key=nome.toLowerCase(); if(!key) return;
+      const r=numReps(e.reps), w=+e.weight||0;
+      (ex[key]=ex[key]||{nome,s:[]}).s.push({k,data:h.data,tipo:h.tipo,peso:w,reps:r,series:e.feitas,
+        volume:r!=null?Math.round(w*r*e.feitas):null,tSerie:media(e.tempos),tDesc:media(e.descansos)});
+    });
+  });
+  const comp=[], insuf=[];
+  Object.values(ex).forEach(o=>{
+    if(o.s.length<2) return insuf.push(o.nome);
+    comp.push({nome:o.nome,sessoes:o.s.length,tipos:[...new Set(o.s.map(x=>x.tipo))],ini:o.s[0],fim:o.s.at(-1)});
+  });
+  const divs=Object.entries(div).map(([tipo,s])=>({tipo,sessoes:s.length,ini:s[0],fim:s.at(-1)}));
+  return {total:data.hist.length,divs,comp,insuf};
+}
+window.dadosAnalise=calcAnalise;
+// [campo, rótulo, unidade, direção: 1 = maior é melhor, -1 = menor é melhor, 0 = neutro]
+const METR=[['peso','Peso','kg',1],['reps','Repetições (meta)','',1],['series','Séries concluídas','',1],
+  ['volume','Volume (peso×reps×séries)','kg',1],['tSerie','Tempo médio por série','t',0],['tDesc','Descanso médio','t',-1]];
+function linhaComp(lbl,a,b,u,dir){
+  if(a==null||b==null) return '';
+  const f=v=>u==='t'?mmss(v):(Math.round(v*10)/10)+(u?' '+u:'');
+  const d=b-a, c=!d||!dir?'eq':(d*dir>0?'up':'dn');
+  const ic=!d?'＝':c==='eq'?'•':c==='up'?'▲':'▼';
+  return `<div><span>${lbl}</span><b class="${c}">${f(a)} → ${f(b)} ${ic}</b></div>`;
+}
+function renderAnalise(){
+  const a=calcAnalise(), box=$('anLista'), ok=a.comp.length>0;
+  $('bIA').disabled=!ok;
+  if(!ok){
+    box.innerHTML=`<div class="card info">📉 Ainda não há dados suficientes para uma análise confiável. É preciso ter pelo menos <b>2 sessões salvas</b> com o mesmo exercício (há ${a.total} sessão(ões) no histórico).</div>`;
+    return;
+  }
+  box.innerHTML=
+    a.divs.map(d=>`<div class="card"><div class="nm">Treino ${esc(d.tipo)}</div>
+      <div class="info">${d.sessoes} sessão(ões)${d.sessoes>1?` • ${esc(d.ini.data)} → ${esc(d.fim.data)}`:''}</div>
+      ${d.sessoes>1?`<div class="kv">${linhaComp('Duração do treino',d.ini.dur,d.fim.dur,'t',0)}</div>`:'<div class="info">Sessões insuficientes para comparar este treino.</div>'}</div>`).join('')
+    +'<h2>Exercícios</h2>'
+    +a.comp.map(c=>`<div class="card"><div class="nm">${esc(c.nome)}</div>
+      <div class="info">Treino ${c.tipos.map(esc).join(', ')} • ${c.sessoes} sessões<br>1ª: ${esc(c.ini.data)} → última: ${esc(c.fim.data)}</div>
+      <div class="kv">${METR.map(([k,l,u,dir])=>linhaComp(l,c.ini[k],c.fim[k],u,dir)).join('')}</div></div>`).join('')
+    +(a.insuf.length?`<div class="card info">Sem histórico suficiente (só 1 sessão): ${a.insuf.map(esc).join(', ')}.</div>`:'');
 }
 
 // ===== Arrastar para reordenar =====

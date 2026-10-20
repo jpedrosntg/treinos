@@ -38,36 +38,33 @@ const modelo = getGenerativeModel(ai, {
 const el = id => document.getElementById(id);
 let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
 
-// ===== IA: gerar treino =====
-window.gerarIA = async () => {
-  const pedido = el('iaTxt').value.trim();
-  if (!pedido) return alert('Descreva o treino que você quer.');
-  if (data.divs.some(l => data[l].length) &&
-      !confirm('Isso substituirá os exercícios atuais (o histórico é mantido). Continuar?')) return;
-  if (!sairDaSessao()) return;
-  const b = el('bIA'); b.disabled = true; b.textContent = '⏳ Gerando...';
+// ===== IA: análise da evolução =====
+window.analisarIA = async () => {
+  const a = window.dadosAnalise();
+  if (!a.comp.length) return alert('Ainda não há dados suficientes para uma análise confiável.');
+  const b = el('bIA'), out = el('iaRes');
+  b.disabled = true; b.textContent = '⏳ Analisando...';
   try {
-    const prompt = `Você é um personal trainer. Monte um treino de musculação em português para: "${pedido}".
-Responda SOMENTE com JSON neste formato:
-{"divs":["A","B"],"A":[{"name":"Supino reto","sets":4,"reps":"10","weight":0,"rest":90}],"B":[...]}
-Regras: de 1 a 5 divisões, usando as letras A a E em ordem; 4 a 8 exercícios por divisão;
-"sets" e "rest" (em segundos) são números; "reps" é texto (ex: "8-12"); "weight" sempre 0.`;
+    const prompt = `Você é um personal trainer analisando a evolução de um aluno de musculação.
+Use EXCLUSIVAMENTE os dados abaixo. Cada exercício compara a primeira ("ini") e a última ("fim") sessão salva.
+"reps" é a meta de repetições cadastrada (não as feitas); "series" são as séries concluídas; "volume" = peso×reps×séries;
+"tSerie" e "tDesc" são médias em segundos; "dur" é a duração do treino em segundos.
+Não invente números, causas ou conclusões. Se algo não puder ser concluído com esses dados, diga isso.
+Em cada item, cite o exercício, os valores e as datas comparadas.
+Responda SOMENTE com JSON: {"resumo":"texto curto","melhorou":["..."],"piorou":["..."],"observacoes":["..."]}
+Dados: ${JSON.stringify(a)}`;
     const r = await modelo.generateContent(prompt);
     const d = JSON.parse(r.response.text());
-    if (!Array.isArray(d.divs) || !d.divs.length) throw new Error('Resposta inválida da IA.');
-    d.divs = d.divs.filter(l => LETRAS.includes(l));
-    d.divs.forEach(l => d[l] = (d[l] || []).map(e => ({
-      name: String(e.name || 'Exercício'), sets: +e.sets || 3,
-      reps: String(e.reps ?? '12'), weight: 0, rest: +e.rest || 60
-    })));
-    setData({ ...d, hist: data.hist });
-    await window.salvarNuvem();
-    el('iaTxt').value = '';
-    tela('telaCadastro');
+    const lista = (t, v) => Array.isArray(v) && v.length
+      ? `<div class="nm" style="margin-top:10px">${t}</div>` + v.map(x => `<div class="info">• ${esc(x)}</div>`).join('') : '';
+    out.innerHTML = `<div class="card"><div class="nm">🤖 Análise da IA</div>
+      <div class="info">${esc(d.resumo || '')}</div>
+      ${lista('✅ Melhorou', d.melhorou)}${lista('⚠️ Piorou', d.piorou)}${lista('ℹ️ Observações', d.observacoes)}
+      <div class="info" style="margin-top:10px;font-size:12px">Gerado por IA a partir do histórico. Confira os números abaixo.</div></div>`;
   } catch (e) {
-    alert('Erro ao gerar treino: ' + e.message);
+    alert('Erro na análise: ' + e.message);
   } finally {
-    b.disabled = false; b.textContent = '✨ Gerar treino';
+    b.disabled = false; b.textContent = '🤖 Analisar com IA';
   }
 };
 

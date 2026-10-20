@@ -45,12 +45,6 @@
     <button class="voltar" onclick="voltarAdmin()">⬅ Voltar para lista de alunos</button>
   </div>
   <button class="btn fin" style="font-size:18px" onclick="novoTreino()">＋ Cadastrar novo treino</button>
-  <div class="card" style="margin-top:12px">
-    <div class="nm">🤖 Gerar treino com IA</div>
-    <div class="info">Descreva seu objetivo, nível, dias por semana, equipamentos...</div>
-    <textarea id="iaTxt" rows="3" placeholder="Ex: hipertrofia, intermediário, 4x por semana, academia completa"></textarea>
-    <button id="bIA" class="btn ini" style="margin-bottom:0" onclick="gerarIA()">✨ Gerar treino</button>
-  </div>
   <h2>Selecionar treino existente</h2>
   <div id="listaTreinos"></div>
 </div>
@@ -117,6 +111,16 @@
     <div id="hist" class="hist"></div>
   </div>
 
+  <div id="p_analise" style="display:none">
+    <div class="card">
+      <div class="nm">📈 Sua evolução</div>
+      <div class="info">Comparação entre a primeira e a última sessão salva de cada exercício.</div>
+      <button id="bIA" class="btn ini" style="margin-bottom:0" onclick="analisarIA()">🤖 Analisar com IA</button>
+    </div>
+    <div id="iaRes"></div>
+    <div id="anLista"></div>
+  </div>
+
   <div id="p_backup" style="display:none">
     <div class="card perfil">
       <div class="top">
@@ -150,6 +154,7 @@
 <nav id="bnav" class="bnav">
   <button data-a="treino" aria-label="Treino" onclick="irAba('treino')">🏋️</button>
   <button data-a="hist" aria-label="Histórico" onclick="irAba('hist')">📜</button>
+  <button data-a="analise" aria-label="Análises" onclick="irAba('analise')">📈</button>
   <button data-a="backup" aria-label="Ajustes" onclick="irAba('backup')">⚙️</button>
 </nav>
 
