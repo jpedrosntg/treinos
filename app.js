@@ -521,20 +521,41 @@ function renderCatalogo(){
     ${c.descricao?`<div class="info">${esc(c.descricao)}</div>`:''}</div>`).join('')
     ||'<div class="info">Nenhum exercício encontrado.</div>';
 }
+// Lista de grupos secundários (seleção múltipla)
+const secSelecionados=()=>[...$('cSec').selectedOptions].map(o=>o.value);
+function syncSec(){
+  const g=$('cGrupo').value;
+  [...$('cSec').options].forEach(o=>{ o.disabled=o.value===g; if(o.disabled) o.selected=false; });
+  const n=secSelecionados().length;
+  $('cSecInfo').textContent=n?n+' grupo(s) selecionado(s): '+secSelecionados().map(k=>GRUPOS[k]).join(', ')
+    :'Toque para selecionar um ou mais grupos.';
+}
+// No computador: um clique marca/desmarca, sem precisar segurar Ctrl
+$('cSec').addEventListener('mousedown',e=>{
+  const o=e.target; if(o.tagName!=='OPTION'||o.disabled) return;
+  e.preventDefault();
+  const sc=$('cSec').scrollTop;
+  o.selected=!o.selected;
+  $('cSec').focus(); $('cSec').scrollTop=sc;
+  syncSec();
+});
+$('cSec').addEventListener('change',syncSec);
 function abrirCat(id){
   const c=catalogo.find(x=>x.id===id)||{nome:'',grupo:'peito',secundarios:[],descricao:''};
   catEdit=id||null;
   $('cTitle').textContent=id?'Editar exercício':'Novo exercício';
   $('cNome').value=c.nome; $('cDesc').value=c.descricao;
   $('cGrupo').innerHTML=optGrupos(); $('cGrupo').value=c.grupo;
-  $('cSec').innerHTML=Object.entries(GRUPOS).map(([k,v])=>`<label class="chk"><input type="checkbox" value="${k}" ${c.secundarios.includes(k)?'checked':''}>${v}</label>`).join('');
+  $('cSec').innerHTML=optGrupos();
+  [...$('cSec').options].forEach(o=>o.selected=c.secundarios.includes(o.value));
+  syncSec();
   $('cDel').style.display=id?'flex':'none'; $('cErr').textContent='';
   $('modalCat').classList.add('on');
 }
 async function salvarCat(){
   const g=$('cGrupo').value;
   const ex={nome:$('cNome').value.trim(),grupo:g,descricao:$('cDesc').value.trim(),
-    secundarios:[...document.querySelectorAll('#cSec input:checked')].map(i=>i.value).filter(v=>v!==g)};
+    secundarios:secSelecionados().filter(v=>v!==g)};
   if(!ex.nome) return $('cErr').textContent='Informe o nome.';
   try{ await window.salvarExercicio(ex,catEdit); $('modalCat').classList.remove('on'); }
   catch(e){ $('cErr').textContent='Erro: '+e.message; }

@@ -186,8 +186,10 @@
 <div class="modal" id="modalCat"><div class="box">
   <div class="nm" id="cTitle">Exercício</div>
   <label>Nome</label><input id="cNome" placeholder="Ex: Supino reto">
-  <label>Grupo principal</label><select id="cGrupo"></select>
-  <label>Grupos secundários</label><div id="cSec"></div>
+  <label>Grupo principal</label><select id="cGrupo" onchange="syncSec()"></select>
+  <label>Grupos secundários</label>
+  <select id="cSec" multiple size="5" style="height:auto"></select>
+  <div class="info" id="cSecInfo" style="margin-top:4px">Toque para selecionar um ou mais grupos.</div>
   <label>Descrição</label><textarea id="cDesc" rows="4" placeholder="Como executar"></textarea>
   <div id="cErr" class="erro"></div>
   <button class="btn fin" onclick="salvarCat()"><i data-lucide="check"></i>Salvar</button>
