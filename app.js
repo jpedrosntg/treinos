@@ -1,14 +1,18 @@
 const KEY='treinos_v1';
 const LETRAS=['A','B','C','D','E'];
 const VAZIO=()=>({divs:[],A:[],B:[],C:[],D:[],E:[],hist:[]});
-let data=VAZIO(), cur='A', done={}, edit=-1, formDiv='A';
+let data=VAZIO(), cur='A', done={}, edit=-1, formDiv='A', fSer=[], pilha=[];
 let tStart=null, tAcc=0, pausado=false, target=60, tInt=null, beeped=false;
 let pos={i:0,j:0}, fase='serie';
 let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', agendada=false, telaAtual='telaLogin';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-const info=e=>`${e.sets}x${esc(e.reps)} • ${e.weight} kg • ${e.rest}s descanso`;
+// Série individual (compatível com treinos antigos que só têm weight/rest)
+const serie=(e,j)=>{ const s=(e.series||[])[j]||{}; return {w:+(s.w??e.weight)||0, r:+(s.r??e.rest??60)||0}; };
+const series=e=>Array.from({length:e.sets},(_,j)=>serie(e,j));
+const faixa=a=>{ if(!a.length) return 0; const mn=Math.min(...a), mx=Math.max(...a); return mn===mx?mn:mn+'–'+mx; };
+const info=e=>{ const s=series(e); return `${e.sets}x${esc(e.reps)} • ${faixa(s.map(x=>x.w))} kg • ${faixa(s.map(x=>x.r))}s descanso`; };
 const feita=v=>v!=null;
 const linhaTempo=(j,t,d)=>`S${j+1} ${mmss(t)}${d!=null?` <span class="d">• desc ${mmss(d)}</span>`:''}`;
 function divLabel(n){ const l=LETRAS.slice(0,n); return l.length>1?l.slice(0,-1).join(', ')+' e '+l.at(-1):l[0]; }
@@ -140,12 +144,12 @@ function mudarAba(a){
 }
 
 // ===== Sessão =====
-function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; }
+function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; pilha=[]; }
 function botaoSessao(){ sessao==='andamento'?$('dlgFim').classList.add('on'):iniciarSessao(); }
 function iniciarSessao(){
   if(!(data[cur]||[]).length) return alert('Adicione exercícios ao Treino '+cur+' antes de iniciar.');
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
-  pos={i:0,j:0}; fase='serie'; sessao='andamento'; sIni=Date.now();
+  pos={i:0,j:0}; fase='serie'; sessao='andamento'; sIni=Date.now(); pilha=[];
   clearInterval(sInt); sInt=setInterval(status,1000);
   startTimer(); render();
 }
@@ -154,14 +158,14 @@ function encerrar(salvar){
   if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
   if(salvar){
     const ex=data[cur].map((e,i)=>{ const d=done[cur+i]||[];
-      return {...e,feitas:d.filter(feita).length,
+      return {...e,series:series(e),feitas:d.filter(feita).length,
         tempos:Array.from({length:e.sets},(_,j)=>feita(d[j])?d[j].t:null),
         descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; });
     data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex});
     save();
   }
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
-  pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null;
+  pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null; pilha=[];
   sessao='encerrado'; sMsg=salvar?ic('circle-check')+'Treino encerrado e salvo no histórico.':'Treino encerrado sem salvar.';
   render();
 }
@@ -176,7 +180,7 @@ const aviso=()=>alert('Toque em "INICIAR TREINO" para começar a sessão.');
 function trocar(t){
   if(t===cur) return;
   if(sessao==='andamento') return alert('Encerre o treino em andamento antes de trocar de divisão.');
-  cur=t; pos={i:0,j:0}; fase='serie'; if(sessao==='encerrado') sessao='nao'; stopTimer(); render();
+  cur=t; pos={i:0,j:0}; fase='serie'; pilha=[]; if(sessao==='encerrado') sessao='nao'; stopTimer(); render();
 }
 
 function render(){
@@ -192,7 +196,7 @@ function render(){
   $('list').className=on?'':'bloq';
   $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
-    for(let j=0;j<e.sets;j++) s+=`<span class="${feita(d[j])?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${j+1}</span>`;
+    for(let j=0;j<e.sets;j++) s+=`<span class="${feita(d[j])?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${j+1}<small>${serie(e,j).w}kg</small></span>`;
     const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
       <span class="drag">${ic('grip-vertical')}</span><div><div class="nm">${esc(e.name)}</div>
@@ -203,27 +207,49 @@ function render(){
 
   const bs=$('bSessao'); bs.innerHTML=on?ic('square')+'ENCERRAR TREINO':ic('play')+'INICIAR TREINO'; bs.classList.toggle('enc',on);
   $('timerBar').classList.toggle('off',!on);
+  // Na última série do último exercício o botão já vira "Encerrar"
+  const fim=fase==='fim'||(fase==='serie'&&ex.length>0&&ultimaSerie());
   const b=$('bAcao');
-  b.innerHTML=fase==='serie'?ic('timer')+'Descanso':fase==='descanso'?ic('skip-forward')+'Próximo':ic('square')+'Encerrar';
+  b.innerHTML=fase==='descanso'?ic('skip-forward')+'Próximo':fim?ic('square')+'Encerrar':ic('timer')+'Descanso';
   b.classList.toggle('prox',fase==='descanso');
-  b.classList.toggle('fim',fase==='fim');
+  b.classList.toggle('fim',fim);
+  $('bVolta').disabled=!on||!pilha.length;
   $('bPausa').innerHTML=pausado?ic('play')+'Retomar':ic('pause')+'Pausar';
   status(); renderHist(); if(aba==='analise') renderAnalise(); tick(); ilha(); renderNav();
 }
 
 function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
 function proxima(){ const ex=data[cur]; return pos.j+1<ex[pos.i].sets?{i:pos.i,j:pos.j+1}:{i:pos.i+1,j:0}; }
+// Guarda o estado antes de cada avanço para o botão Voltar
+function guardar(){ pilha.push({pos:{...pos},fase,target,el:decorrido(),done:JSON.parse(JSON.stringify(done))}); }
 function acao(){
   if(sessao!=='andamento') return aviso();
   const ex=data[cur]; if(!ex.length) return;
   if(fase==='serie'){
+    guardar();
     const k=cur+pos.i; done[k]=done[k]||[]; done[k][pos.j]={t:Math.floor(decorrido()/1000),d:null};
-    if(ultimaSerie()){ stopTimer(); fase='fim'; render(); return alert('Última série concluída! Toque em "Encerrar" para finalizar.'); }
-    target=+ex[pos.i].rest||60; fase='descanso'; startTimer(); agendar(target);
+    if(ultimaSerie()){ stopTimer(); fase='fim'; render(); return $('dlgFim').classList.add('on'); }
+    const r=serie(ex[pos.i],pos.j).r; target=r>0?r:60; fase='descanso'; startTimer(); agendar(target);
   } else if(fase==='descanso'){
+    guardar();
     const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000);
     pos=proxima(); fase='serie'; startTimer();
   } else return $('dlgFim').classList.add('on');
+  render();
+}
+// Volta para a etapa anterior e retoma o cronômetro somando o tempo do avanço acidental
+function voltar(){
+  if(sessao!=='andamento') return aviso();
+  const s=pilha.pop(); if(!s) return;
+  const extra=decorrido();
+  cancelar(); clearInterval(tInt);
+  done=s.done; pos=s.pos; fase=s.fase; target=s.target;
+  tAcc=s.el+extra; beeped=fase==='descanso'&&tAcc>=target*1000;
+  if(pausado) tStart=null;
+  else {
+    tStart=Date.now(); tInt=setInterval(tick,250);
+    if(fase==='descanso') agendar(target-Math.floor(decorrido()/1000));
+  }
   render();
 }
 
@@ -231,7 +257,7 @@ function acao(){
 function agendar(seg){
   if(!window.notifAgendar||seg<=0) return;
   const n=proxima(), e=data[cur][n.i];
-  agendada=window.notifAgendar(seg, e?`Próximo: ${e.name} — série ${n.j+1}/${e.sets}`:'Bora para a próxima!');
+  agendada=window.notifAgendar(seg, e?`Próximo: ${e.name} — série ${n.j+1}/${e.sets} • ${serie(e,n.j).w} kg`:'Bora para a próxima!');
 }
 function cancelar(){ if(agendada&&window.notifCancelar) window.notifCancelar(); agendada=false; }
 
@@ -246,21 +272,46 @@ function del(i,dv=cur){
   });
   done=nd;
   if(dv===cur){
+    pilha=[];
     if(pos.i>i) pos.i--;
     else if(pos.i===i){ pos.j=0; fase='serie'; if(sessao==='andamento'&&data[cur].length) startTimer(); else stopTimer(); }
   }
   save(); renderAll();
 }
+function lerSeries(){
+  document.querySelectorAll('#fSeries .srow').forEach((r,j)=>{
+    fSer[j]={w:parseFloat(r.querySelector('.w').value), r:parseInt(r.querySelector('.r').value,10)};
+  });
+}
+function gerarSeries(){
+  lerSeries();
+  const n=+$('fs').value, ok=Number.isInteger(n)&&n>=1&&n<=20;
+  $('fs').classList.toggle('inv',!ok);
+  $('fErr').textContent=ok?'':'Informe de 1 a 20 séries.';
+  if(!ok) return;
+  // Novas séries copiam a última; as já preenchidas são mantidas no buffer
+  while(fSer.length<n) fSer.push({...(fSer.at(-1)||{w:0,r:60})});
+  $('fSeries').innerHTML=fSer.slice(0,n).map((s,j)=>`<div class="srow"><span>${j+1}</span>
+    <input class="w" type="number" inputmode="decimal" step="0.5" min="0" value="${Number.isFinite(s.w)?s.w:''}">
+    <input class="r" type="number" inputmode="numeric" min="0" value="${Number.isFinite(s.r)?s.r:''}"></div>`).join('');
+}
 function openForm(i=-1,dv=cur){
   edit=i; formDiv=dv; const e=i>=0?data[dv][i]:{name:'',sets:3,reps:12,weight:0,rest:60};
   $('ftitle').textContent=(i>=0?'Editar':'Novo')+' exercício — Treino '+dv;
-  $('fn').value=e.name;$('fs').value=e.sets;$('fr').value=e.reps;$('fp').value=e.weight;$('fd').value=e.rest;
+  $('fn').value=e.name;$('fs').value=e.sets;$('fr').value=e.reps;
+  fSer=series(e); $('fSeries').innerHTML=''; gerarSeries();
   $('modal').classList.add('on');
 }
 function closeForm(){ $('modal').classList.remove('on'); }
 function saveForm(){
-  const e={name:$('fn').value.trim()||'Exercício',sets:+$('fs').value||1,reps:$('fr').value,weight:+$('fp').value||0,rest:+$('fd').value||60};
+  const n=+$('fs').value;
+  if(!(Number.isInteger(n)&&n>=1&&n<=20)) return $('fErr').textContent='Informe de 1 a 20 séries.';
+  lerSeries();
+  const ser=fSer.slice(0,n), bad=ser.findIndex(s=>!(s.w>=0)||!(s.r>=0));
+  if(bad>=0) return $('fErr').textContent=`Série ${bad+1}: peso e descanso devem ser números iguais ou maiores que 0.`;
+  const e={name:$('fn').value.trim()||'Exercício',sets:n,reps:$('fr').value,series:ser.map(s=>({w:s.w,r:s.r})),weight:ser[0].w,rest:ser[0].r};
   edit>=0?data[formDiv][edit]=e:data[formDiv].push(e);
+  if(formDiv===cur) pilha=[];
   if(fase==='fim'&&formDiv===cur&&!ultimaSerie()){ pos=proxima(); fase='serie'; startTimer(); }
   save(); closeForm(); renderAll();
 }
@@ -275,7 +326,7 @@ function renderHist(){
   $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • '+ic('clock')+mmss(h.dur):''}</div>
     <button class="ic" aria-label="Apagar" onclick="delHist(${k})">${ic('trash-2')}</button></div>
     ${(h.ex||[]).map(e=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?linhaTempo(j,t,(e.descansos||[])[j]):null).filter(Boolean).join('<br>');
-      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${e.weight}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">${ic('timer')}${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
+      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${faixa(series(e).map(s=>s.w))}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">${ic('timer')}${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
     ||`<div class="info">${data.hist.length?'Nenhum registro para o Treino '+esc(v)+'.':'Nenhum treino registrado ainda.'}</div>`;
 }
 function delHist(k){
@@ -294,9 +345,11 @@ function calcAnalise(){
     (h.ex||[]).forEach(e=>{
       if(!e.feitas) return;
       const nome=String(e.name||'').trim(), key=nome.toLowerCase(); if(!key) return;
-      const r=numReps(e.reps), w=+e.weight||0;
+      const idx=(e.tempos||[]).map((t,j)=>feita(t)?j:-1).filter(j=>j>=0);
+      const js=idx.length?idx:Array.from({length:e.feitas},(_,j)=>j);
+      const ws=js.map(j=>serie(e,j).w), r=numReps(e.reps), w=Math.max(...ws);
       (ex[key]=ex[key]||{nome,s:[]}).s.push({k,data:h.data,tipo:h.tipo,peso:w,reps:r,series:e.feitas,
-        volume:r!=null?Math.round(w*r*e.feitas):null,tSerie:media(e.tempos),tDesc:media(e.descansos)});
+        volume:r!=null?Math.round(ws.reduce((a,b)=>a+b,0)*r):null,tSerie:media(e.tempos),tDesc:media(e.descansos)});
     });
   });
   const comp=[], insuf=[];
@@ -309,8 +362,8 @@ function calcAnalise(){
 }
 window.dadosAnalise=calcAnalise;
 // [campo, rótulo, unidade, direção: 1 = maior é melhor, -1 = menor é melhor, 0 = neutro]
-const METR=[['peso','Peso','kg',1],['reps','Repetições (meta)','',1],['series','Séries concluídas','',1],
-  ['volume','Volume (peso×reps×séries)','kg',1],['tSerie','Tempo médio por série','t',0],['tDesc','Descanso médio','t',-1]];
+const METR=[['peso','Peso máximo','kg',1],['reps','Repetições (meta)','',1],['series','Séries concluídas','',1],
+  ['volume','Volume (Σ peso×reps)','kg',1],['tSerie','Tempo médio por série','t',0],['tDesc','Descanso médio','t',-1]];
 function linhaComp(lbl,a,b,u,dir){
   if(a==null||b==null) return '';
   const f=v=>u==='t'?mmss(v):(Math.round(v*10)/10)+(u?' '+u:'');
@@ -377,6 +430,7 @@ function soltar(){
   Object.assign(done,nd);
   data[cur]=ordem.map(o=>ex[o]);
   pos.i=Math.max(0,data[cur].indexOf(atual));
+  pilha=[];
   save(); render();
 }
 document.addEventListener('pointerup',soltar);
@@ -397,12 +451,9 @@ function importar(inp){
     if(confirm('Substituir dados atuais pelo backup?')){ setData(d); save(); } }catch(e){ alert('Arquivo inválido (use o arquivo de "Exportar tudo")'); } inp.value=''; });
 }
 
-// ===== Cronômetro =====
-let actx;
-function beep(){ try{ [0,.3,.6].forEach(t=>{const o=actx.createOscillator();o.frequency.value=880;o.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);}); if(navigator.vibrate)navigator.vibrate(500);}catch(e){} }
+// ===== Cronômetro (sem som) =====
 const decorrido=()=>tAcc+(tStart?Date.now()-tStart:0);
 function startTimer(){
-  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
   cancelar(); tAcc=0; pausado=false; tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
 }
 function stopTimer(){ cancelar(); clearInterval(tInt); tStart=null; tAcc=0; pausado=false; tick(); }
@@ -430,9 +481,9 @@ function tick(){
   $('iNome').innerHTML=fase==='fim'?'Treino '+cur+' concluído'+ic('party-popper'):esc(e?e.name:'Treino '+cur);
   $('iSub').textContent=fase==='fim'?'Toque em Encerrar'
     :rest?(over?'Descanso excedido +'+mmss(s-target):'Descanso • faltam '+mmss(Math.max(0,target-s)))+(pausado?' • pausado':'')
-    :(e?'Série '+(pos.j+1)+'/'+e.sets:'')+(pausado?' • pausado':'');
+    :(e?'Série '+(pos.j+1)+'/'+e.sets+' • '+serie(e,pos.j).w+' kg':'')+(pausado?' • pausado':'');
   const p=fase==='fim'?1:rest?Math.min(s/target,1):ativo?(s%60)/60:0, a=$('anel');
   a.style.strokeDashoffset=100.5*(1-p);
   a.style.stroke=fase==='fim'?'#22c55e':over?'#ef4444':rest?'#facc15':pausado?'#f59e0b':'#3b82f6';
-  if(over&&!beeped&&tStart){ beeped=true; beep(); }
+  if(over&&!beeped&&tStart){ beeped=true; navigator.vibrate&&navigator.vibrate(500); }
 }
