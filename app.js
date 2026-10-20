@@ -135,11 +135,12 @@ function abrirExec(){
   if(!data.divs.includes(cur)) cur=data.divs[0];
   tela('app'); mudarAba('treino');
 }
-const TITULOS={treino:['dumbbell','Meus Treinos'],hist:['history','Histórico'],analise:['trending-up','Análises'],backup:['settings','Ajustes']};
+const TITULOS={treino:['dumbbell','Meus Treinos'],hist:['history','Histórico'],analise:['trending-up','Análises'],catalogo:['book-open','Catálogo'],backup:['settings','Ajustes']};
 function mudarAba(a){
-  aba=a; ['treino','hist','analise','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none');
+  aba=a; ['treino','hist','analise','catalogo','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none');
   const [i,t]=TITULOS[a]||TITULOS.treino; $('tituloApp').innerHTML=ic(i)+t;
   render(); renderNav();
+  if(a==='catalogo') renderCatalogo();
   if(a==='backup'){ window.atualizarNotifUI&&atualizarNotifUI(); window.renderPerfil&&renderPerfil(); }
   scrollTo(0,0);
 }
@@ -500,4 +501,46 @@ function tick(){
   a.style.strokeDashoffset=100.5*(1-p);
   a.style.stroke=fase==='fim'?'#22c55e':over?'#ef4444':rest?'#facc15':pausado?'#f59e0b':'#3b82f6';
   if(over&&!beeped&&tStart){ beeped=true; navigator.vibrate&&navigator.vibrate(500); }
+}
+
+// ===== Catálogo =====
+const GRUPOS={peito:'Peito',costas:'Costas',ombros:'Ombros',biceps:'Bíceps',triceps:'Tríceps',pernas:'Pernas',gluteos:'Glúteos',panturrilha:'Panturrilha',abdomen:'Abdômen',antebraco:'Antebraço'};
+const optGrupos=()=>Object.entries(GRUPOS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+let catalogo=[], catEdit=null;
+function setCatalogo(l){ catalogo=l||[]; renderCatalogo(); }
+function renderCatalogo(){
+  const adm=!!window.souAdmin?.();
+  $('bNovoCat').style.display=adm?'flex':'none';
+  $('dlCat').innerHTML=catalogo.map(c=>`<option value="${esc(c.nome)}">`).join('');
+  const sel=$('fGrupo'), g=sel.value, q=$('buscaCat').value.toLowerCase();
+  sel.innerHTML='<option value="">Todos os grupos</option>'+optGrupos(); sel.value=g;
+  const it=catalogo.filter(c=>(!g||c.grupo===g||c.secundarios.includes(g))&&c.nome.toLowerCase().includes(q));
+  $('catLista').innerHTML=it.map(c=>`<div class="card"${adm?` onclick="abrirCat('${c.id}')" style="cursor:pointer"`:''}>
+    <div class="nm">${esc(c.nome)}</div>
+    <div class="info"><b>${GRUPOS[c.grupo]||esc(c.grupo)}</b>${c.secundarios.length?' • '+c.secundarios.map(s=>GRUPOS[s]||esc(s)).join(', '):''}</div>
+    ${c.descricao?`<div class="info">${esc(c.descricao)}</div>`:''}</div>`).join('')
+    ||'<div class="info">Nenhum exercício encontrado.</div>';
+}
+function abrirCat(id){
+  const c=catalogo.find(x=>x.id===id)||{nome:'',grupo:'peito',secundarios:[],descricao:''};
+  catEdit=id||null;
+  $('cTitle').textContent=id?'Editar exercício':'Novo exercício';
+  $('cNome').value=c.nome; $('cDesc').value=c.descricao;
+  $('cGrupo').innerHTML=optGrupos(); $('cGrupo').value=c.grupo;
+  $('cSec').innerHTML=Object.entries(GRUPOS).map(([k,v])=>`<label class="chk"><input type="checkbox" value="${k}" ${c.secundarios.includes(k)?'checked':''}>${v}</label>`).join('');
+  $('cDel').style.display=id?'flex':'none'; $('cErr').textContent='';
+  $('modalCat').classList.add('on');
+}
+async function salvarCat(){
+  const g=$('cGrupo').value;
+  const ex={nome:$('cNome').value.trim(),grupo:g,descricao:$('cDesc').value.trim(),
+    secundarios:[...document.querySelectorAll('#cSec input:checked')].map(i=>i.value).filter(v=>v!==g)};
+  if(!ex.nome) return $('cErr').textContent='Informe o nome.';
+  try{ await window.salvarExercicio(ex,catEdit); $('modalCat').classList.remove('on'); }
+  catch(e){ $('cErr').textContent='Erro: '+e.message; }
+}
+async function excluirCat(){
+  if(!catEdit||!confirm('Excluir este exercício do catálogo?')) return;
+  try{ await window.excluirExercicio(catEdit); $('modalCat').classList.remove('on'); }
+  catch(e){ alert('Erro: '+e.message); }
 }

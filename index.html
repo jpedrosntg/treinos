@@ -122,6 +122,16 @@
     <div id="anLista"></div>
   </div>
 
+  <div id="p_catalogo" style="display:none">
+    <button id="bNovoCat" class="btn fin" style="display:none" onclick="abrirCat()"><i data-lucide="plus"></i>Novo exercício</button>
+    <div class="busca" style="margin-top:12px">
+      <i data-lucide="search"></i>
+      <input id="buscaCat" placeholder="Buscar exercício" oninput="renderCatalogo()">
+    </div>
+    <select id="fGrupo" onchange="renderCatalogo()" style="margin-bottom:12px"></select>
+    <div id="catLista"></div>
+  </div>
+
   <div id="p_backup" style="display:none">
     <div class="card perfil">
       <div class="top">
@@ -156,19 +166,33 @@
   <button data-a="treino" aria-label="Treino" onclick="irAba('treino')"><i data-lucide="dumbbell"></i></button>
   <button data-a="hist" aria-label="Histórico" onclick="irAba('hist')"><i data-lucide="history"></i></button>
   <button data-a="analise" aria-label="Análises" onclick="irAba('analise')"><i data-lucide="trending-up"></i></button>
+  <button data-a="catalogo" aria-label="Catálogo" onclick="irAba('catalogo')"><i data-lucide="book-open"></i></button>
   <button data-a="backup" aria-label="Ajustes" onclick="irAba('backup')"><i data-lucide="settings"></i></button>
 </nav>
 
 <!-- MODAL EXERCÍCIO -->
 <div class="modal" id="modal"><div class="box">
   <div class="nm" id="ftitle">Exercício</div>
-  <label>Nome</label><input id="fn" placeholder="Ex: Supino reto">
+  <label>Nome</label><input id="fn" list="dlCat" placeholder="Ex: Supino reto"><datalist id="dlCat"></datalist>
   <label>Séries</label><input id="fs" type="number" inputmode="numeric" min="1" max="20" value="3" oninput="gerarSeries()">
   <div class="shead"><span>#</span><span>Reps</span><span>Peso (kg)</span><span>Descanso (s)</span></div>
   <div id="fSeries" oninput="autoPeso(event)"></div>
   <div id="fErr" class="erro"></div>
   <button class="btn fin" onclick="saveForm()"><i data-lucide="check"></i>Salvar</button>
   <button class="btn add" onclick="closeForm()">Cancelar</button>
+</div></div>
+
+<!-- MODAL CATÁLOGO -->
+<div class="modal" id="modalCat"><div class="box">
+  <div class="nm" id="cTitle">Exercício</div>
+  <label>Nome</label><input id="cNome" placeholder="Ex: Supino reto">
+  <label>Grupo principal</label><select id="cGrupo"></select>
+  <label>Grupos secundários</label><div id="cSec"></div>
+  <label>Descrição</label><textarea id="cDesc" rows="4" placeholder="Como executar"></textarea>
+  <div id="cErr" class="erro"></div>
+  <button class="btn fin" onclick="salvarCat()"><i data-lucide="check"></i>Salvar</button>
+  <button id="cDel" class="btn del" onclick="excluirCat()"><i data-lucide="trash-2"></i>Excluir</button>
+  <button class="btn add" onclick="$('modalCat').classList.remove('on')">Cancelar</button>
 </div></div>
 
 <!-- DIÁLOGO ENCERRAR -->

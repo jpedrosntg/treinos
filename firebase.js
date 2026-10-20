@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app-check.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js";
 import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-ai.js";
@@ -18,6 +18,7 @@ const VAPID_KEY = 'BCf0WcCmzfJgVoul0i0OPiK67q_JqCEeSoD6ZF06KyHqNkWQqJ5tcZkRXcvWs
 const RECAPTCHA_KEY = '6LflcPctAAAAAHgYzAFnVC-lTLc5h42zmfpRGC4O';
 
 const COLECAO = 'treinos_teste';
+const CAT = 'exercicios';
 const app = initializeApp(firebaseConfig);
 
 // App Check (antes de qualquer outro serviço)
@@ -37,7 +38,7 @@ const modelo = getGenerativeModel(ai, {
   generationConfig: { responseMimeType: 'application/json' }
 });
 const el = id => document.getElementById(id);
-let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
+let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [], cat = [];
 
 // ===== IA: análise da evolução (somente admin) =====
 window.analisarIA = async () => {
@@ -240,6 +241,27 @@ window.voltarAdmin = async () => {
   tela('telaAdmin');
 };
 
+// ===== CATÁLOGO =====
+async function carregarCatalogo() {
+  const s = await getDocs(query(collection(db, CAT), orderBy('nome')));
+  cat = s.docs.map(d => ({ id: d.id, secundarios: [], descricao: '', ...d.data() }));
+  setCatalogo(cat);
+}
+window.souAdmin = () => ehAdmin;
+window.getCatalogo = () => cat;
+window.salvarExercicio = async (ex, id = null) => {
+  if (!ehAdmin) throw new Error('Apenas o administrador pode editar o catálogo.');
+  const ref = id ? doc(db, CAT, id) : doc(collection(db, CAT));
+  await setDoc(ref, { ...ex, atualizado: Date.now() });
+  await carregarCatalogo();
+  return ref.id;
+};
+window.excluirExercicio = async (id) => {
+  if (!ehAdmin) throw new Error('Apenas o administrador pode editar o catálogo.');
+  await deleteDoc(doc(db, CAT, id));
+  await carregarCatalogo();
+};
+
 // ===== ESTADO DO LOGIN =====
 onAuthStateChanged(auth, async (u) => {
   usuario = u; ehAdmin = false;
@@ -249,7 +271,7 @@ onAuthStateChanged(auth, async (u) => {
   if (!u) {
     el('msgLogin').textContent = 'Entre para acessar seus treinos';
     el('btnLogin').style.display = 'flex';
-    setData(null); tela('telaLogin'); return;
+    setData(null); setCatalogo([]); tela('telaLogin'); return;
   }
 
   el('msgLogin').textContent = 'Carregando...';
@@ -270,6 +292,7 @@ onAuthStateChanged(auth, async (u) => {
   } catch (e) { alert('Erro ao acessar a nuvem: ' + e.message); }
 
   window.renderPerfil();
+  carregarCatalogo().catch(e => console.warn('Catálogo:', e.message));
   if (notifOn()) obterToken(false).catch(() => {});
 
   if (ehAdmin) {
