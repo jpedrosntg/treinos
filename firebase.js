@@ -40,6 +40,7 @@ let usuario = null, alvo = null, alvoInfo = {}, ehAdmin = false, alunos = [];
 
 // ===== IA: análise da evolução =====
 window.analisarIA = async () => {
+  if (!ehAdmin) return alert('Recurso disponível apenas para o administrador.');
   const a = window.dadosAnalise();
   if (!a.comp.length) return alert('Ainda não há dados suficientes para uma análise confiável.');
   const b = el('bIA'), out = el('iaRes');
