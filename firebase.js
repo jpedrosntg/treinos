@@ -45,7 +45,7 @@ window.analisarIA = async () => {
   const a = window.dadosAnalise();
   if (!a.comp.length) return alert('Ainda não há dados suficientes para uma análise confiável.');
   const b = el('bIA'), out = el('iaRes');
-  b.disabled = true; b.textContent = '⏳ Analisando...';
+  b.disabled = true; b.innerHTML = ic('loader-circle', 'spin') + 'Analisando...';
   try {
     const prompt = `Você é um personal trainer analisando a evolução de um aluno de musculação.
 Use EXCLUSIVAMENTE os dados abaixo. Cada exercício compara a primeira ("ini") e a última ("fim") sessão salva.
@@ -58,15 +58,15 @@ Dados: ${JSON.stringify(a)}`;
     const r = await modelo.generateContent(prompt);
     const d = JSON.parse(r.response.text());
     const lista = (t, v) => Array.isArray(v) && v.length
-      ? `<div class="nm" style="margin-top:10px">${t}</div>` + v.map(x => `<div class="info">• ${esc(x)}</div>`).join('') : '';
-    out.innerHTML = `<div class="card"><div class="nm">🤖 Análise da IA</div>
+      ? `<div class="nm" style="margin-top:12px">${t}</div>` + v.map(x => `<div class="info">• ${esc(x)}</div>`).join('') : '';
+    out.innerHTML = `<div class="card"><div class="nm">${ic('bot')}Análise da IA</div>
       <div class="info">${esc(d.resumo || '')}</div>
-      ${lista('✅ Melhorou', d.melhorou)}${lista('⚠️ Piorou', d.piorou)}${lista('ℹ️ Observações', d.observacoes)}
-      <div class="info" style="margin-top:10px;font-size:12px">Gerado por IA a partir do histórico. Confira os números abaixo.</div></div>`;
+      ${lista(ic('circle-check') + 'Melhorou', d.melhorou)}${lista(ic('triangle-alert') + 'Piorou', d.piorou)}${lista(ic('info') + 'Observações', d.observacoes)}
+      <div class="info" style="margin-top:12px;font-size:12px">Gerado por IA a partir do histórico. Confira os números abaixo.</div></div>`;
   } catch (e) {
     alert('Erro na análise: ' + e.message);
   } finally {
-    b.disabled = false; b.textContent = '🤖 Analisar com IA';
+    b.disabled = false; b.innerHTML = ic('bot') + 'Analisar com IA';
   }
 };
 
@@ -105,17 +105,17 @@ window.renderPerfil = () => {
   } else f.textContent = ini;
   const dt = s => s ? new Date(s).toLocaleString('pt-BR') : '—';
   const linhas = [
-    ['Tipo de conta', ehAdmin ? '👑 Administrador' : 'Aluno'],
+    ['Tipo de conta', ehAdmin ? ic('crown') + 'Administrador' : 'Aluno'],
     ['Login via', 'Google'],
     ['E-mail verificado', u.emailVerified ? 'Sim' : 'Não'],
-    ['Conta criada em', dt(u.metadata?.creationTime)],
-    ['Último acesso', dt(u.metadata?.lastSignInTime)]
+    ['Conta criada em', esc(dt(u.metadata?.creationTime))],
+    ['Último acesso', esc(dt(u.metadata?.lastSignInTime))]
   ];
-  if (alvo && alvo !== u.uid) linhas.push(['Editando treino de', alvoInfo.email || alvo]);
+  if (alvo && alvo !== u.uid) linhas.push(['Editando treino de', esc(alvoInfo.email || alvo)]);
   const box = el('pDados'); box.innerHTML = '';
   linhas.forEach(([k, v]) => {
     const d = document.createElement('div'), s = document.createElement('span'), b = document.createElement('b');
-    s.textContent = k; b.textContent = v; d.append(s, b); box.append(d);
+    s.textContent = k; b.innerHTML = v; d.append(s, b); box.append(d);
   });
 };
 
@@ -140,7 +140,7 @@ async function obterToken(pedir) {
 
 window.atualizarNotifUI = () => {
   const on = notifOn(), b = el('bNotif');
-  b.textContent = on ? '🔔 Notificações ativadas (toque para desativar)' : '🔕 Ativar notificações';
+  b.innerHTML = on ? ic('bell') + 'Notificações ativadas (toque para desativar)' : ic('bell-off') + 'Ativar notificações';
   b.classList.toggle('ativo', on);
   el('nInfo').textContent = on
     ? 'Você será avisado quando o descanso acabar, mesmo com a tela bloqueada.'
@@ -160,7 +160,7 @@ window.notifAgendar = (seg, corpo) => {
   if (!notifOn() || !usuario) return false;
   const id = idAtual = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
   (fcmToken ? Promise.resolve(fcmToken) : obterToken(false))
-    .then(token => fAgendar({ token, id, segundos: Math.round(seg), titulo: '⏰ Descanso terminou!', corpo }))
+    .then(token => fAgendar({ token, id, segundos: Math.round(seg), titulo: 'Descanso terminou!', corpo }))
     .catch(e => console.warn('Notificação:', e.message));
   return true;
 };
@@ -173,7 +173,7 @@ window.notifCancelar = () => {
 
 window.notifTeste = () => {
   if (!notifOn()) return alert('Ative as notificações primeiro.');
-  window.notifAgendar(5, 'Teste OK! As notificações estão funcionando. 💪');
+  window.notifAgendar(5, 'Teste OK! As notificações estão funcionando.');
   alert('Bloqueie o celular agora. A notificação chega em ~5 segundos.');
 };
 
@@ -215,7 +215,7 @@ window.renderAlunos = (filtro = '') => {
     const div = document.createElement('div');
     div.className = 'aluno' + (a.uid === usuario.uid ? ' eu' : '');
     const nm = document.createElement('div'); nm.className = 'nm';
-    nm.textContent = (a.uid === usuario.uid ? '⭐ Meu treino — ' : '') + (a.nome || 'Sem nome');
+    nm.innerHTML = (a.uid === usuario.uid ? ic('star') + 'Meu treino — ' : '') + esc(a.nome || 'Sem nome');
     const em = document.createElement('div'); em.className = 'info';
     em.textContent = a.email || a.uid;
     div.append(nm, em);
@@ -228,7 +228,8 @@ window.renderAlunos = (filtro = '') => {
 window.abrirTreino = async (uid) => {
   alvo = uid;
   try { await abrirUsuario(uid); } catch (e) { return alert('Erro: ' + e.message); }
-  setTopo(uid === usuario.uid ? '☁️ ' + usuario.email : '👁 Editando treino de: ' + alvoInfo.email, ehAdmin);
+  if (uid === usuario.uid) setTopo(usuario.email, ehAdmin, 'cloud');
+  else setTopo('Editando treino de: ' + alvoInfo.email, ehAdmin, 'eye');
   tela('telaInicio');
 };
 
@@ -247,7 +248,7 @@ onAuthStateChanged(auth, async (u) => {
 
   if (!u) {
     el('msgLogin').textContent = 'Entre para acessar seus treinos';
-    el('btnLogin').style.display = 'block';
+    el('btnLogin').style.display = 'flex';
     setData(null); tela('telaLogin'); return;
   }
 
@@ -275,7 +276,7 @@ onAuthStateChanged(auth, async (u) => {
     try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }
     tela('telaAdmin');
   } else {
-    setTopo('☁️ ' + u.email, false);
+    setTopo(u.email, false, 'cloud');
     tela('telaInicio');
   }
 });

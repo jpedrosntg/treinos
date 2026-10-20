@@ -22,84 +22,84 @@
 
 <!-- LOGIN -->
 <div id="telaLogin" class="tela" style="display:flex">
-  <div style="font-size:64px">🏋️</div>
+  <div class="logo"><i data-lucide="dumbbell"></i></div>
   <h1>Meus Treinos</h1>
   <div class="info" id="msgLogin">Carregando...</div>
-  <button id="btnLogin" class="btn fin" onclick="entrar()" style="display:none;max-width:320px">🔐 Entrar com Google</button>
+  <button id="btnLogin" class="btn fin" onclick="entrar()" style="display:none;max-width:320px"><i data-lucide="log-in"></i>Entrar com Google</button>
 </div>
 
 <!-- ADMIN -->
 <div id="telaAdmin" class="tela">
-  <div class="head"><h1>👑 Painel do Admin</h1></div>
-  <div class="info" style="margin-bottom:10px">Escolha qual treino deseja ver:</div>
-  <input id="buscaAluno" placeholder="🔍 Buscar por nome ou e-mail" oninput="renderAlunos(this.value)" style="margin-bottom:12px">
+  <div class="head"><h1><i data-lucide="crown"></i>Painel do Admin</h1></div>
+  <div class="info" style="margin-bottom:12px">Escolha qual treino deseja ver:</div>
+  <div class="busca">
+    <i data-lucide="search"></i>
+    <input id="buscaAluno" placeholder="Buscar por nome ou e-mail" oninput="renderAlunos(this.value)">
+  </div>
   <div id="listaAlunos"></div>
 </div>
 
 <!-- INÍCIO -->
 <div id="telaInicio" class="tela">
-  <div class="head"><h1>🏋️ Meus Treinos</h1></div>
-  <div class="info uinfo" style="margin-bottom:10px"></div>
+  <div class="head"><h1><i data-lucide="dumbbell"></i>Meus Treinos</h1></div>
+  <div class="info uinfo" style="margin-bottom:12px"></div>
   <div class="adm admOnly" style="display:none">
-    <div class="lbl">👑 Modo administrador</div>
-    <button class="voltar" onclick="voltarAdmin()">⬅ Voltar para lista de alunos</button>
+    <div class="lbl"><i data-lucide="crown"></i>Modo administrador</div>
+    <button class="voltar" onclick="voltarAdmin()"><i data-lucide="arrow-left"></i>Voltar para lista de alunos</button>
   </div>
-  <button class="btn fin" style="font-size:18px" onclick="novoTreino()">＋ Cadastrar novo treino</button>
+  <button class="btn fin" style="font-size:18px" onclick="novoTreino()"><i data-lucide="plus"></i>Cadastrar novo treino</button>
   <h2>Selecionar treino existente</h2>
   <div id="listaTreinos"></div>
 </div>
 
 <!-- ESCOLHA DA DIVISÃO -->
 <div id="telaDivisao" class="tela">
-  <h1>Novo treino</h1>
+  <div class="head"><h1><i data-lucide="layout-grid"></i>Novo treino</h1></div>
   <div class="info" style="margin-bottom:12px">Escolha a divisão do treino:</div>
   <div id="opcDiv"></div>
-  <button class="voltar" onclick="tela('telaInicio')">⬅ Voltar</button>
+  <button class="voltar" onclick="tela('telaInicio')"><i data-lucide="arrow-left"></i>Voltar</button>
 </div>
 
 <!-- CADASTRO -->
 <div id="telaCadastro" class="tela">
-  <h1>✏️ Cadastro do treino</h1>
+  <div class="head"><h1><i data-lucide="pencil"></i>Cadastro do treino</h1></div>
   <div class="info" style="margin-bottom:12px">Cadastre os exercícios de cada divisão.</div>
   <div class="card">
     <div class="nm">Divisão do treino</div>
     <label>Mudar divisão</label>
     <select id="selDiv"></select>
-    <button class="btn add" onclick="mudarDiv(false)">🔄 Aplicar (manter exercícios)</button>
-    <button class="btn del" onclick="mudarDiv(true)">🗑 Recomeçar do zero</button>
+    <button class="btn add" onclick="mudarDiv(false)"><i data-lucide="refresh-cw"></i>Aplicar (manter exercícios)</button>
+    <button class="btn del" onclick="mudarDiv(true)"><i data-lucide="trash-2"></i>Recomeçar do zero</button>
   </div>
   <div id="cadList"></div>
-  <button id="bCadIni" class="btn ini" onclick="iniciarDoCadastro()">▶ INICIAR TREINO</button>
-  <button class="btn add" onclick="irInicio()">✔ Concluir e voltar ao início</button>
+  <button id="bCadIni" class="btn ini" onclick="iniciarDoCadastro()"><i data-lucide="play"></i>INICIAR TREINO</button>
+  <button class="btn add" onclick="irInicio()"><i data-lucide="check"></i>Concluir e voltar ao início</button>
 </div>
 
 <!-- APP / EXECUÇÃO -->
 <div id="app" class="tela">
-  <div class="head">
-    <h1 id="tituloApp">🏋️ Meus Treinos</h1>
-    <button class="sair" onclick="irInicio()">⌂ Início</button>
-  </div>
-  <div class="info uinfo" style="margin-bottom:10px"></div>
+  <div class="head"><h1 id="tituloApp"><i data-lucide="dumbbell"></i>Meus Treinos</h1></div>
+  <div class="info uinfo" style="margin-bottom:12px"></div>
   <div class="adm admOnly" style="display:none">
-    <div class="lbl">👑 Modo administrador</div>
-    <button class="voltar" onclick="voltarAdmin()">⬅ Voltar para lista de alunos</button>
+    <div class="lbl"><i data-lucide="crown"></i>Modo administrador</div>
+    <button class="voltar" onclick="voltarAdmin()"><i data-lucide="arrow-left"></i>Voltar para lista de alunos</button>
   </div>
 
   <div id="p_treino">
     <div id="semTreino" class="card info">Nenhum treino cadastrado.
-      <button class="btn fin" onclick="novoTreino()">＋ Cadastrar novo treino</button></div>
+      <button class="btn fin" onclick="novoTreino()"><i data-lucide="plus"></i>Cadastrar novo treino</button></div>
     <div id="comTreino">
       <div class="tabs" id="tabs"></div>
-      <button id="bSessao" class="btn ini" onclick="botaoSessao()">▶ INICIAR TREINO</button>
+      <button id="bSessao" class="btn ini" onclick="botaoSessao()"><i data-lucide="play"></i>INICIAR TREINO</button>
       <div id="status" class="status" style="margin-bottom:12px"></div>
       <div id="list"></div>
-      <button class="btn add" onclick="openForm()">+ Adicionar exercício</button>
-      <button class="btn add" onclick="tela('telaCadastro')">✏️ Editar treino</button>
+      <button class="btn add" onclick="openForm()"><i data-lucide="plus"></i>Adicionar exercício</button>
+      <button class="btn add" onclick="tela('telaCadastro')"><i data-lucide="pencil"></i>Editar treino</button>
       <div class="timer" id="timerBar">
         <div class="tb">
-          <button onclick="parar()">■ Parar</button>
-          <button id="bPausa" onclick="pausar()">⏸ Pausar</button>
-          <button id="bAcao" class="acao" onclick="acao()">⏱ Descanso</button>
+          <button onclick="parar()"><i data-lucide="square"></i>Parar</button>
+          <button id="bPausa" onclick="pausar()"><i data-lucide="pause"></i>Pausar</button>
+          <button id="bAcao" class="acao" onclick="acao()"><i data-lucide="timer"></i>Descanso</button>
         </div>
       </div>
     </div>
@@ -113,9 +113,9 @@
 
   <div id="p_analise" style="display:none">
     <div class="card">
-      <div class="nm">📈 Sua evolução</div>
+      <div class="nm"><i data-lucide="trending-up"></i>Sua evolução</div>
       <div class="info">Comparação entre a primeira e a última sessão salva de cada exercício.</div>
-      <button id="bIA" class="btn ini admOnly" style="margin-bottom:0;display:none" onclick="analisarIA()">🤖 Analisar com IA</button>
+      <button id="bIA" class="btn ini admOnly" style="margin-bottom:0;display:none" onclick="analisarIA()"><i data-lucide="bot"></i>Analisar com IA</button>
     </div>
     <div id="iaRes" class="admOnly" style="display:none"></div>
     <div id="anLista"></div>
@@ -130,32 +130,32 @@
       <div class="kv" id="pDados"></div>
     </div>
     <div class="card">
-      <div class="nm">🔔 Aviso de fim do descanso</div>
+      <div class="nm"><i data-lucide="bell"></i>Aviso de fim do descanso</div>
       <div class="info" id="nInfo">Carregando...</div>
       <button id="bNotif" class="btn add" onclick="notifToggle()">Ativar notificações</button>
-      <button class="btn add" onclick="notifTeste()">🧪 Testar (5 s — bloqueie o celular)</button>
+      <button class="btn add" onclick="notifTeste()"><i data-lucide="flask-conical"></i>Testar (5 s — bloqueie o celular)</button>
     </div>
     <div class="card">
-      <div class="nm">💾 Backup</div>
+      <div class="nm"><i data-lucide="save"></i>Backup</div>
       <div class="info">Salve uma cópia dos seus dados ou restaure um backup.</div>
-      <button class="btn add" onclick="exportar()">⬇ Exportar tudo (treino + histórico)</button>
-      <button class="btn add" onclick="exportarHist()">⬇ Exportar só o histórico</button>
-      <button class="btn add" onclick="$('imp').click()">⬆ Importar backup</button>
+      <button class="btn add" onclick="exportar()"><i data-lucide="download"></i>Exportar tudo (treino + histórico)</button>
+      <button class="btn add" onclick="exportarHist()"><i data-lucide="download"></i>Exportar só o histórico</button>
+      <button class="btn add" onclick="$('imp').click()"><i data-lucide="upload"></i>Importar backup</button>
       <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
     </div>
     <div class="card">
-      <div class="nm">👤 Conta</div>
-      <button class="btn del" onclick="sair()">🚪 Sair da conta</button>
+      <div class="nm"><i data-lucide="user"></i>Conta</div>
+      <button class="btn del" onclick="sair()"><i data-lucide="log-out"></i>Sair da conta</button>
     </div>
   </div>
 </div>
 
 <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
 <nav id="bnav" class="bnav">
-  <button data-a="treino" aria-label="Treino" onclick="irAba('treino')">🏋️</button>
-  <button data-a="hist" aria-label="Histórico" onclick="irAba('hist')">📜</button>
-  <button data-a="analise" aria-label="Análises" onclick="irAba('analise')">📈</button>
-  <button data-a="backup" aria-label="Ajustes" onclick="irAba('backup')">⚙️</button>
+  <button data-a="treino" aria-label="Treino" onclick="irAba('treino')"><i data-lucide="dumbbell"></i></button>
+  <button data-a="hist" aria-label="Histórico" onclick="irAba('hist')"><i data-lucide="history"></i></button>
+  <button data-a="analise" aria-label="Análises" onclick="irAba('analise')"><i data-lucide="trending-up"></i></button>
+  <button data-a="backup" aria-label="Ajustes" onclick="irAba('backup')"><i data-lucide="settings"></i></button>
 </nav>
 
 <!-- MODAL EXERCÍCIO -->
@@ -170,7 +170,7 @@
     <div><label>Peso (kg)</label><input id="fp" type="number" inputmode="decimal" step="0.5" value="0"></div>
     <div><label>Descanso (s)</label><input id="fd" type="number" inputmode="numeric" value="60"></div>
   </div>
-  <button class="btn fin" onclick="saveForm()">Salvar</button>
+  <button class="btn fin" onclick="saveForm()"><i data-lucide="check"></i>Salvar</button>
   <button class="btn add" onclick="closeForm()">Cancelar</button>
 </div></div>
 
@@ -178,12 +178,13 @@
 <div class="modal" id="dlgFim"><div class="box">
   <div class="nm">Encerrar treino</div>
   <div class="info">Deseja salvar esta sessão no histórico?</div>
-  <button class="btn fin" onclick="encerrar(true)">💾 Salvar no histórico</button>
+  <button class="btn fin" onclick="encerrar(true)"><i data-lucide="save"></i>Salvar no histórico</button>
   <button class="btn del" onclick="encerrar(false)">Não salvar</button>
   <button class="btn add" onclick="$('dlgFim').classList.remove('on')">Continuar treinando</button>
 </div></div>
 
-<!-- A ordem importa: app.js antes de firebase.js -->
+<!-- A ordem importa: lucide → app.js → firebase.js -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script src="app.js"></script>
 <script type="module" src="firebase.js"></script>
 </body></html>

@@ -13,6 +13,16 @@ const feita=v=>v!=null;
 const linhaTempo=(j,t,d)=>`S${j+1} ${mmss(t)}${d!=null?` <span class="d">• desc ${mmss(d)}</span>`:''}`;
 function divLabel(n){ const l=LETRAS.slice(0,n); return l.length>1?l.slice(0,-1).join(', ')+' e '+l.at(-1):l[0]; }
 
+// ===== Ícones Lucide =====
+const ic=(n,c='')=>`<i data-lucide="${n}"${c?` class="${c}"`:''}></i>`;
+let icRaf=0;
+function icons(){
+  if(icRaf||!window.lucide) return;
+  icRaf=requestAnimationFrame(()=>{ icRaf=0; if(document.querySelector('i[data-lucide]')) lucide.createIcons(); });
+}
+new MutationObserver(icons).observe(document.body,{childList:true,subtree:true});
+icons();
+
 function norm(d){
   const n=VAZIO(); if(!d||!(d.A||d.divs)) return n;
   LETRAS.forEach(l=>n[l]=Array.isArray(d[l])?d[l]:[]);
@@ -58,9 +68,9 @@ function irAba(a){
   if(telaAtual!=='app'){ if(!data.divs.includes(cur)) cur=data.divs[0]||'A'; tela('app'); }
   mudarAba(a);
 }
-function setTopo(txt,adm){
-  document.querySelectorAll('.uinfo').forEach(e=>e.textContent=txt);
-  document.querySelectorAll('.admOnly').forEach(e=>e.style.display=adm?'block':'none');
+function setTopo(txt,adm,icone){
+  document.querySelectorAll('.uinfo').forEach(e=>e.innerHTML=txt?(icone?ic(icone):'')+esc(txt):'');
+  document.querySelectorAll('.admOnly').forEach(e=>e.style.display=adm?(e.tagName==='BUTTON'?'flex':'block'):'none');
 }
 function sairDaSessao(){
   if(sessao==='andamento'&&!confirm('Há um treino em andamento. Sair vai descartá-lo sem salvar. Continuar?')) return false;
@@ -70,7 +80,7 @@ function irInicio(){ if(sairDaSessao()) tela('telaInicio'); }
 
 function renderInicio(){
   $('listaTreinos').innerHTML=data.divs.length
-    ?`<div class="aluno" onclick="abrirExec()"><div class="nm">📋 Treino ${divLabel(data.divs.length)}</div>
+    ?`<div class="aluno" onclick="abrirExec()"><div class="nm">${ic('clipboard-list')}Treino ${divLabel(data.divs.length)}</div>
       <div class="info">${data.divs.map(l=>l+': '+data[l].length+' exercício(s)').join(' • ')}</div>
       <div class="info">Toque para abrir</div></div>`
     :'<div class="info">Nenhum treino cadastrado. Toque em "Cadastrar novo treino".</div>';
@@ -87,12 +97,12 @@ function escolherDiv(n){
 function renderCad(){
   $('cadList').innerHTML=data.divs.map(l=>`<div class="card"><div class="nm">Treino ${l}</div>
     ${data[l].map((e,i)=>`<div class="top item"><div><div>${esc(e.name)}</div><div class="info">${info(e)}</div></div>
-      <div style="white-space:nowrap"><button class="ic" onclick="openForm(${i},'${l}')">✏️</button><button class="ic" onclick="del(${i},'${l}')">🗑</button></div></div>`).join('')
+      <div style="white-space:nowrap"><button class="ic" aria-label="Editar" onclick="openForm(${i},'${l}')">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i},'${l}')">${ic('trash-2')}</button></div></div>`).join('')
       ||'<div class="info">Nenhum exercício ainda.</div>'}
-    <button class="btn add" onclick="openForm(-1,'${l}')">+ Adicionar exercício no Treino ${l}</button></div>`).join('')
+    <button class="btn add" onclick="openForm(-1,'${l}')">${ic('plus')}Adicionar exercício no Treino ${l}</button></div>`).join('')
     ||'<div class="info">Nenhuma divisão escolhida.</div>';
   $('selDiv').innerHTML=[1,2,3,4,5].map(n=>`<option value="${n}" ${n==(data.divs.length||1)?'selected':''}>${divLabel(n)}</option>`).join('');
-  $('bCadIni').textContent=sessao==='andamento'?'▶ Voltar ao treino em andamento':'▶ INICIAR TREINO';
+  $('bCadIni').innerHTML=ic('play')+(sessao==='andamento'?'Voltar ao treino em andamento':'INICIAR TREINO');
 }
 function mudarDiv(limpar){
   const n=+$('selDiv').value, novas=LETRAS.slice(0,n);
@@ -120,9 +130,10 @@ function abrirExec(){
   if(!data.divs.includes(cur)) cur=data.divs[0];
   tela('app'); mudarAba('treino');
 }
+const TITULOS={treino:['dumbbell','Meus Treinos'],hist:['history','Histórico'],analise:['trending-up','Análises'],backup:['settings','Ajustes']};
 function mudarAba(a){
   aba=a; ['treino','hist','analise','backup'].forEach(x=>$('p_'+x).style.display=x===a?'block':'none');
-  $('tituloApp').textContent=a==='hist'?'📜 Histórico':a==='analise'?'📈 Análises':a==='backup'?'⚙️ Ajustes':'🏋️ Meus Treinos';
+  const [i,t]=TITULOS[a]||TITULOS.treino; $('tituloApp').innerHTML=ic(i)+t;
   render(); renderNav();
   if(a==='backup'){ window.atualizarNotifUI&&atualizarNotifUI(); window.renderPerfil&&renderPerfil(); }
   scrollTo(0,0);
@@ -151,14 +162,14 @@ function encerrar(salvar){
   }
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
   pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null;
-  sessao='encerrado'; sMsg=salvar?'✅ Treino encerrado e salvo no histórico.':'Treino encerrado sem salvar.';
+  sessao='encerrado'; sMsg=salvar?ic('circle-check')+'Treino encerrado e salvo no histórico.':'Treino encerrado sem salvar.';
   render();
 }
 function status(){
   const st=$('status'); st.className='status '+sessao;
-  st.textContent=sessao==='andamento'?'🟢 Treino '+cur+' em andamento • '+mmss(Math.floor((Date.now()-sIni)/1000))
+  st.innerHTML=sessao==='andamento'?ic('circle-dot')+'Treino '+cur+' em andamento • '+mmss(Math.floor((Date.now()-sIni)/1000))
     :sessao==='encerrado'?sMsg+' Toque em INICIAR TREINO para uma nova sessão.'
-    :'⚪ Treino não iniciado. Toque em INICIAR TREINO para começar.';
+    :ic('circle')+'Treino não iniciado. Toque em INICIAR TREINO para começar.';
 }
 const aviso=()=>alert('Toque em "INICIAR TREINO" para começar a sessão.');
 
@@ -184,19 +195,19 @@ function render(){
     for(let j=0;j<e.sets;j++) s+=`<span class="${feita(d[j])?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${j+1}</span>`;
     const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
-      <span class="drag">☰</span><div><div class="nm">${esc(e.name)}</div>
+      <span class="drag">${ic('grip-vertical')}</span><div><div class="nm">${esc(e.name)}</div>
       <div class="info">${info(e)}</div></div></div>
-      <div style="white-space:nowrap"><button class="ic" onclick="openForm(${i})">✏️</button><button class="ic" onclick="del(${i})">🗑</button></div></div>
-      <div class="ser">${s}</div>${tp?`<div class="tempos">⏱ ${tp}</div>`:''}</div>`;
+      <div style="white-space:nowrap"><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
+      <div class="ser">${s}</div>${tp?`<div class="tempos">${ic('timer')}${tp}</div>`:''}</div>`;
   }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
 
-  const bs=$('bSessao'); bs.textContent=on?'■ ENCERRAR TREINO':'▶ INICIAR TREINO'; bs.classList.toggle('enc',on);
+  const bs=$('bSessao'); bs.innerHTML=on?ic('square')+'ENCERRAR TREINO':ic('play')+'INICIAR TREINO'; bs.classList.toggle('enc',on);
   $('timerBar').classList.toggle('off',!on);
   const b=$('bAcao');
-  b.textContent=fase==='serie'?'⏱ Descanso':fase==='descanso'?'⏭ Próximo':'■ Encerrar';
+  b.innerHTML=fase==='serie'?ic('timer')+'Descanso':fase==='descanso'?ic('skip-forward')+'Próximo':ic('square')+'Encerrar';
   b.classList.toggle('prox',fase==='descanso');
   b.classList.toggle('fim',fase==='fim');
-  $('bPausa').textContent=pausado?'▶ Retomar':'⏸ Pausar';
+  $('bPausa').innerHTML=pausado?ic('play')+'Retomar':ic('pause')+'Pausar';
   status(); renderHist(); if(aba==='analise') renderAnalise(); tick(); ilha(); renderNav();
 }
 
@@ -261,10 +272,10 @@ function renderHist(){
   sel.innerHTML='<option value="">Todas as divisões</option>'+ops.map(l=>`<option value="${esc(l)}">Treino ${esc(l)}</option>`).join('');
   sel.value=v;
   const it=data.hist.map((h,k)=>({h,k})).filter(o=>!v||o.h.tipo===v).reverse();
-  $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • ⏳ '+mmss(h.dur):''}</div>
-    <button class="ic" onclick="delHist(${k})">🗑</button></div>
+  $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • '+ic('clock')+mmss(h.dur):''}</div>
+    <button class="ic" aria-label="Apagar" onclick="delHist(${k})">${ic('trash-2')}</button></div>
     ${(h.ex||[]).map(e=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?linhaTempo(j,t,(e.descansos||[])[j]):null).filter(Boolean).join('<br>');
-      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${e.weight}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">⏱ ${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
+      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(e.reps)} @ ${e.weight}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">${ic('timer')}${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
     ||`<div class="info">${data.hist.length?'Nenhum registro para o Treino '+esc(v)+'.':'Nenhum treino registrado ainda.'}</div>`;
 }
 function delHist(k){
@@ -304,14 +315,14 @@ function linhaComp(lbl,a,b,u,dir){
   if(a==null||b==null) return '';
   const f=v=>u==='t'?mmss(v):(Math.round(v*10)/10)+(u?' '+u:'');
   const d=b-a, c=!d||!dir?'eq':(d*dir>0?'up':'dn');
-  const ic=!d?'＝':c==='eq'?'•':c==='up'?'▲':'▼';
-  return `<div><span>${lbl}</span><b class="${c}">${f(a)} → ${f(b)} ${ic}</b></div>`;
+  const i=!d?'equal':c==='eq'?'minus':c==='up'?'arrow-up':'arrow-down';
+  return `<div><span>${lbl}</span><b class="${c}">${f(a)} → ${f(b)} ${ic(i)}</b></div>`;
 }
 function renderAnalise(){
   const a=calcAnalise(), box=$('anLista'), ok=a.comp.length>0;
   $('bIA').disabled=!ok;
   if(!ok){
-    box.innerHTML=`<div class="card info">📉 Ainda não há dados suficientes para uma análise confiável. É preciso ter pelo menos <b>2 sessões salvas</b> com o mesmo exercício (há ${a.total} sessão(ões) no histórico).</div>`;
+    box.innerHTML=`<div class="card info">${ic('trending-down')}Ainda não há dados suficientes para uma análise confiável. É preciso ter pelo menos <b>2 sessões salvas</b> com o mesmo exercício (há ${a.total} sessão(ões) no histórico).</div>`;
     return;
   }
   box.innerHTML=
@@ -416,7 +427,7 @@ function tick(){
   const x=$('iTm'); x.textContent=ativo?mmss(s):'00:00';
   x.classList.toggle('over',over); x.classList.toggle('desc',rest&&!over); x.classList.toggle('pause',pausado&&!rest);
   const e=(data[cur]||[])[pos.i];
-  $('iNome').textContent=fase==='fim'?'Treino '+cur+' concluído 🎉':(e?e.name:'Treino '+cur);
+  $('iNome').innerHTML=fase==='fim'?'Treino '+cur+' concluído'+ic('party-popper'):esc(e?e.name:'Treino '+cur);
   $('iSub').textContent=fase==='fim'?'Toque em Encerrar'
     :rest?(over?'Descanso excedido +'+mmss(s-target):'Descanso • faltam '+mmss(Math.max(0,target-s)))+(pausado?' • pausado':'')
     :(e?'Série '+(pos.j+1)+'/'+e.sets:'')+(pausado?' • pausado':'');
