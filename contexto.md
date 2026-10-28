@@ -23,8 +23,8 @@
 | Execução: sessão, cronômetro, descanso, "ilha", desfazer, arrastar para reordenar | Estável |
 | Login com Google (inclusive pelo atalho do iPhone) | Corrigido em 23/10/2026, aguardando teste |
 | Histórico | Em ajuste |
-| Análises: filtro de exercícios, radar dos 3 últimos treinos, comparação penúltima × última | Refeita em 28/10/2026, aguardando teste |
-| Análise com IA (Gemini, só admin) | Em ajuste. Ainda compara a 1ª com a última sessão |
+| Análises: filtro de divisão, filtro de exercícios, radar dos 3 últimos treinos da divisão, comparação penúltima × última | Refeita em 28/10/2026, aguardando teste |
+| Análise com IA (Gemini, só admin) | Em ajuste. Ainda compara a 1ª com a última sessão, com todas as divisões |
 | Catálogo de exercícios (grupo principal + secundários com seleção múltipla) | Em ajuste |
 | Ajustes: perfil e backup | Em ajuste |
 | Notificações de descanso | **Desconsiderada.** Não funciona e não será implementada (exige plano Blaze) |
@@ -64,16 +64,23 @@ sessao    = { tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg, ex:[{...exercicio,
 - **Grupos do catálogo** (podem mudar): peito, costas, ombros, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco. Ficam na constante `GRUPOS` do `app.js`.
 
 ### Análises (`app.js`)
-- `histEx()`: agrupa o histórico por exercício, usando o nome em minúsculas como chave.
-- `calcAnalise()` / `window.dadosAnalise`: dados para a IA. Mantém o formato antigo, comparando a 1ª com a última sessão.
-- **Filtro:** `anSel` guarda os exercícios marcados (`null` = todos). Volta para "todos" no `setData`. Funções `anToggle(i)` e `anTodos(v)`.
-- **Radar:** usa as 3 sessões mais recentes que têm algum exercício marcado. Cores: azul = mais recente, vermelho = penúltima, verde = antepenúltima.
+- `histEx()`: agrupa o histórico por exercício, usando o nome em minúsculas como chave. Considera só ocorrências com `feitas > 0`.
+- Métricas por ocorrência: `peso` (máximo), `reps` (média da meta cadastrada, não das reps realmente feitas), `series` (concluídas), `volume` (Σ peso×reps), `tSerie` (tempo médio por série), `tDesc` (descanso médio).
+- `calcAnalise()` / `window.dadosAnalise`: dados para a IA. Mantém o formato antigo (1ª × última sessão, todas as divisões). O texto do pedido no `firebase.js` também descreve essa comparação. Para mudar a IA, é preciso alterar os dois arquivos.
+- **Filtro de divisão:** `anDiv` guarda a divisão escolhida e `anSetDiv(d)` troca a divisão. Os botões usam o estilo `.tabs`, e o selecionado fica azul. Aparecem só as divisões com sessões no histórico. A divisão inicial é a do treino mais recente. Volta ao padrão no `setData`.
+  - As sessões de cada exercício são limitadas às da divisão escolhida (`x.tipo===anDiv`). Os cálculos não mudam.
+  - Um mesmo exercício em divisões diferentes é analisado separadamente em cada uma.
+  - Divisão sem exercícios concluídos: aparece um aviso no lugar do gráfico.
+- **Filtro de exercícios:** `anSel` guarda os exercícios marcados (`null` = todos), e a seleção se mantém ao trocar de divisão. `anKeys` = exercícios da divisão atual. Funções `anToggle(i)` e `anTodos(v)`; `anTodos` vale só para a divisão atual. Volta para "todos" no `setData`.
+- **Radar** (`radar(ex,sel,div)`): usa as 3 sessões mais recentes da divisão que têm algum exercício marcado. Cores: azul = mais recente, vermelho = penúltima, verde = antepenúltima.
   - Métrica: volume (Σ peso×reps). Em exercícios sem carga, usa o total de reps (reps × séries).
-  - Normalização: 100% = maior valor do exercício entre as sessões mostradas. Os valores reais aparecem numa lista abaixo do gráfico.
+  - Normalização: 100% = maior valor do exercício entre as sessões mostradas. Os valores reais aparecem numa lista abaixo do gráfico, da sessão mais antiga para a mais recente.
   - Exercício não feito em uma sessão: ponto no centro, bolinha vazada e "—" na lista.
   - Com menos de 3 exercícios marcados, o gráfico não é desenhado (aparece um aviso e a lista).
-- **Comparação detalhada:** penúltima × última sessão de cada exercício marcado.
+  - Com menos de 3 sessões na divisão, mostra as disponíveis e avisa quantas são.
+- **Comparação detalhada:** penúltima × última ocorrência de cada exercício marcado, dentro da divisão. Exercícios com só 1 sessão aparecem como "sem histórico suficiente".
 - O texto do cartão "Sua evolução" é substituído pelo `renderAnalise`, porque o `index.html` não foi alterado.
+- O CSS do filtro (`.chips`, `.chip`) e do radar (`.radar`, `.leg`) fica no final do `style.css`.
 
 ## 5. Firebase
 - **Projeto:** `treinos-teste`, plano **Spark** (gratuito). Não há intenção de migrar para o Blaze.
@@ -135,8 +142,9 @@ service cloud.firestore {
 
 ## 7. Pendências conhecidas
 - [ ] Testar o login pelo novo atalho do iPhone. O atalho antigo precisa ser apagado e criado de novo.
-- [ ] Testar a nova aba de Análises (filtro, radar e comparação penúltima × última).
-- [ ] (Opcional) Fazer a IA também comparar a penúltima com a última sessão (`calcAnalise` no `app.js` + texto do pedido no `firebase.js`).
+- [ ] Testar a aba de Análises (filtro de divisão, filtro de exercícios, radar, sessões ausentes e comparação penúltima × última).
+- [ ] Confirmar que a divisão e o filtro voltam ao padrão ao abrir o treino de outro aluno.
+- [ ] (Opcional) Fazer a IA também comparar a penúltima com a última sessão e/ou usar a divisão escolhida (`calcAnalise` no `app.js` + texto do pedido no `firebase.js`).
 - [ ] (Opcional) Mover o texto do cartão "Sua evolução" para o `index.html` e tirar a troca feita pelo JS.
 - [ ] Remover o cartão "Aviso de fim do descanso" (Ajustes) e o código de notificações (`firebase.js`, além de `agendar`/`cancelar` no `app.js`). É preciso alterar os arquivos juntos. Hoje o cartão manda o usuário "instalar o app", o que está errado.
 - [ ] Fixar a versão do Lucide em vez de `@latest`.
@@ -161,3 +169,4 @@ service cloud.firestore {
 | 23/10/2026 | Regras do Firestore confirmadas e registradas, sem alterações |
 | 23/10/2026 | Revisão dos 4 arquivos: nenhum erro. Contexto corrigido (login sem `initializeAuth`, formato da data, dependência entre os scripts) |
 | 28/10/2026 | Análises refeitas (`app.js`, `style.css`): removido o comparativo das divisões (só tempo); adicionados o filtro de exercícios, o radar SVG dos 3 últimos treinos e a comparação detalhada penúltima × última. IA sem mudanças |
+| 28/10/2026 | Análises (`app.js`): adicionado o filtro de divisão (`anDiv`, `anSetDiv`). Radar, filtro de exercícios e comparação passaram a usar só as sessões da divisão escolhida. Cálculos e IA sem mudanças; `style.css` sem mudanças (reaproveita `.tabs`) |

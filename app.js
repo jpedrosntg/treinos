@@ -38,7 +38,7 @@ function norm(d){
 }
 function setData(d){
   data=norm(d); done={}; pos={i:0,j:0}; fase='serie'; resetSessao(); stopTimer(); cur=data.divs[0]||'A';
-  anSel=null;
+  anSel=null; anDiv=null;
   const r=$('iaRes'); if(r) r.innerHTML='';
   renderAll();
 }
@@ -395,10 +395,11 @@ function linhaComp(lbl,a,b,u,dir){
   return `<div><span>${lbl}</span><b class="${c}">${f(a)} → ${f(b)} ${ic(i)}</b></div>`;
 }
 
-// Filtro de exercícios (null = todos selecionados)
-let anSel=null, anKeys=[];
+// Filtros: divisão (anDiv) e exercícios (anSel; null = todos selecionados)
+let anSel=null, anKeys=[], anDiv=null;
+function anSetDiv(d){ anDiv=d; renderAnalise(); }
 function anToggle(i){ const k=anKeys[i]; if(!k) return; anSel.has(k)?anSel.delete(k):anSel.add(k); renderAnalise(); }
-function anTodos(v){ anSel=new Set(v?anKeys:[]); renderAnalise(); }
+function anTodos(v){ anKeys.forEach(k=>v?anSel.add(k):anSel.delete(k)); renderAnalise(); }
 
 // Métrica do radar: volume (Σ peso×reps). Exercícios sem carga (volume sempre 0) usam total de reps.
 const usaVol=o=>o.s.some(x=>x.volume>0);
@@ -406,7 +407,7 @@ const metrica=(o,x)=>usaVol(o)?x.volume:(x.reps!=null?Math.round(x.reps*x.series
 const CORES=['#3b82f6','#f87171','#22c55e']; // mais recente, penúltimo, antepenúltimo
 const rotulo=k=>{ const h=data.hist[k]; return 'Treino '+esc(h.tipo)+' — '+esc(String(h.data).split(',')[0]); };
 
-function radar(ex,sel){
+function radar(ex,sel,div){
   // 3 sessões mais recentes que contêm algum exercício selecionado (mais recente primeiro)
   const ks=[...new Set(sel.flatMap(k=>ex[k].s.map(x=>x.k)))].sort((a,b)=>b-a).slice(0,3);
   const vals={};
@@ -435,40 +436,53 @@ function radar(ex,sel){
   } else svg=`<div class="info">${ic('info')}Selecione 3 ou mais exercícios para ver o gráfico radar. Os valores estão abaixo.</div>`;
 
   const leg=`<div class="leg">${ks.map((k,j)=>`<div><span class="dot" style="background:${CORES[j]}"></span>${rotulo(k)}${j===0?' (mais recente)':''}</div>`).join('')}</div>`;
-  const aviso=ks.length<3?`<div class="info">Há ${ks.length} sessão(ões) com esses exercícios. O gráfico mostra todas as disponíveis.</div>`:'';
+  const aviso=ks.length<3?`<div class="info">Há ${ks.length} sessão(ões) do Treino ${esc(div)} com esses exercícios. O gráfico mostra todas as disponíveis.</div>`:'';
   // Valores reais, do mais antigo para o mais recente
   const tab=`<div class="kv">${sel.map(k=>{ const o=ex[k], u=usaVol(o)?' kg':' reps';
     const v=[...vals[k]].reverse().map(x=>x==null?'—':x+u).join(' → ');
     return `<div><span>${esc(o.nome)}</span><b>${v}</b></div>`; }).join('')}</div>`;
-  return `<div class="card"><div class="nm">${ic('radar')}Comparativo dos últimos treinos</div>
+  return `<div class="card"><div class="nm">${ic('radar')}Últimos treinos — Treino ${esc(div)}</div>
     <div class="info">Volume (Σ peso×reps) ou total de reps em exercícios sem carga. Em cada eixo, 100% = maior valor do exercício entre os treinos mostrados. "—" = não feito naquele treino.</div>
     ${svg}${leg}${aviso}${tab}</div>`;
 }
 
 function renderAnalise(){
   const desc=$('p_analise').querySelector('.card .info');
-  if(desc) desc.textContent='Compara o treino mais recente com o penúltimo. Escolha abaixo os exercícios que quer ver.';
-  const ex=histEx(), box=$('anLista');
-  anKeys=Object.keys(ex).sort((a,b)=>ex[a].nome.localeCompare(ex[b].nome));
-  $('bIA').disabled=!anKeys.some(k=>ex[k].s.length>1);
-  if(!anKeys.length){
+  if(desc) desc.textContent='Escolha a divisão e os exercícios. Compara o treino mais recente com o penúltimo.';
+  const todos=histEx(), box=$('anLista');
+  $('bIA').disabled=!Object.values(todos).some(o=>o.s.length>1);
+  if(!Object.keys(todos).length){
+    anKeys=[];
     box.innerHTML=`<div class="card info">${ic('trending-down')}Ainda não há dados para análise. Salve pelo menos uma sessão no histórico (há ${data.hist.length} sessão(ões)).</div>`;
     return;
   }
-  if(!anSel) anSel=new Set(anKeys);
-  const sel=anKeys.filter(k=>anSel.has(k));
-  let h=`<div class="card"><div class="nm">${ic('list-filter')}Exercícios</div>
+  if(!anSel) anSel=new Set(Object.keys(todos));
+  // Divisões com sessões no histórico; padrão = divisão do treino mais recente
+  const divs=[...new Set(data.hist.map(h=>h.tipo).filter(Boolean))].sort();
+  if(!divs.includes(anDiv)) anDiv=data.hist.at(-1)?.tipo||divs[0];
+  const nSess=data.hist.filter(h=>h.tipo===anDiv).length;
+  // Apenas sessões da divisão escolhida (cálculos inalterados)
+  const ex={};
+  Object.entries(todos).forEach(([k,o])=>{ const s=o.s.filter(x=>x.tipo===anDiv); if(s.length) ex[k]={nome:o.nome,s}; });
+  anKeys=Object.keys(ex).sort((a,b)=>ex[a].nome.localeCompare(ex[b].nome));
+
+  let h=`<div class="card"><div class="nm">${ic('layout-grid')}Divisão</div>
+    <div class="tabs" style="margin:12px 0 0">${divs.map(d=>`<button class="${d===anDiv?'on':''}" onclick="anSetDiv('${esc(d)}')">${divs.length>3?esc(d):'Treino '+esc(d)}</button>`).join('')}</div>
+    <div class="info">Mostrando o <b>Treino ${esc(anDiv)}</b> • ${nSess} sessão(ões)</div></div>`;
+  if(!anKeys.length){ box.innerHTML=h+`<div class="card info">Nenhum exercício concluído nas sessões do Treino ${esc(anDiv)}.</div>`; return; }
+  h+=`<div class="card"><div class="nm">${ic('list-filter')}Exercícios do Treino ${esc(anDiv)}</div>
     <div class="chips">${anKeys.map((k,i)=>`<button class="chip${anSel.has(k)?' on':''}" onclick="anToggle(${i})">${esc(ex[k].nome)}</button>`).join('')}</div>
     <div class="chips"><button class="chip lk" onclick="anTodos(true)">Todos</button><button class="chip lk" onclick="anTodos(false)">Nenhum</button></div></div>`;
+  const sel=anKeys.filter(k=>anSel.has(k));
   if(!sel.length){ box.innerHTML=h+'<div class="card info">Selecione ao menos um exercício.</div>'; return; }
-  h+=radar(ex,sel);
+  h+=radar(ex,sel,anDiv);
   const comp=sel.filter(k=>ex[k].s.length>1), insuf=sel.filter(k=>ex[k].s.length<2);
-  h+='<h2>Exercícios</h2>'
+  h+=`<h2>Exercícios — Treino ${esc(anDiv)}</h2>`
     +comp.map(k=>{ const o=ex[k], a=o.s.at(-2), b=o.s.at(-1);
       return `<div class="card"><div class="nm">${esc(o.nome)}</div>
-      <div class="info">Treino ${[...new Set(o.s.map(x=>x.tipo))].map(esc).join(', ')} • ${o.s.length} sessões<br>Penúltima: ${esc(a.data)} → última: ${esc(b.data)}</div>
+      <div class="info">${o.s.length} sessões no Treino ${esc(anDiv)}<br>Penúltima: ${esc(a.data)} → última: ${esc(b.data)}</div>
       <div class="kv">${METR.map(([m,l,u,dir])=>linhaComp(l,a[m],b[m],u,dir)).join('')}</div></div>`; }).join('')
-    +(insuf.length?`<div class="card info">Sem histórico suficiente (só 1 sessão): ${insuf.map(k=>esc(ex[k].nome)).join(', ')}.</div>`:'');
+    +(insuf.length?`<div class="card info">Sem histórico suficiente no Treino ${esc(anDiv)} (só 1 sessão): ${insuf.map(k=>esc(ex[k].nome)).join(', ')}.</div>`:'');
   box.innerHTML=h;
 }
 
