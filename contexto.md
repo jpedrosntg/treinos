@@ -21,9 +21,10 @@
 |---|---|
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
 | Execução: sessão, cronômetro, descanso, "ilha", desfazer, arrastar para reordenar | Estável |
+| Confirmação de cada série (reps e carga executadas) | Nova em 28/10/2026, aguardando teste |
 | Login com Google (inclusive pelo atalho do iPhone) | Corrigido em 23/10/2026, aguardando teste |
-| Histórico | Em ajuste |
-| Análises: filtro de divisão, filtro de exercícios, radar dos 3 últimos treinos da divisão, comparação penúltima × última | Refeita em 28/10/2026, aguardando teste |
+| Histórico | Em ajuste. Agora grava os valores executados |
+| Análises: filtro de divisão, filtro de exercícios, radar dos 3 últimos treinos da divisão (nomes com quebra de linha), comparação penúltima × última | Refeita em 28/10/2026, aguardando teste |
 | Análise com IA (Gemini, só admin) | Em ajuste. Ainda compara a 1ª com a última sessão, com todas as divisões |
 | Catálogo de exercícios (grupo principal + secundários com seleção múltipla) | Em ajuste |
 | Ajustes: perfil e backup | Em ajuste |
@@ -45,7 +46,7 @@
 
 | Arquivo | Função |
 |---|---|
-| `index.html` | Telas, modais e barra de navegação. Ordem dos scripts: lucide → app.js → firebase.js |
+| `index.html` | Telas, modais (exercício, catálogo, confirmar série, encerrar) e barra de navegação. Ordem dos scripts: lucide → app.js → firebase.js |
 | `app.js` | Lógica do app: estado, treino, cronômetro, histórico, análises, catálogo, backup |
 | `firebase.js` | Auth, Firestore, App Check, Functions, Messaging, IA. Expõe funções em `window.*` |
 | `style.css` | Visual em tema escuro, mobile-first |
@@ -58,28 +59,40 @@
 ```js
 { divs:['A','B'], A:[exercicio], B:[...], C:[], D:[], E:[], hist:[sessao] }
 exercicio = { name, sets, reps, weight, rest, series:[{p:reps, w:peso, r:descanso}] }
-sessao    = { tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg, ex:[{...exercicio, feitas, tempos[], descansos[]}] }
+sessao    = { tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
+              ex:[{...exercicio, plan:[planejado], series:[executado], feitas, tempos[], descansos[]}] }
 ```
+- **No histórico,** `series` guarda os valores **executados** (confirmados pelo usuário) e `plan` guarda os planejados. Sessões antigas não têm `plan`, e nelas `series` = planejado.
 - **Ordem cronológica:** é a posição em `hist`, porque as sessões são gravadas com `push`. Não ordenar pelo texto de `data`.
 - **Grupos do catálogo** (podem mudar): peito, costas, ombros, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco. Ficam na constante `GRUPOS` do `app.js`.
 
+### Execução e confirmação de série (`app.js`)
+- **Fases (`fase`):** `serie` → confirmação → `conf` → `descanso` → `serie`… Na última série: `serie` → confirmação → `fim`.
+- **1º toque em "Descanso"** (ou "Encerrar", na última série): marca o tempo da série em `pend` e abre o modal `dlgSerie`. Os campos `sReps` e `sPeso` vêm preenchidos com o planejado.
+- **`confirmarSerie()`:** valida os valores e grava `done[div+i][j]={t,d,p,w}`. Depois, para o cronômetro e vai para `conf` (ou `fim`, abrindo `dlgFim`). `fecharSerie()` cancela sem gravar nada.
+- **2º toque em "Descanso"** (fase `conf`): inicia o cronômetro de descanso.
+- Os círculos das séries feitas mostram as reps e a carga executadas.
+- O botão "Voltar" desfaz cada etapa, porque `guardar()` é chamado na confirmação e no início do descanso.
+
 ### Análises (`app.js`)
 - `histEx()`: agrupa o histórico por exercício, usando o nome em minúsculas como chave. Considera só ocorrências com `feitas > 0`.
-- Métricas por ocorrência: `peso` (máximo), `reps` (média da meta cadastrada, não das reps realmente feitas), `series` (concluídas), `volume` (Σ peso×reps), `tSerie` (tempo médio por série), `tDesc` (descanso médio).
-- `calcAnalise()` / `window.dadosAnalise`: dados para a IA. Mantém o formato antigo (1ª × última sessão, todas as divisões). O texto do pedido no `firebase.js` também descreve essa comparação. Para mudar a IA, é preciso alterar os dois arquivos.
+- Métricas por ocorrência: `peso` (máximo), `reps` (média), `series` (concluídas), `volume` (Σ peso×reps), `tSerie` (tempo médio por série), `tDesc` (descanso médio).
+  - Como `histEx` lê `series`, as sessões novas usam os valores executados. As antigas usam a meta.
+- `calcAnalise()` / `window.dadosAnalise`: dados para a IA. Mantém o formato antigo (1ª × última sessão, todas as divisões). O texto do pedido no `firebase.js` também descreve essa comparação e ainda chama "reps" de meta. Para mudar a IA, é preciso alterar os dois arquivos.
 - **Filtro de divisão:** `anDiv` guarda a divisão escolhida e `anSetDiv(d)` troca a divisão. Os botões usam o estilo `.tabs`, e o selecionado fica azul. Aparecem só as divisões com sessões no histórico. A divisão inicial é a do treino mais recente. Volta ao padrão no `setData`.
   - As sessões de cada exercício são limitadas às da divisão escolhida (`x.tipo===anDiv`). Os cálculos não mudam.
   - Um mesmo exercício em divisões diferentes é analisado separadamente em cada uma.
   - Divisão sem exercícios concluídos: aparece um aviso no lugar do gráfico.
 - **Filtro de exercícios:** `anSel` guarda os exercícios marcados (`null` = todos), e a seleção se mantém ao trocar de divisão. `anKeys` = exercícios da divisão atual. Funções `anToggle(i)` e `anTodos(v)`; `anTodos` vale só para a divisão atual. Volta para "todos" no `setData`.
-- **Radar** (`radar(ex,sel,div)`): usa as 3 sessões mais recentes da divisão que têm algum exercício marcado. Cores: azul = mais recente, vermelho = penúltima, verde = antepenúltima.
+- **Radar** (`radar(ex,sel,div)`): `viewBox` de 400×340, centro (200,170), raio 100. Usa as 3 sessões mais recentes da divisão que têm algum exercício marcado. Cores: azul = mais recente, vermelho = penúltima, verde = antepenúltima.
+  - **Nomes:** `quebra(texto,max)` divide o nome em até 3 linhas (`<tspan>`), com largura calculada pelo espaço livre de cada lado (cerca de 6,6 px por letra). Nomes de cima crescem para cima e nomes de baixo, para baixo.
   - Métrica: volume (Σ peso×reps). Em exercícios sem carga, usa o total de reps (reps × séries).
   - Normalização: 100% = maior valor do exercício entre as sessões mostradas. Os valores reais aparecem numa lista abaixo do gráfico, da sessão mais antiga para a mais recente.
   - Exercício não feito em uma sessão: ponto no centro, bolinha vazada e "—" na lista.
   - Com menos de 3 exercícios marcados, o gráfico não é desenhado (aparece um aviso e a lista).
   - Com menos de 3 sessões na divisão, mostra as disponíveis e avisa quantas são.
 - **Comparação detalhada:** penúltima × última ocorrência de cada exercício marcado, dentro da divisão. Exercícios com só 1 sessão aparecem como "sem histórico suficiente".
-- O texto do cartão "Sua evolução" é substituído pelo `renderAnalise`, porque o `index.html` não foi alterado.
+- O texto do cartão "Sua evolução" é substituído pelo `renderAnalise`, porque o texto do `index.html` não foi alterado.
 - O CSS do filtro (`.chips`, `.chip`) e do radar (`.radar`, `.leg`) fica no final do `style.css`.
 
 ## 5. Firebase
@@ -130,7 +143,7 @@ service cloud.firestore {
 }
 ```
 - **Ao criar uma coleção nova** (por exemplo, perfil ou subcoleção de sessões), é preciso adicionar a regra dela aqui e publicar no Console. Sem isso, o Firestore bloqueia o acesso.
-- **Limite:** cada documento tem no máximo 1 MB. Hoje o histórico inteiro fica em `dados`. A longo prazo, mover as sessões para uma subcoleção.
+- **Limite:** cada documento tem no máximo 1 MB. Hoje o histórico inteiro fica em `dados`. O campo `plan` aumenta um pouco cada sessão. A longo prazo, mover as sessões para uma subcoleção.
 
 ## 6. Publicação
 - **Repositório:** https://github.com/jpedrosntg/treinos
@@ -142,9 +155,12 @@ service cloud.firestore {
 
 ## 7. Pendências conhecidas
 - [ ] Testar o login pelo novo atalho do iPhone. O atalho antigo precisa ser apagado e criado de novo.
-- [ ] Testar a aba de Análises (filtro de divisão, filtro de exercícios, radar, sessões ausentes e comparação penúltima × última).
+- [ ] Testar a confirmação de série: valores editados, Cancelar, botão Voltar, última série e histórico salvo com os valores executados.
+- [ ] Testar a aba de Análises (filtro de divisão, filtro de exercícios, radar com nomes longos, sessões ausentes e comparação penúltima × última).
 - [ ] Confirmar que a divisão e o filtro voltam ao padrão ao abrir o treino de outro aluno.
+- [ ] Atualizar o texto do pedido da IA no `firebase.js`: "reps" agora são as executadas, e não a meta.
 - [ ] (Opcional) Fazer a IA também comparar a penúltima com a última sessão e/ou usar a divisão escolhida (`calcAnalise` no `app.js` + texto do pedido no `firebase.js`).
+- [ ] (Opcional) Mostrar no histórico a diferença entre o planejado (`plan`) e o executado.
 - [ ] (Opcional) Mover o texto do cartão "Sua evolução" para o `index.html` e tirar a troca feita pelo JS.
 - [ ] Remover o cartão "Aviso de fim do descanso" (Ajustes) e o código de notificações (`firebase.js`, além de `agendar`/`cancelar` no `app.js`). É preciso alterar os arquivos juntos. Hoje o cartão manda o usuário "instalar o app", o que está errado.
 - [ ] Fixar a versão do Lucide em vez de `@latest`.
@@ -158,6 +174,7 @@ service cloud.firestore {
 - Preservar o visual e o funcionamento existentes. Mudanças devem ser integradas ao código atual.
 - Sem plano Blaze, sem PWA instalado, sem sair do GitHub Pages.
 - Sempre enviar este `CONTEXTO.md` atualizado junto com as alterações.
+- Cada série deve ser confirmada (reps e carga) antes de o descanso começar. O botão "Descanso" não muda de lugar.
 
 ## 9. Histórico de alterações
 | Data | Alteração |
@@ -170,3 +187,5 @@ service cloud.firestore {
 | 23/10/2026 | Revisão dos 4 arquivos: nenhum erro. Contexto corrigido (login sem `initializeAuth`, formato da data, dependência entre os scripts) |
 | 28/10/2026 | Análises refeitas (`app.js`, `style.css`): removido o comparativo das divisões (só tempo); adicionados o filtro de exercícios, o radar SVG dos 3 últimos treinos e a comparação detalhada penúltima × última. IA sem mudanças |
 | 28/10/2026 | Análises (`app.js`): adicionado o filtro de divisão (`anDiv`, `anSetDiv`). Radar, filtro de exercícios e comparação passaram a usar só as sessões da divisão escolhida. Cálculos e IA sem mudanças; `style.css` sem mudanças (reaproveita `.tabs`) |
+| 28/10/2026 | Radar (`app.js`): nomes com quebra de linha automática (`quebra`) e área do gráfico ampliada (400×340) |
+| 28/10/2026 | Confirmação de série (`app.js`, `index.html`): modal `dlgSerie` com reps e carga editáveis; nova fase `conf`; histórico grava os valores executados em `series` e o planejado em `plan`. Rótulo "Repetições médias (meta)" → "Repetições médias". `style.css` sem mudanças |

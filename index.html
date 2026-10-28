@@ -192,6 +192,19 @@
   <button class="btn add" onclick="$('modalCat').classList.remove('on')">Cancelar</button>
 </div></div>
 
+<!-- DIÁLOGO CONFIRMAR SÉRIE -->
+<div class="modal" id="dlgSerie"><div class="box">
+  <div class="nm"><i data-lucide="clipboard-check"></i>Série executada conforme planejado?</div>
+  <div class="info" id="sInfo"></div>
+  <div class="row">
+    <div><label>Repetições</label><input id="sReps" inputmode="numeric" placeholder="12"></div>
+    <div><label>Carga (kg)</label><input id="sPeso" type="number" inputmode="decimal" step="0.5" min="0"></div>
+  </div>
+  <div id="sErr" class="erro"></div>
+  <button class="btn fin" onclick="confirmarSerie()"><i data-lucide="check"></i>Confirmar</button>
+  <button class="btn add" onclick="fecharSerie()">Cancelar</button>
+</div></div>
+
 <!-- DIÁLOGO ENCERRAR -->
 <div class="modal" id="dlgFim"><div class="box">
   <div class="nm">Encerrar treino</div>
