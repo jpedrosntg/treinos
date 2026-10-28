@@ -105,6 +105,18 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .kv svg.lucide{width:16px;height:16px}
 .kv b.up{color:#22c55e}.kv b.dn{color:#ef4444}.kv b.eq{color:#cbd}
 
+/* Análise: filtro e radar */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{border:1px solid #2a2f3a;background:#1d2129;color:#9aa;border-radius:9999px;padding:8px 12px;font-size:14px;font-family:inherit}
+.chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.chip.lk{background:none;border:0;color:var(--pri);padding:4px 8px 4px 0;font-weight:600}
+.radar{width:100%;max-width:420px;display:block;margin:12px auto 0}
+.radar .rg{fill:none;stroke:#374151;stroke-width:1}
+.radar text{fill:#cbd;font-size:12px;font-family:inherit}
+.radar .pct{fill:#6b7280;font-size:9px}
+.leg{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:14px;color:#bbb}
+.leg .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+
 /* Modal e formulários */
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:40}
 .modal.on{display:flex}
