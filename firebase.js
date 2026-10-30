@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app-check.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js";
 import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-ai.js";
@@ -216,6 +216,13 @@ window.salvarSessao = (s) => {
     if (!ok) alert('Não foi possível enviar a cópia do treino para a nuvem agora. Ela ficou guardada neste aparelho e será enviada no próximo acesso.');
   });
 };
+// Regrava na subcoleção as sessões alteradas (ex.: padronização de nomes). Usa a mesma fila local.
+window.atualizarSessoes = async (lista) => {
+  if (!usuario || !alvo || !Array.isArray(lista)) return;
+  const uid = alvo; let falhas = 0;
+  for (const s of lista) if (s?.id && !(await gravarSessao(uid, s))) falhas++;
+  if (falhas) alert(falhas + ' sessão(ões) não foram atualizadas na cópia da nuvem agora. Elas ficaram guardadas neste aparelho e serão enviadas no próximo acesso.');
+};
 window.excluirSessao = (id) => {
   if (!usuario || !alvo || !id) return;
   tirarDaFila(alvo, id);
@@ -315,6 +322,23 @@ window.excluirExercicio = async (id) => {
   if (!ehAdmin) throw new Error('Apenas o administrador pode editar o catálogo.');
   await deleteDoc(doc(db, CAT, id));
   await carregarCatalogo();
+};
+// Importação em lote: itens = [{ id (ou null = novo), ex:{nome,grupo,secundarios,descricao} }]
+// Grava em blocos de até 400. Se um bloco falhar, os anteriores continuam salvos.
+window.importarCatalogo = async (itens) => {
+  if (!ehAdmin) throw new Error('Apenas o administrador pode editar o catálogo.');
+  try {
+    for (let i = 0; i < itens.length; i += 400) {
+      const b = writeBatch(db), agora = Date.now();
+      itens.slice(i, i + 400).forEach(({ id, ex }) => {
+        const ref = id ? doc(db, CAT, id) : doc(collection(db, CAT));
+        b.set(ref, { ...ex, atualizado: agora });
+      });
+      await b.commit();
+    }
+  } finally {
+    await carregarCatalogo().catch(e => console.warn('Catálogo:', e.message));
+  }
 };
 
 // ===== ESTADO DO LOGIN =====

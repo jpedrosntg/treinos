@@ -119,6 +119,9 @@
 
   <div id="p_catalogo" style="display:none">
     <button id="bNovoCat" class="btn fin" style="display:none" onclick="abrirCat()"><i data-lucide="plus"></i>Novo exercício</button>
+    <button id="bImpCat" class="btn add" style="display:none" onclick="$('impCat').click()"><i data-lucide="upload"></i>Importar catálogo (JSON)</button>
+    <input type="file" id="impCat" accept=".json,application/json" style="display:none" onchange="importarCat(this)">
+    <button id="bPadr" class="btn add" style="display:none" onclick="abrirPadronizar()"><i data-lucide="wand-sparkles"></i>Padronizar nomes deste aluno</button>
     <div class="busca" style="margin-top:12px">
       <i data-lucide="search"></i>
       <input id="buscaCat" placeholder="Buscar exercício" oninput="renderCatalogo()">
@@ -168,7 +171,7 @@
 <!-- MODAL EXERCÍCIO -->
 <div class="modal" id="modal"><div class="box">
   <div class="nm" id="ftitle">Exercício</div>
-  <label>Nome</label><input id="fn" list="dlCat" placeholder="Ex: Supino reto"><datalist id="dlCat"></datalist>
+  <label>Nome (do catálogo)</label><input id="fn" autocomplete="off" placeholder="Busque no catálogo (ex: Supino reto)">
   <label>Séries</label><input id="fs" type="number" inputmode="numeric" min="1" max="20" value="3" oninput="gerarSeries()">
   <div class="shead"><span>#</span><span>Reps</span><span>Peso (kg)</span><span>Descanso (s)</span></div>
   <div id="fSeries" oninput="autoPeso(event)"></div>
@@ -192,6 +195,17 @@
   <button class="btn add" onclick="$('modalCat').classList.remove('on')">Cancelar</button>
 </div></div>
 
+<!-- MODAL PADRONIZAR NOMES (admin) -->
+<div class="modal" id="modalPad"><div class="box">
+  <div class="nm"><i data-lucide="wand-sparkles"></i>Padronizar nomes</div>
+  <div class="info">Escolha o nome do catálogo para cada exercício. Só o nome muda: séries, cargas, tempos e datas do histórico ficam iguais, e o nome antigo fica guardado.</div>
+  <button class="btn add" onclick="exportar()"><i data-lucide="download"></i>Baixar backup antes</button>
+  <div id="padLista" style="margin-top:12px"></div>
+  <div id="padErr" class="erro"></div>
+  <button class="btn fin" onclick="aplicarPadronizar()"><i data-lucide="check"></i>Aplicar</button>
+  <button class="btn add" onclick="$('modalPad').classList.remove('on')">Cancelar</button>
+</div></div>
+
 <!-- DIÁLOGO CONFIRMAR SÉRIE -->
 <div class="modal" id="dlgSerie"><div class="box">
   <div class="nm"><i data-lucide="clipboard-check"></i>Série executada conforme planejado?</div>
@@ -202,7 +216,7 @@
   </div>
   <div id="sErr" class="erro"></div>
   <button class="btn fin" onclick="confirmarSerie()"><i data-lucide="check"></i>Confirmar</button>
-  <button class="btn add" onclick="fecharSerie()">Cancelar</button>
+  <button class="btn add" onclick="fecharSerie()">Manter o planejado</button>
 </div></div>
 
 <!-- DIÁLOGO ENCERRAR -->

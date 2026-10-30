@@ -138,6 +138,21 @@ textarea{margin-top:8px;resize:vertical}
 .busca input{padding-left:40px}
 .hist{font-size:14px;color:#bbb}.hist .card>div{margin-top:4px}
 
+/* Sugestões do catálogo no campo Nome */
+.sug{background:#0f1115;border:1px solid #333;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto}
+.sug button{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:12px;border:0;border-bottom:1px solid #2a2f3a;background:none;color:#eee;font-size:16px;font-family:inherit;text-align:left}
+.sug button:last-child{border-bottom:0}
+.sug button:active{background:#1d2129}
+.sug button small{color:#9aa;font-size:12px;flex:none}
+.sug .info{padding:12px;margin:0}
+.aviso{color:#f59e0b}
+.aviso.ok{color:#22c55e}
+.aviso:empty{display:none}
+
+/* Padronizar nomes */
+.padrow{padding:12px 0;border-top:1px solid #2a2f3a}
+.padrow select{margin-top:8px}
+
 /* Telas */
 .tela{display:none}
 #telaLogin{min-height:90vh;flex-direction:column;justify-content:center;align-items:center;text-align:center}
