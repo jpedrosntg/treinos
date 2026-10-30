@@ -13,7 +13,7 @@
 - **Público:** uso próprio no início. Depois, abrir para os alunos da esposa (personal trainer).
 - **Usuários:** 5 hoje. Meta de 30 a 50.
 - **Administrador:** só o Joao Pedro. Ele vê e edita o treino de todos os alunos e gerencia o catálogo.
-- **Alunos:** podem editar o próprio treino, mas só com nomes do catálogo.
+- **Alunos:** podem editar o próprio treino, mas só com nomes do catálogo. Podem marcar exercícios como aquecimento (no treino e no histórico).
 - **Forma de uso:** site aberto no navegador. No iPhone, por um **atalho comum do Safari** na Tela de Início. **Não** é um app instalado (PWA), e isso é intencional.
 
 ## 2. Situação das funcionalidades
@@ -21,17 +21,19 @@
 |---|---|
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
 | Nome do exercício obrigatório do catálogo (lista de sugestões) | Nova em 30/10/2026, aguardando teste |
+| Exercício de aquecimento (`aq`): opção no modal, etiqueta, chama no histórico, fora das análises | Nova em 30/10/2026, aguardando teste |
 | Execução: sessão, cronômetro, descanso, "ilha", desfazer, arrastar para reordenar | Estável |
 | Confirmação de cada série (reps e carga), aberta junto com o descanso | Refeita em 28/10/2026, aguardando teste |
 | Cópia de segurança do histórico (subcoleção `sessoes` + fila local) | Nova em 28/10/2026, aguardando teste |
 | Login com Google (inclusive pelo atalho do iPhone) | Corrigido em 23/10/2026, aguardando teste |
-| Histórico | Em ajuste. Grava os valores executados |
-| Análises: filtro de divisão, filtro de exercícios, radar dos 3 últimos treinos da divisão, comparação penúltima × última | Refeita em 28/10/2026, aguardando teste |
-| Análise com IA (Gemini, só admin) | Em ajuste. Compara a 1ª com a última sessão, com todas as divisões |
+| Histórico | Em ajuste. Grava os valores executados. Permite marcar/desmarcar aquecimento |
+| Análises: filtro de divisão, filtro de exercícios, radar dos 3 últimos treinos da divisão, comparação penúltima × última | Refeita em 28/10/2026, aguardando teste. Ignora aquecimentos |
+| Análise com IA (Gemini, só admin) | Em ajuste. Compara a 1ª com a última sessão, com todas as divisões. Ignora aquecimentos |
 | Catálogo de exercícios (grupo principal + secundários, inclui Trapézio) | Em ajuste |
 | Importar catálogo por JSON (admin) | Nova em 30/10/2026, aguardando teste |
-| Padronizar nomes do treino e do histórico de um aluno (admin) | Nova em 30/10/2026, aguardando teste |
-| Ajustes: perfil e backup | Em ajuste |
+| Padronizar nomes do treino e do histórico de um aluno (admin) | Nova em 30/10/2026, aguardando teste. Aquecimento não conflita com trabalho |
+| Backup (exportar/importar JSON) | Corrigido em 30/10/2026 (não funcionava no computador), aguardando teste |
+| Ajustes: perfil | Em ajuste |
 | Notificações de descanso | **Desconsiderada.** Não funciona e não será implementada (exige plano Blaze) |
 
 ## 3. Roadmap (em ordem de prioridade)
@@ -50,8 +52,8 @@
 
 | Arquivo | Função |
 |---|---|
-| `index.html` | Telas, modais (exercício, catálogo, padronizar nomes, confirmar série, encerrar) e barra de navegação. Ordem dos scripts: lucide → app.js → firebase.js |
-| `app.js` | Lógica do app: estado, treino, cronômetro, histórico, análises, catálogo, importação, padronização, backup |
+| `index.html` | Telas, modais (exercício com opção Aquecimento `#fAq`, catálogo, padronizar nomes, confirmar série, encerrar) e barra de navegação. Ordem dos scripts: lucide → app.js → firebase.js |
+| `app.js` | Lógica do app: estado, treino, cronômetro, histórico, aquecimento, análises, catálogo, importação, padronização, backup |
 | `firebase.js` | Auth, Firestore (incluindo a cópia das sessões e a importação do catálogo), App Check, Functions, Messaging, IA. Expõe funções em `window.*` |
 | `style.css` | Visual em tema escuro, mobile-first |
 
@@ -63,15 +65,24 @@
 ### Modelo de dados (`data` em app.js)
 ```js
 { divs:['A','B'], A:[exercicio], B:[...], C:[], D:[], E:[], hist:[sessao] }
-exercicio = { name, sets, reps, weight, rest, series:[{p:reps, w:peso, r:descanso}], nomeOriginal? }
+exercicio = { name, sets, reps, weight, rest, series:[{p:reps, w:peso, r:descanso}], nomeOriginal?, aq? }
 sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
               ex:[{...exercicio, plan:[planejado], series:[executado], feitas, tempos[], descansos[]}] }
 ```
 - **`id`:** código único da sessão, gerado por `novoId()`. **`ts`:** momento em que a sessão foi salva (`Date.now()`). Sessões antigas recebem `id` no primeiro carregamento, mas não têm `ts`.
 - **`nomeOriginal`** (opcional): o primeiro nome que o exercício teve antes de ser trocado para o nome do catálogo (na edição ou na padronização). Nunca é sobrescrito.
+- **`aq`** (opcional, `true`): exercício de aquecimento. Fica no histórico, mas não entra nas análises nem na IA. Quando é falso, o campo não é gravado.
 - **No histórico,** `series` guarda os valores **executados** e `plan` guarda os planejados. Sessões antigas não têm `plan`, e nelas `series` = planejado.
 - **Ordem cronológica:** é a posição em `hist`. Ao juntar as cópias, o app ordena por `ts` com ordenação estável, e as sessões sem `ts` ficam no início. Não ordenar pelo texto de `data`.
 - **Grupos do catálogo** (podem mudar): peito, costas, ombros, trapezio, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco. Ficam na constante `GRUPOS` do `app.js`.
+
+### Aquecimento (`app.js` + `index.html`)
+- **Modal do exercício:** checkbox `#fAq`. `openForm` preenche, `saveForm` grava `aq:true` se marcado.
+- **`tagAq(e)`:** etiqueta "Aquecimento • fora das análises" nos cartões do Treino, do Cadastro e do Histórico.
+- **`encerrar`:** copia o exercício com `...e`, então a sessão já leva o `aq`.
+- **`togAq(k,n)`** (todos os usuários): botão de chama em cada exercício do card do histórico. Pede confirmação, só alterna o `aq`, salva o documento e chama `atualizarSessoes([h])`. Zera `anSel`.
+- **`histEx()`** ignora `e.aq`. Com isso, o radar, a comparação e `calcAnalise` (IA) excluem aquecimentos.
+- **`padLista`:** a chave de conflito é `nome normalizado + '|aq'` quando é aquecimento. Aquecimento e trabalho com o mesmo nome convivem. Dois exercícios do mesmo tipo com o mesmo nome continuam bloqueados.
 
 ### Nomes e catálogo (`app.js`)
 - `normNome(s)`: tira acentos, deixa minúsculo e junta espaços. Serve para comparar nomes.
@@ -90,8 +101,13 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
   - Lista os nomes do treino e do histórico que são diferentes do catálogo.
   - Diferença só de escrita: o nome do catálogo já vem marcado. Outros casos começam em "Não alterar" e mostram os mais parecidos primeiro (`parecidos`).
   - Só troca o `name` e guarda `nomeOriginal`. Séries, cargas, tempos e datas não mudam.
-  - `padLista` não troca quando a troca juntaria dois exercícios diferentes no mesmo treino ou sessão, e avisa quais ficaram de fora.
+  - `padLista` não troca quando a troca juntaria dois exercícios diferentes (do mesmo tipo: trabalho ou aquecimento) no mesmo treino ou sessão, e avisa quais ficaram de fora, com a dica de marcar aquecimento.
   - Depois, salva o documento e chama `atualizarSessoes` com as sessões alteradas.
+
+### Backup (`app.js`)
+- `exportar()` (tudo), `exportarHist()` (só histórico) e o botão "Baixar backup antes" usam `compartilhar(obj,nome)`.
+- **`compartilhar`:** no celular (`ehMovel()`), usa o menu de compartilhar se `navigator.canShare` aceitar arquivos. No computador, ou se compartilhar falhar, faz download direto com `baixar()` (link colocado na página, clicado e removido em seguida). Se o usuário cancelar (`AbortError`), nada acontece. Qualquer outro erro aparece em `alert`.
+- **`importar(inp)`:** aceita arquivos com `A` ou `divs`. Se faltar `hist`, usa uma lista vazia. Não importa com treino em andamento. Pede confirmação mostrando o número de sessões e avisa quando termina. Erros de leitura também aparecem.
 
 ### Execução e confirmação de série (`app.js`)
 - **Fases (`fase`):** `serie` → `descanso` → `serie`… Na última série: `serie` → `fim`.
@@ -107,17 +123,17 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 
 ### Histórico na nuvem (`firebase.js`)
 - **Documento principal:** `treinos_teste/{uid}.dados` (JSON completo, incluindo `hist`).
-- **Cópia de segurança:** `treinos_teste/{uid}/sessoes/{id}` → `{ dados, ts, tipo }`. É gravada ao encerrar com "Salvar" (`salvarSessao`) e regravada depois da padronização (`atualizarSessoes`).
+- **Cópia de segurança:** `treinos_teste/{uid}/sessoes/{id}` → `{ dados, ts, tipo }`. É gravada ao encerrar com "Salvar" (`salvarSessao`) e regravada depois da padronização e da marcação de aquecimento (`atualizarSessoes`).
 - **Fila local** (`localStorage['treinos_pend']`): a sessão entra na fila antes do envio e só sai depois que o Firestore confirma. `reenviarPendentes()` roda no login.
 - **`abrirUsuario`:** junta o documento e a subcoleção com `mesclar()` (sem duplicar, pelo `id`). As sessões que só existem na cópia voltam para o `hist`, e as que faltam na nuvem são enviadas. Se a leitura da subcoleção falhar, o app não tenta reenviar tudo.
 - **`delHist`** apaga a sessão nos dois lugares (`excluirSessao`).
 - Importar um backup substitui o `hist` do documento, mas as cópias continuam. Por isso, as sessões que não estão no backup voltam no próximo carregamento.
 
 ### Análises (`app.js`)
-- `histEx()`: agrupa o histórico por exercício, usando o nome em minúsculas como chave. Considera só ocorrências com `feitas > 0`. Depois da padronização, nomes antes diferentes passam a contar como um exercício só.
+- `histEx()`: agrupa o histórico por exercício, usando o nome em minúsculas como chave. Considera só ocorrências com `feitas > 0` e **sem `aq`**. Depois da padronização, nomes antes diferentes passam a contar como um exercício só.
 - Métricas: `peso` (máximo), `reps` (média), `series`, `volume` (Σ peso×reps), `tSerie`, `tDesc`.
 - `calcAnalise()` / `window.dadosAnalise`: dados para a IA (1ª × última, todas as divisões).
-- **Filtro de divisão** (`anDiv`, `anSetDiv`) e **filtro de exercícios** (`anSel`, `anKeys`, `anToggle`, `anTodos`) voltam ao padrão no `setData`. A padronização também zera o `anSel`.
+- **Filtro de divisão** (`anDiv`, `anSetDiv`) e **filtro de exercícios** (`anSel`, `anKeys`, `anToggle`, `anTodos`) voltam ao padrão no `setData`. A padronização e o `togAq` também zeram o `anSel`.
 - **Radar** (`radar(ex,sel,div)`): viewBox 400×340, as 3 sessões mais recentes da divisão. Nomes com quebra de linha (`quebra`). Métrica: volume, ou total de reps em exercícios sem carga. 100% = maior valor do exercício. Com menos de 3 exercícios, aparece um aviso.
 - **Comparação detalhada:** penúltima × última ocorrência dentro da divisão.
 - O texto do cartão "Sua evolução" é trocado pelo `renderAnalise`.
@@ -182,12 +198,16 @@ service cloud.firestore {
 - **Repositório:** https://github.com/jpedrosntg/treinos
 - **Hospedagem:** GitHub Pages, em `https://jpedrosntg.github.io/treinos/`. A decisão é **continuar no GitHub Pages**.
 - **Como publica:** upload de arquivos pelo site do GitHub. As regras do Firestore são publicadas pelo Console (**antes** de subir arquivos que dependem delas).
-- **Os 4 arquivos de 30/10/2026 precisam subir juntos.**
+- **Os 4 arquivos de 30/10/2026 precisam subir juntos.** A correção do backup mudou só o `app.js`. O aquecimento mudou `app.js` + `index.html` (subir juntos).
 - **Testes:** não são feitos antes de publicar.
 - **Colaborador:** um amigo cuida do visual pelo GitHub.
 - **Backup:** exportação em JSON pelo app + cópia automática das sessões em `sessoes`.
 
 ## 7. Pendências conhecidas
+- [ ] Testar o aquecimento: marcar no modal, etiqueta nos cartões, chama no histórico (marcar/desmarcar), conferir que sai das análises e que a padronização passa no caso "Puxada Frente" × aquecimento.
+- [ ] (Opcional) Estilizar no `style.css` o checkbox `#fAq` e a chama do histórico.
+- [ ] Testar o backup no computador (exportar tudo, só histórico, "Baixar backup antes" e importar). Se o importar não abrir a janela de arquivo, revisar o botão no `index.html`.
+- [ ] Testar o backup no iPhone e no Android (menu de compartilhar).
 - [ ] Publicar a regra nova (`sessoes`) no Console, se ainda não foi publicada.
 - [ ] Importar o catálogo completo por JSON e conferir a contagem de novos, atualizados e ignorados.
 - [ ] Testar o campo Nome: sugestões, aviso verde e laranja, bloqueio ao salvar com nome fora do catálogo, aviso "Fora do catálogo" nos cartões.
@@ -213,7 +233,9 @@ service cloud.firestore {
 - Sempre enviar este `CONTEXTO.md` atualizado junto com as alterações.
 - O toque em "Descanso" inicia o descanso **na hora**. A confirmação nunca bloqueia nem atrasa o cronômetro.
 - O histórico precisa ficar salvo de forma redundante (documento principal + `sessoes`).
-- Nomes de exercícios vêm **sempre do catálogo**. Alterações no histórico só podem **trocar nomes**, nunca apagar ou substituir sessões.
+- Nomes de exercícios vêm **sempre do catálogo**. Alterações no histórico só podem **trocar nomes ou a marcação de aquecimento**, nunca apagar ou substituir sessões, séries ou cargas.
+- No computador, o backup **baixa direto**. O menu de compartilhar só é usado no celular.
+- Aquecimento fica **no histórico**, mas **fora das análises**. Qualquer usuário pode marcar ou desmarcar.
 
 ## 9. Histórico de alterações
 | Data | Alteração |
@@ -231,3 +253,5 @@ service cloud.firestore {
 | 28/10/2026 | Fluxo da série refeito: descanso no toque e confirmação sem interferir; fase `conf` removida |
 | 28/10/2026 | Histórico na nuvem: `id`/`ts`, subcoleção `sessoes`, fila local, junção sem duplicar, exclusão nos dois lugares |
 | 30/10/2026 | Catálogo (`app.js`, `index.html`, `style.css`, `firebase.js`): grupo Trapézio; nome do exercício obrigatório do catálogo com lista de sugestões; aviso "Fora do catálogo"; `nomeOriginal`; importação por JSON (`importarCatalogo`, `writeBatch`); padronização de nomes no treino e no histórico (`atualizarSessoes`); botão "Manter o planejado" direto no `index.html`. Regras sem mudanças |
+| 30/10/2026 | Backup corrigido (só `app.js`): download direto no computador (`ehMovel`, `baixar`), compartilhar só no celular com download como alternativa, erros visíveis; `importar` com confirmação, aviso de conclusão e tratamento de erro de leitura |
+| 30/10/2026 | Aquecimento (`app.js` + `index.html`): campo `aq`, checkbox `#fAq`, etiqueta `tagAq`, `togAq` no histórico (todos os usuários, com `atualizarSessoes`), `histEx` ignora aquecimento, `padLista` separa aquecimento de trabalho. Regras sem mudanças |

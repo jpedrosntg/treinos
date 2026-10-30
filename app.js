@@ -21,6 +21,8 @@ const info=e=>{ const s=series(e); return `${e.sets} séries • ${esc(lista(s.m
 const feita=v=>v!=null;
 const linhaTempo=(j,t,d)=>`S${j+1} ${mmss(t)}${d!=null?` <span class="d">• desc ${mmss(d)}</span>`:''}`;
 function divLabel(n){ const l=LETRAS.slice(0,n); return l.length>1?l.slice(0,-1).join(', ')+' e '+l.at(-1):l[0]; }
+// Etiqueta de aquecimento (exercício que fica no histórico, mas não entra nas análises)
+const tagAq=e=>e&&e.aq?`<div class="info">${ic('flame')}Aquecimento • fora das análises</div>`:'';
 
 // ===== Ícones Lucide =====
 const ic=(n,c='')=>`<i data-lucide="${n}"${c?` class="${c}"`:''}></i>`;
@@ -106,7 +108,7 @@ function escolherDiv(n){
 }
 function renderCad(){
   $('cadList').innerHTML=data.divs.map(l=>`<div class="card"><div class="nm">Treino ${l}</div>
-    ${data[l].map((e,i)=>`<div class="top item"><div><div>${esc(e.name)}</div><div class="info">${info(e)}</div>${avisoFora(e)}</div>
+    ${data[l].map((e,i)=>`<div class="top item"><div><div>${esc(e.name)}</div><div class="info">${info(e)}</div>${tagAq(e)}${avisoFora(e)}</div>
       <div style="white-space:nowrap"><button class="ic" aria-label="Editar" onclick="openForm(${i},'${l}')">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i},'${l}')">${ic('trash-2')}</button></div></div>`).join('')
       ||'<div class="info">Nenhum exercício ainda.</div>'}
     <button class="btn add" onclick="openForm(-1,'${l}')">${ic('plus')}Adicionar exercício no Treino ${l}</button></div>`).join('')
@@ -164,7 +166,7 @@ function encerrar(salvar){
   $('dlgFim').classList.remove('on');
   if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
   if(salvar){
-    // series = valores executados (confirmados); plan = valores planejados
+    // series = valores executados (confirmados); plan = valores planejados. "aq" vem junto com o exercício
     const ex=data[cur].map((e,i)=>{ const d=done[cur+i]||[], plan=series(e);
       return {...e,plan,series:plan.map((s,j)=>feita(d[j])&&d[j].p!=null?{...s,p:d[j].p,w:d[j].w}:s),
         feitas:d.filter(feita).length,
@@ -213,7 +215,7 @@ function render(){
     const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
       <span class="drag">${ic('grip-vertical')}</span><div><div class="nm">${esc(e.name)}</div>
-      <div class="info">${info(e)}</div>${avisoFora(e)}</div></div>
+      <div class="info">${info(e)}</div>${tagAq(e)}${avisoFora(e)}</div></div>
       <div style="white-space:nowrap"><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
       <div class="ser">${s}</div>${tp?`<div class="tempos">${ic('timer')}${tp}</div>`:''}</div>`;
   }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
@@ -353,6 +355,7 @@ function openForm(i=-1,dv=cur){
   edit=i; formDiv=dv; const e=i>=0?data[dv][i]:{name:'',sets:3,reps:'12',weight:0,rest:60};
   $('ftitle').textContent=(i>=0?'Editar':'Novo')+' exercício — Treino '+dv;
   $('fn').value=e.name; $('fs').value=e.sets;
+  const aq=$('fAq'); if(aq) aq.checked=!!e.aq;
   const s=series(e); fSer=s.map((x,j)=>({...x,wm:j>0&&x.w!==s[0].w}));
   $('fSeries').innerHTML=''; gerarSeries();
   const sg=$('fnSug'); if(sg) sg.style.display='none';
@@ -372,6 +375,7 @@ function saveForm(){
   if(bad>=0) return $('fErr').textContent=`Série ${bad+1}: informe as repetições (ex: 12 ou 10-12), e peso e descanso maiores ou iguais a 0.`;
   const sr=ser.map(({w,r,p})=>({w,r,p}));
   const e={name:c.nome,sets:n,reps:lista(sr.map(s=>s.p)),series:sr,weight:sr[0].w,rest:sr[0].r};
+  if($('fAq')?.checked) e.aq=true;
   // Guarda o nome antigo, se o exercício foi renomeado
   const ant=edit>=0?data[formDiv][edit]:null;
   if(ant){ const orig=ant.nomeOriginal??(ant.name!==c.nome?ant.name:null); if(orig!=null) e.nomeOriginal=orig; }
@@ -390,9 +394,10 @@ function renderHist(){
   const it=data.hist.map((h,k)=>({h,k})).filter(o=>!v||o.h.tipo===v).reverse();
   $('hist').innerHTML=it.map(({h,k})=>`<div class="card"><div class="top"><div><b>Treino ${esc(h.tipo)}</b> — ${esc(h.data)}${h.dur?' • '+ic('clock')+mmss(h.dur):''}</div>
     <button class="ic" aria-label="Apagar" onclick="delHist(${k})">${ic('trash-2')}</button></div>
-    ${(h.ex||[]).map(e=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?linhaTempo(j,t,(e.descansos||[])[j]):null).filter(Boolean).join('<br>');
+    ${(h.ex||[]).map((e,n)=>{ const tp=(e.tempos||[]).map((t,j)=>feita(t)?linhaTempo(j,t,(e.descansos||[])[j]):null).filter(Boolean).join('<br>');
       const s=series(e);
-      return `<div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(lista(s.map(x=>x.p)))} @ ${faixa(s.map(x=>x.w))}kg${tp?`<div class="tempos" style="margin:2px 0 0 12px">${ic('timer')}${tp}</div>`:''}</div>`; }).join('')}</div>`).join('')
+      return `<div class="top"><div>• ${esc(e.name)}: ${e.feitas}/${e.sets} séries x${esc(lista(s.map(x=>x.p)))} @ ${faixa(s.map(x=>x.w))}kg${tagAq(e)}${tp?`<div class="tempos" style="margin:2px 0 0 12px">${ic('timer')}${tp}</div>`:''}</div>
+        <button class="ic" aria-label="${e.aq?'Desmarcar aquecimento':'Marcar como aquecimento'}" title="${e.aq?'Desmarcar aquecimento':'Marcar como aquecimento'}" onclick="togAq(${k},${n})" style="opacity:${e.aq?1:.45}">${ic('flame')}</button></div>`; }).join('')}</div>`).join('')
     ||`<div class="info">${data.hist.length?'Nenhum registro para o Treino '+esc(v)+'.':'Nenhum treino registrado ainda.'}</div>`;
 }
 function delHist(k){
@@ -401,17 +406,26 @@ function delHist(k){
   data.hist.splice(k,1); save(); renderHist();
   if(h.id&&window.excluirSessao) window.excluirSessao(h.id);
 }
+// Marca/desmarca um exercício do histórico como aquecimento. Só muda "aq"; o resto fica igual.
+function togAq(k,n){
+  const h=data.hist[k], e=h&&(h.ex||[])[n]; if(!e) return;
+  if(!confirm(e.aq?`Desmarcar "${e.name}" como aquecimento?\nEle volta a contar nas análises.`
+    :`Marcar "${e.name}" como aquecimento?\nEle continua no histórico, mas sai das análises.`)) return;
+  if(e.aq) delete e.aq; else e.aq=true;
+  save(); window.atualizarSessoes&&window.atualizarSessoes([h]);
+  anSel=null; render();
+}
 
 // ===== Análises =====
 const media=a=>{ const v=(a||[]).filter(x=>x!=null); return v.length?Math.round(v.reduce((s,x)=>s+x,0)/v.length):null; };
 const numReps=r=>{ const m=String(r??'').match(/\d+(\.\d+)?/g); if(!m) return null; const n=m.map(Number); return n.reduce((a,b)=>a+b,0)/n.length; };
-// Agrupa o histórico por exercício (nome sem diferenciar maiúsculas).
+// Agrupa o histórico por exercício (nome sem diferenciar maiúsculas). Aquecimentos (aq) ficam de fora.
 // A ordem cronológica é a posição no histórico (k): sessões são gravadas em ordem com push.
 function histEx(){
   const ex={};
   data.hist.forEach((h,k)=>{
     (h.ex||[]).forEach(e=>{
-      if(!e.feitas) return;
+      if(!e.feitas||e.aq) return;
       const nome=String(e.name||'').trim(), key=nome.toLowerCase(); if(!key) return;
       const idx=(e.tempos||[]).map((t,j)=>feita(t)?j:-1).filter(j=>j>=0);
       const js=idx.length?idx:Array.from({length:e.feitas},(_,j)=>j);
@@ -516,7 +530,7 @@ function radar(ex,sel,div){
 
 function renderAnalise(){
   const desc=$('p_analise').querySelector('.card .info');
-  if(desc) desc.textContent='Escolha a divisão e os exercícios. Compara o treino mais recente com o penúltimo.';
+  if(desc) desc.textContent='Escolha a divisão e os exercícios. Compara o treino mais recente com o penúltimo. Aquecimentos não entram.';
   const todos=histEx(), box=$('anLista');
   $('bIA').disabled=!Object.values(todos).some(o=>o.s.length>1);
   if(!Object.keys(todos).length){
@@ -602,18 +616,42 @@ document.addEventListener('pointerup',soltar);
 document.addEventListener('pointercancel',soltar);
 
 // ===== Backup =====
+// Celular: menu de compartilhar (se disponível). Computador: download direto.
+const ehMovel=()=>/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent));
+function baixar(blob,nome){
+  const u=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=u; a.download=nome; a.style.display='none';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ a.remove(); URL.revokeObjectURL(u); },2000);
+}
 async function compartilhar(obj,nome){
-  const file=new File([JSON.stringify(obj,null,2)],nome,{type:'application/json'});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file]}); return; }catch(e){ return; } }
-  const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=nome; a.click();
+  let blob;
+  try{ blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); }
+  catch(e){ return alert('Erro ao gerar o backup: '+e.message); }
+  if(ehMovel()&&navigator.canShare){
+    try{
+      const file=new File([blob],nome,{type:'application/json'});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return; }
+    }catch(e){ if(e.name==='AbortError') return; } // cancelado pelo usuário
+  }
+  try{ baixar(blob,nome); }catch(e){ alert('Erro ao baixar o backup: '+e.message); }
 }
 function hoje(){ return new Date().toISOString().slice(0,10); }
 function exportar(){ compartilhar(data,'treinos-'+hoje()+'.json'); }
 function exportarHist(){ compartilhar({hist:data.hist},'historico-'+hoje()+'.json'); }
 function importar(inp){
-  const f=inp.files[0]; if(!f) return;
-  f.text().then(t=>{ try{ const d=JSON.parse(t); if(!(d.A||d.divs)||!d.hist) throw 0;
-    if(confirm('Substituir dados atuais pelo backup?')){ setData(d); save(); } }catch(e){ alert('Arquivo inválido (use o arquivo de "Exportar tudo")'); } inp.value=''; });
+  const f=inp&&inp.files&&inp.files[0]; if(!f) return;
+  f.text().then(t=>{
+    inp.value='';
+    let d;
+    try{ d=JSON.parse(t); if(!d||!(d.A||d.divs)) throw 0; }
+    catch(e){ return alert('Arquivo inválido (use o arquivo de "Exportar tudo").'); }
+    if(!Array.isArray(d.hist)) d.hist=[];
+    if(sessao==='andamento') return alert('Encerre o treino em andamento antes de importar.');
+    if(!confirm(`Substituir dados atuais pelo backup?\n• ${d.hist.length} sessão(ões) no histórico`)) return;
+    setData(d); save();
+    alert('Backup importado.');
+  }).catch(e=>{ inp.value=''; alert('Não foi possível ler o arquivo: '+e.message); });
 }
 
 // ===== Cronômetro (sem som) =====
@@ -788,7 +826,8 @@ function importarCat(inp){
 
 // ===== Padronizar nomes (admin) =====
 // Troca só o nome dos exercícios do treino e do histórico do aluno aberto.
-// Guarda o nome antigo em "nomeOriginal". Nunca junta dois exercícios diferentes no mesmo treino ou sessão.
+// Guarda o nome antigo em "nomeOriginal". Nunca junta dois exercícios diferentes no mesmo treino ou sessão
+// (aquecimento e exercício de trabalho com o mesmo nome podem conviver).
 let padCand=[];
 function contarNomes(){
   const m=new Map();
@@ -820,15 +859,17 @@ function abrirPadronizar(){
   $('modalPad').classList.add('on');
 }
 // Aplica as trocas em uma lista (exercícios de um treino ou de uma sessão). Retorna quantos nomes mudaram.
+// A chave de conflito inclui "aq": aquecimento e trabalho são grupos separados.
 function padLista(arr,mapa,onde,conflitos){
   const nm=e=>String(e?.name||'').trim();
+  const ch=(i,n)=>normNome(n)+(arr[i]&&arr[i].aq?'|aq':'');
   const fin=arr.map(e=>{ const n=nm(e); return n?(mapa.get(normNome(n))??n):n; });
   let mudou=true;
   while(mudou){
     mudou=false; const g=new Map();
-    arr.forEach((e,i)=>{ const k=normNome(fin[i]); if(!k) return; if(!g.has(k)) g.set(k,[]); g.get(k).push(i); });
+    arr.forEach((e,i)=>{ if(!normNome(fin[i])) return; const k=ch(i,fin[i]); if(!g.has(k)) g.set(k,[]); g.get(k).push(i); });
     g.forEach(ix=>{
-      if(new Set(ix.map(i=>normNome(nm(arr[i])))).size<2) return;
+      if(new Set(ix.map(i=>ch(i,nm(arr[i])))).size<2) return;
       ix.forEach(i=>{ if(fin[i]!==nm(arr[i])){ fin[i]=nm(arr[i]); mudou=true; conflitos.add(onde+': '+nm(arr[i])); } });
     });
   }
@@ -849,5 +890,5 @@ function aplicarPadronizar(){
   $('modalPad').classList.remove('on');
   anSel=null; renderAll();
   alert(`Padronização concluída.\n• Treino: ${nT} nome(s) trocado(s)\n• Histórico: ${nH} nome(s) em ${mud.length} sessão(ões)`
-    +(conflitos.size?`\n\nNão trocados para não juntar exercícios diferentes:\n${[...conflitos].slice(0,10).join('\n')}${conflitos.size>10?'\n...':''}`:''));
+    +(conflitos.size?`\n\nNão trocados para não juntar exercícios diferentes:\n${[...conflitos].slice(0,10).join('\n')}${conflitos.size>10?'\n...':''}\n\nDica: se um deles é aquecimento, marque-o no histórico (ícone de chama) e padronize de novo.`:''));
 }

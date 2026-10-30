@@ -104,6 +104,7 @@
   <div id="p_hist" style="display:none">
     <label>Filtrar por divisão</label>
     <select id="fHist" onchange="renderHist()" style="margin-bottom:12px"></select>
+    <div class="info" style="margin-bottom:12px"><i data-lucide="flame"></i>Toque na chama de um exercício para marcá-lo como aquecimento (fica no histórico, fora das análises).</div>
     <div id="hist" class="hist"></div>
   </div>
 
@@ -172,6 +173,9 @@
 <div class="modal" id="modal"><div class="box">
   <div class="nm" id="ftitle">Exercício</div>
   <label>Nome (do catálogo)</label><input id="fn" autocomplete="off" placeholder="Busque no catálogo (ex: Supino reto)">
+  <label for="fAq" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+    <input type="checkbox" id="fAq" style="width:auto;margin:0">Aquecimento (fica no histórico, fora das análises)
+  </label>
   <label>Séries</label><input id="fs" type="number" inputmode="numeric" min="1" max="20" value="3" oninput="gerarSeries()">
   <div class="shead"><span>#</span><span>Reps</span><span>Peso (kg)</span><span>Descanso (s)</span></div>
   <div id="fSeries" oninput="autoPeso(event)"></div>
