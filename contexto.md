@@ -20,6 +20,7 @@
 | Funcionalidade | Situação |
 |---|---|
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
+| Preenchimento automático das séries no modal (reps e descanso para as séries seguintes; peso da 1ª série) | Reps/descanso novos em 30/10/2026, aguardando teste |
 | Nome do exercício obrigatório do catálogo (lista de sugestões) | Nova em 30/10/2026, aguardando teste |
 | Exercício de aquecimento (`aq`): opção no modal, etiqueta, chama no histórico, fora das análises | Nova em 30/10/2026, aguardando teste |
 | Execução: sessão, cronômetro, descanso, "ilha", desfazer, arrastar para reordenar | Estável |
@@ -53,8 +54,8 @@
 
 | Arquivo | Função |
 |---|---|
-| `index.html` | Telas, modais (exercício com opção Aquecimento `#fAq`, catálogo, padronizar nomes, confirmar série, encerrar) e barra de navegação. Ordem dos scripts: lucide → app.js → firebase.js |
-| `app.js` | Lógica do app: estado, treino, cronômetro, histórico, aquecimento, atualização do planejado, análises, catálogo, importação, padronização, backup |
+| `index.html` | Telas, modais (exercício com opção Aquecimento `#fAq`, catálogo, padronizar nomes, confirmar série, encerrar) e barra de navegação. `#fSeries` tem `oninput="autoPeso(event)"`. Ordem dos scripts: lucide → app.js → firebase.js |
+| `app.js` | Lógica do app: estado, treino, preenchimento automático das séries, cronômetro, histórico, aquecimento, atualização do planejado, análises, catálogo, importação, padronização, backup |
 | `firebase.js` | Auth, Firestore (incluindo a cópia das sessões e a importação do catálogo), App Check, Functions, Messaging, IA. Expõe funções em `window.*` |
 | `style.css` | Visual em tema escuro, mobile-first |
 
@@ -76,6 +77,13 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 - **No histórico,** `series` guarda os valores **executados** e `plan` guarda os planejados. Sessões antigas não têm `plan`, e nelas `series` = planejado.
 - **Ordem cronológica:** é a posição em `hist`. Ao juntar as cópias, o app ordena por `ts` com ordenação estável, e as sessões sem `ts` ficam no início. Não ordenar pelo texto de `data`.
 - **Grupos do catálogo** (podem mudar): peito, costas, ombros, trapezio, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco. Ficam na constante `GRUPOS` do `app.js`.
+
+### Modal do exercício: séries (`app.js`)
+- `fSer`: lista de trabalho das séries no modal (`{p, w, r, wm}`). `gerarSeries()` monta as linhas `.srow` com os campos `.p` (reps), `.w` (peso) e `.r` (descanso). Novas séries copiam a última. `lerSeries()` lê os campos sem perder outras propriedades (`...fSer[j]`).
+- **`autoPeso(ev)`** (nome mantido por causa do `oninput` no `index.html`):
+  - **Reps (`.p`) e descanso (`.r`):** o valor digitado na série *j* é copiado para **todas** as séries seguintes (*j+1* até a última), inclusive as que estão escondidas em `fSer` (quando o número de séries foi reduzido). As séries anteriores não mudam. Os dois campos são independentes e não alteram o peso.
+  - **Peso (`.w`):** o da 1ª série vai para as seguintes que ainda não foram editadas à mão. A marca `wm` (peso manual) protege essas séries. `openForm` marca `wm` nas séries com peso diferente do da 1ª.
+- Nada é gravado até o **Salvar** (`saveForm`), que grava só `{w, r, p}` em cada série.
 
 ### Aquecimento (`app.js` + `index.html`)
 - **Modal do exercício:** checkbox `#fAq`. `openForm` preenche, `saveForm` grava `aq:true` se marcado.
@@ -205,12 +213,13 @@ service cloud.firestore {
 - **Repositório:** https://github.com/jpedrosntg/treinos
 - **Hospedagem:** GitHub Pages, em `https://jpedrosntg.github.io/treinos/`. A decisão é **continuar no GitHub Pages**.
 - **Como publica:** upload de arquivos pelo site do GitHub. As regras do Firestore são publicadas pelo Console (**antes** de subir arquivos que dependem delas).
-- **Os 4 arquivos de 30/10/2026 precisam subir juntos.** A correção do backup mudou só o `app.js`. O aquecimento mudou `app.js` + `index.html` (subir juntos). A atualização do planejado mudou só o `app.js`.
+- **Os 4 arquivos de 30/10/2026 precisam subir juntos.** A correção do backup mudou só o `app.js`. O aquecimento mudou `app.js` + `index.html` (subir juntos). A atualização do planejado e o preenchimento automático de reps/descanso mudaram só o `app.js`.
 - **Testes:** não são feitos antes de publicar.
 - **Colaborador:** um amigo cuida do visual pelo GitHub.
 - **Backup:** exportação em JSON pelo app + cópia automática das sessões em `sessoes`.
 
 ## 7. Pendências conhecidas
+- [ ] Testar o preenchimento automático no modal: reps e descanso editados numa série vão para as seguintes (não para as anteriores), um não altera o outro nem o peso, o peso da 1ª série continua respeitando `wm`, e as séries escondidas recebem o valor ao aumentar o número de séries.
 - [ ] Testar a atualização do planejado: mudar carga/reps no modal, salvar, conferir o cartão do treino (novo valor), o histórico (`plan` antigo × `series` executado) e a permanência após recarregar. Conferir que "Não salvar" não muda o treino.
 - [ ] Testar o aquecimento: marcar no modal, etiqueta nos cartões, chama no histórico (marcar/desmarcar), conferir que sai das análises e que a padronização passa no caso "Puxada Frente" × aquecimento.
 - [ ] (Opcional) Estilizar no `style.css` o checkbox `#fAq` e a chama do histórico.
@@ -224,6 +233,7 @@ service cloud.firestore {
 - [ ] Testar a cópia de segurança (Console, treino sem internet, reabrir com internet).
 - [ ] Testar o login pelo novo atalho do iPhone (apagar o atalho antigo e criar de novo).
 - [ ] Testar a aba de Análises e confirmar que os filtros voltam ao padrão ao trocar de aluno.
+- [ ] (Opcional) Renomear `autoPeso` para `autoSeries` (exige mudar o `oninput` no `index.html` junto).
 - [ ] (Opcional) Fazer a IA comparar a penúltima com a última sessão e/ou usar a divisão escolhida.
 - [ ] (Opcional) Mostrar no histórico a diferença entre o planejado (`plan`) e o executado.
 - [ ] (Opcional) Mover o texto do cartão "Sua evolução" para o `index.html`.
@@ -245,6 +255,7 @@ service cloud.firestore {
 - No computador, o backup **baixa direto**. O menu de compartilhar só é usado no celular.
 - Aquecimento fica **no histórico**, mas **fora das análises**. Qualquer usuário pode marcar ou desmarcar.
 - As reps e cargas **executadas** (confirmadas) numa sessão salva viram o **planejado do próximo treino**. O histórico mantém a distinção `plan` × `series`.
+- No modal do exercício, editar as **reps** ou o **descanso** de uma série copia o valor para **todas as séries seguintes**, nunca para as anteriores. Os campos são independentes. O peso mantém a regra da 1ª série com proteção `wm`.
 
 ## 9. Histórico de alterações
 | Data | Alteração |
@@ -265,3 +276,4 @@ service cloud.firestore {
 | 30/10/2026 | Backup corrigido (só `app.js`): download direto no computador (`ehMovel`, `baixar`), compartilhar só no celular com download como alternativa, erros visíveis; `importar` com confirmação, aviso de conclusão e tratamento de erro de leitura |
 | 30/10/2026 | Aquecimento (`app.js` + `index.html`): campo `aq`, checkbox `#fAq`, etiqueta `tagAq`, `togAq` no histórico (todos os usuários, com `atualizarSessoes`), `histEx` ignora aquecimento, `padLista` separa aquecimento de trabalho. Regras sem mudanças |
 | 30/10/2026 | Executado vira o próximo planejado (só `app.js`): `atualizarPlano(div)` em `encerrar(true)`, depois de montar a sessão e antes do `save()`; mensagem com a quantidade de exercícios atualizados; `encerrar` passa a chamar `renderAll()`. Regras sem mudanças |
+| 30/10/2026 | Preenchimento automático no modal (só `app.js`): `autoPeso` passa a copiar reps (`.p`) e descanso (`.r`) da série editada para todas as seguintes (inclusive as escondidas em `fSer`), sem mexer nas anteriores nem nos outros campos; regra do peso mantida. Regras sem mudanças |

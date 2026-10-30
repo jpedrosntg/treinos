@@ -362,10 +362,23 @@ function gerarSeries(){
     <input class="w" type="number" inputmode="decimal" step="0.5" min="0" value="${Number.isFinite(s.w)?s.w:''}">
     <input class="r" type="number" inputmode="numeric" min="0" value="${Number.isFinite(s.r)?s.r:''}"></div>`).join('');
 }
-// Peso da 1ª série replica nas seguintes que ainda não foram editadas à mão
+// Preenchimento automático das séries no modal (chamado pelo oninput de #fSeries):
+// • Repetições (.p) e descanso (.r): o valor digitado numa série vai para TODAS as séries seguintes.
+//   As séries anteriores não mudam. Cada campo é independente e os outros dados da série ficam iguais.
+// • Peso (.w): o da 1ª série vai para as seguintes que ainda não foram editadas à mão (wm).
 function autoPeso(ev){
-  const t=ev.target; if(!t.classList.contains('w')) return;
-  const rows=[...document.querySelectorAll('#fSeries .srow')], j=rows.indexOf(t.closest('.srow'));
+  const t=ev.target, row=t.closest('.srow'); if(!row) return;
+  const rows=[...document.querySelectorAll('#fSeries .srow')], j=rows.indexOf(row); if(j<0) return;
+  const campo=['p','r'].find(c=>t.classList.contains(c));
+  if(campo){
+    rows.slice(j+1).forEach(r=>{ r.querySelector('.'+campo).value=t.value; });
+    lerSeries();
+    // Séries escondidas (ao reduzir o número de séries) também recebem o valor
+    const v=campo==='p'?t.value.trim():parseInt(t.value,10);
+    for(let k=rows.length;k<fSer.length;k++) fSer[k]={...fSer[k],[campo]:v};
+    return;
+  }
+  if(!t.classList.contains('w')) return;
   if(j>0){ fSer[j]={...fSer[j],wm:true}; return; }
   rows.slice(1).forEach((r,k)=>{ if(!fSer[k+1]?.wm) r.querySelector('.w').value=t.value; });
   lerSeries();
