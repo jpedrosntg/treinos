@@ -162,11 +162,28 @@ function iniciarSessao(){
   clearInterval(sInt); sInt=setInterval(status,1000);
   startTimer(); render();
 }
+// Leva para o treino configurado as reps e cargas executadas (confirmadas) na sessão.
+// Só muda séries feitas e com valores diferentes; o descanso (r) fica igual. Retorna quantos exercícios mudaram.
+function atualizarPlano(div){
+  let n=0;
+  (data[div]||[]).forEach((e,i)=>{
+    const d=done[div+i]||[], sr=series(e); let mud=false;
+    sr.forEach((s,j)=>{ const v=d[j];
+      if(!feita(v)||v.p==null) return;
+      const p=String(v.p), w=+v.w;
+      if(!Number.isFinite(w)||(p===s.p&&w===s.w)) return;
+      s.p=p; s.w=w; mud=true; });
+    if(mud){ e.series=sr; e.reps=lista(sr.map(s=>s.p)); e.weight=sr[0].w; e.rest=sr[0].r; n++; }
+  });
+  return n;
+}
 function encerrar(salvar){
   $('dlgFim').classList.remove('on');
   if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
+  let nAt=0;
   if(salvar){
     // series = valores executados (confirmados); plan = valores planejados. "aq" vem junto com o exercício
+    // A sessão é montada ANTES de atualizar o treino, para "plan" guardar o planejado original
     const ex=data[cur].map((e,i)=>{ const d=done[cur+i]||[], plan=series(e);
       return {...e,plan,series:plan.map((s,j)=>feita(d[j])&&d[j].p!=null?{...s,p:d[j].p,w:d[j].w}:s),
         feitas:d.filter(feita).length,
@@ -174,13 +191,15 @@ function encerrar(salvar){
         descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; });
     const s={id:novoId(),ts:Date.now(),tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex};
     data.hist.push(s);
+    nAt=atualizarPlano(cur); // executado vira o planejado do próximo treino
     save();
     window.salvarSessao&&window.salvarSessao(s); // cópia de segurança (subcoleção "sessoes")
   }
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
   pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null; pilha=[]; pend=null;
-  sessao='encerrado'; sMsg=salvar?ic('circle-check')+'Treino encerrado e salvo no histórico.':'Treino encerrado sem salvar.';
-  render();
+  sessao='encerrado'; sMsg=salvar?ic('circle-check')+'Treino encerrado e salvo no histórico.'
+    +(nAt?` ${nAt} exercício(s) atualizado(s) com as reps/cargas executadas para o próximo treino.`:''):'Treino encerrado sem salvar.';
+  renderAll();
 }
 function status(){
   const st=$('status'); st.className='status '+sessao;

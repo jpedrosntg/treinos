@@ -24,6 +24,7 @@
 | Exercício de aquecimento (`aq`): opção no modal, etiqueta, chama no histórico, fora das análises | Nova em 30/10/2026, aguardando teste |
 | Execução: sessão, cronômetro, descanso, "ilha", desfazer, arrastar para reordenar | Estável |
 | Confirmação de cada série (reps e carga), aberta junto com o descanso | Refeita em 28/10/2026, aguardando teste |
+| Executado vira o planejado do próximo treino (`atualizarPlano`) | Nova em 30/10/2026, aguardando teste |
 | Cópia de segurança do histórico (subcoleção `sessoes` + fila local) | Nova em 28/10/2026, aguardando teste |
 | Login com Google (inclusive pelo atalho do iPhone) | Corrigido em 23/10/2026, aguardando teste |
 | Histórico | Em ajuste. Grava os valores executados. Permite marcar/desmarcar aquecimento |
@@ -53,7 +54,7 @@
 | Arquivo | Função |
 |---|---|
 | `index.html` | Telas, modais (exercício com opção Aquecimento `#fAq`, catálogo, padronizar nomes, confirmar série, encerrar) e barra de navegação. Ordem dos scripts: lucide → app.js → firebase.js |
-| `app.js` | Lógica do app: estado, treino, cronômetro, histórico, aquecimento, análises, catálogo, importação, padronização, backup |
+| `app.js` | Lógica do app: estado, treino, cronômetro, histórico, aquecimento, atualização do planejado, análises, catálogo, importação, padronização, backup |
 | `firebase.js` | Auth, Firestore (incluindo a cópia das sessões e a importação do catálogo), App Check, Functions, Messaging, IA. Expõe funções em `window.*` |
 | `style.css` | Visual em tema escuro, mobile-first |
 
@@ -120,6 +121,12 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 - O modal mostra o planejado e a **série anterior** do mesmo exercício.
 - **"Voltar"** desfaz o registro e fecha o modal.
 - O descanso real (`d`) é gravado no "Próximo" ou ao encerrar durante o descanso.
+- **Executado vira o próximo planejado** (`atualizarPlano(div)`, chamada em `encerrar(true)`):
+  - Só roda ao **salvar** no histórico. "Não salvar" não altera o treino.
+  - Roda **depois** de montar a sessão (`plan` = planejado original, `series` = executado) e **antes** do único `save()`.
+  - Para cada série feita (`done`) com `p`/`w` diferentes do planejado, grava em `e.series[j]` as reps e a carga executadas. O descanso (`r`), as séries não feitas, `aq`, `nomeOriginal` e o nome não mudam.
+  - Recalcula `reps`, `weight` e `rest` (campos antigos). A mensagem de encerramento mostra quantos exercícios foram atualizados.
+  - Não mexe na subcoleção `sessoes`.
 
 ### Histórico na nuvem (`firebase.js`)
 - **Documento principal:** `treinos_teste/{uid}.dados` (JSON completo, incluindo `hist`).
@@ -198,12 +205,13 @@ service cloud.firestore {
 - **Repositório:** https://github.com/jpedrosntg/treinos
 - **Hospedagem:** GitHub Pages, em `https://jpedrosntg.github.io/treinos/`. A decisão é **continuar no GitHub Pages**.
 - **Como publica:** upload de arquivos pelo site do GitHub. As regras do Firestore são publicadas pelo Console (**antes** de subir arquivos que dependem delas).
-- **Os 4 arquivos de 30/10/2026 precisam subir juntos.** A correção do backup mudou só o `app.js`. O aquecimento mudou `app.js` + `index.html` (subir juntos).
+- **Os 4 arquivos de 30/10/2026 precisam subir juntos.** A correção do backup mudou só o `app.js`. O aquecimento mudou `app.js` + `index.html` (subir juntos). A atualização do planejado mudou só o `app.js`.
 - **Testes:** não são feitos antes de publicar.
 - **Colaborador:** um amigo cuida do visual pelo GitHub.
 - **Backup:** exportação em JSON pelo app + cópia automática das sessões em `sessoes`.
 
 ## 7. Pendências conhecidas
+- [ ] Testar a atualização do planejado: mudar carga/reps no modal, salvar, conferir o cartão do treino (novo valor), o histórico (`plan` antigo × `series` executado) e a permanência após recarregar. Conferir que "Não salvar" não muda o treino.
 - [ ] Testar o aquecimento: marcar no modal, etiqueta nos cartões, chama no histórico (marcar/desmarcar), conferir que sai das análises e que a padronização passa no caso "Puxada Frente" × aquecimento.
 - [ ] (Opcional) Estilizar no `style.css` o checkbox `#fAq` e a chama do histórico.
 - [ ] Testar o backup no computador (exportar tudo, só histórico, "Baixar backup antes" e importar). Se o importar não abrir a janela de arquivo, revisar o botão no `index.html`.
@@ -236,6 +244,7 @@ service cloud.firestore {
 - Nomes de exercícios vêm **sempre do catálogo**. Alterações no histórico só podem **trocar nomes ou a marcação de aquecimento**, nunca apagar ou substituir sessões, séries ou cargas.
 - No computador, o backup **baixa direto**. O menu de compartilhar só é usado no celular.
 - Aquecimento fica **no histórico**, mas **fora das análises**. Qualquer usuário pode marcar ou desmarcar.
+- As reps e cargas **executadas** (confirmadas) numa sessão salva viram o **planejado do próximo treino**. O histórico mantém a distinção `plan` × `series`.
 
 ## 9. Histórico de alterações
 | Data | Alteração |
@@ -255,3 +264,4 @@ service cloud.firestore {
 | 30/10/2026 | Catálogo (`app.js`, `index.html`, `style.css`, `firebase.js`): grupo Trapézio; nome do exercício obrigatório do catálogo com lista de sugestões; aviso "Fora do catálogo"; `nomeOriginal`; importação por JSON (`importarCatalogo`, `writeBatch`); padronização de nomes no treino e no histórico (`atualizarSessoes`); botão "Manter o planejado" direto no `index.html`. Regras sem mudanças |
 | 30/10/2026 | Backup corrigido (só `app.js`): download direto no computador (`ehMovel`, `baixar`), compartilhar só no celular com download como alternativa, erros visíveis; `importar` com confirmação, aviso de conclusão e tratamento de erro de leitura |
 | 30/10/2026 | Aquecimento (`app.js` + `index.html`): campo `aq`, checkbox `#fAq`, etiqueta `tagAq`, `togAq` no histórico (todos os usuários, com `atualizarSessoes`), `histEx` ignora aquecimento, `padLista` separa aquecimento de trabalho. Regras sem mudanças |
+| 30/10/2026 | Executado vira o próximo planejado (só `app.js`): `atualizarPlano(div)` em `encerrar(true)`, depois de montar a sessão e antes do `save()`; mensagem com a quantidade de exercícios atualizados; `encerrar` passa a chamar `renderAll()`. Regras sem mudanças |
