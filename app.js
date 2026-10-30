@@ -8,6 +8,8 @@ let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', agendada=false, t
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+// Identificador único de sessão (usado também pelo firebase.js)
+const novoId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
 // Série individual: w = peso, r = descanso, p = repetições (compatível com treinos antigos)
 const serie=(e,j)=>{ const s=(e.series||[])[j]||{}; return {w:+(s.w??e.weight)||0, r:+(s.r??e.rest??60)||0, p:String(s.p??e.reps??'')}; };
 const series=e=>Array.from({length:e.sets},(_,j)=>serie(e,j));
@@ -166,8 +168,10 @@ function encerrar(salvar){
         feitas:d.filter(feita).length,
         tempos:Array.from({length:e.sets},(_,j)=>feita(d[j])?d[j].t:null),
         descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; });
-    data.hist.push({tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex});
+    const s={id:novoId(),ts:Date.now(),tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex};
+    data.hist.push(s);
     save();
+    window.salvarSessao&&window.salvarSessao(s); // cópia de segurança (subcoleção "sessoes")
   }
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
   pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null; pilha=[]; pend=null;
@@ -227,21 +231,20 @@ function render(){
 function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
 function proxima(){ const ex=data[cur]; return pos.j+1<ex[pos.i].sets?{i:pos.i,j:pos.j+1}:{i:pos.i+1,j:0}; }
 function guardar(){ pilha.push({pos:{...pos},fase,target,el:decorrido(),done:JSON.parse(JSON.stringify(done))}); }
-// Fases: serie → (confirmação) → conf → descanso → serie ... ; última série: serie → (confirmação) → fim
+// Fases: serie → descanso → serie ... ; última série: serie → fim.
+// O toque em "Descanso" registra a série (valores planejados), inicia o descanso na hora
+// e abre a confirmação por cima, sem interferir no cronômetro.
 function acao(){
   if(sessao!=='andamento') return aviso();
   const ex=data[cur]; if(!ex.length) return;
   if(fase==='serie'){
-    // Tempo da série é marcado no toque; a confirmação abre em seguida
-    const e=ex[pos.i], s=serie(e,pos.j);
-    pend={i:pos.i,j:pos.j,t:Math.floor(decorrido()/1000)};
-    $('sInfo').textContent=`${e.name} — série ${pos.j+1}/${e.sets} • planejado: ${s.p} reps • ${s.w} kg`;
-    $('sReps').value=s.p; $('sPeso').value=s.w; $('sErr').textContent='';
-    $('dlgSerie').classList.add('on');
-    return;
-  } else if(fase==='conf'){
     guardar();
-    const r=serie(ex[pos.i],pos.j).r; target=r>0?r:60; fase='descanso'; startTimer(); agendar(target);
+    const e=ex[pos.i], s=serie(e,pos.j), k=cur+pos.i;
+    done[k]=done[k]||[]; done[k][pos.j]={t:Math.floor(decorrido()/1000),d:null,p:s.p,w:s.w};
+    if(ultimaSerie()){ stopTimer(); fase='fim'; }
+    else { target=s.r>0?s.r:60; fase='descanso'; startTimer(); agendar(target); }
+    render();
+    return abrirSerie(pos.i,pos.j);
   } else if(fase==='descanso'){
     guardar();
     const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000);
@@ -249,22 +252,36 @@ function acao(){
   } else return $('dlgFim').classList.add('on');
   render();
 }
+// Janela de confirmação da série já registrada (i = exercício, j = série)
+function abrirSerie(i,j){
+  const e=data[cur][i], s=serie(e,j), d=done[cur+i]||[], ant=j>0?d[j-1]:null;
+  pend={k:cur+i,j,ult:fase==='fim'};
+  $('sInfo').innerHTML=`${esc(e.name)} — série ${j+1}/${e.sets} • planejado: ${esc(s.p)} reps • ${s.w} kg`
+    +(ant&&ant.p!=null?`<br>Série anterior: ${esc(ant.p)} reps • ${ant.w} kg`:'')
+    +(pend.ult?'':'<br>O descanso já está contando.');
+  $('sReps').value=s.p; $('sPeso').value=s.w; $('sErr').textContent='';
+  const bc=$('dlgSerie').querySelector('.btn.add'); if(bc) bc.textContent='Manter o planejado';
+  $('dlgSerie').classList.add('on');
+}
 function confirmarSerie(){
-  if(!pend||sessao!=='andamento') return fecharSerie();
+  if(!pend) return fecharSerie();
   const p=$('sReps').value.trim(), w=parseFloat($('sPeso').value);
   if(numReps(p)==null||!(w>=0)) return $('sErr').textContent='Informe as repetições (ex: 12) e a carga (0 ou mais).';
-  guardar();
-  const k=cur+pend.i; done[k]=done[k]||[]; done[k][pend.j]={t:pend.t,d:null,p,w};
-  pos={i:pend.i,j:pend.j}; pend=null;
-  $('dlgSerie').classList.remove('on');
-  stopTimer();
-  if(ultimaSerie()){ fase='fim'; render(); return $('dlgFim').classList.add('on'); }
-  fase='conf'; render();
+  const v=(done[pend.k]||[])[pend.j];
+  if(v){ v.p=p; v.w=w; }
+  fecharSerie();
 }
-function fecharSerie(){ pend=null; $('dlgSerie').classList.remove('on'); }
+// Fecha a janela. A série continua registrada (com os valores planejados, se não confirmou)
+function fecharSerie(){
+  const ult=pend&&pend.ult; pend=null;
+  $('dlgSerie').classList.remove('on');
+  render();
+  if(ult&&sessao==='andamento'&&fase==='fim') $('dlgFim').classList.add('on');
+}
 function voltar(){
   if(sessao!=='andamento') return aviso();
   const s=pilha.pop(); if(!s) return;
+  pend=null; $('dlgSerie').classList.remove('on');
   const extra=decorrido();
   cancelar(); clearInterval(tInt);
   done=s.done; pos=s.pos; fase=s.fase; target=s.target;
@@ -371,6 +388,7 @@ function delHist(k){
   const h=data.hist[k];
   if(!h||!confirm(`Apagar definitivamente o registro do Treino ${h.tipo} de ${h.data}?\nEssa ação não pode ser desfeita.`)) return;
   data.hist.splice(k,1); save(); renderHist();
+  if(h.id&&window.excluirSessao) window.excluirSessao(h.id);
 }
 
 // ===== Análises =====
@@ -616,7 +634,6 @@ function tick(){
   const e=(data[cur]||[])[pos.i], sj=e?serie(e,pos.j):null;
   $('iNome').innerHTML=fase==='fim'?'Treino '+cur+' concluído'+ic('party-popper'):esc(e?e.name:'Treino '+cur);
   $('iSub').textContent=fase==='fim'?'Toque em Encerrar'
-    :fase==='conf'&&e?'Série '+(pos.j+1)+'/'+e.sets+' registrada • toque em Descanso'
     :rest?(over?'Descanso excedido +'+mmss(s-target):'Descanso • faltam '+mmss(Math.max(0,target-s)))+(pausado?' • pausado':'')
     :(e?'Série '+(pos.j+1)+'/'+e.sets+' • '+sj.p+' reps • '+sj.w+' kg':'')+(pausado?' • pausado':'');
   const p=fase==='fim'?1:rest?Math.min(s/target,1):ativo?(s%60)/60:0, a=$('anel');

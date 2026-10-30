@@ -19,6 +19,8 @@ const RECAPTCHA_KEY = '6LflcPctAAAAAHgYzAFnVC-lTLc5h42zmfpRGC4O';
 
 const COLECAO = 'treinos_teste';
 const CAT = 'exercicios';
+const SESS = 'sessoes'; // subcoleção: treinos_teste/{uid}/sessoes/{id}
+const PKEY = 'treinos_pend'; // fila local de sessões ainda não enviadas
 const app = initializeApp(firebaseConfig);
 
 // App Check (antes de qualquer outro serviço)
@@ -50,7 +52,7 @@ window.analisarIA = async () => {
   try {
     const prompt = `Você é um personal trainer analisando a evolução de um aluno de musculação.
 Use EXCLUSIVAMENTE os dados abaixo. Cada exercício compara a primeira ("ini") e a última ("fim") sessão salva.
-"reps" é a meta de repetições cadastrada (não as feitas); "series" são as séries concluídas; "volume" = peso×reps×séries;
+"reps" é a média de repetições executadas (em sessões antigas, a meta cadastrada); "peso" é a carga máxima executada; "series" são as séries concluídas; "volume" = Σ peso×reps das séries concluídas;
 "tSerie" e "tDesc" são médias em segundos; "dur" é a duração do treino em segundos.
 Não invente números, causas ou conclusões. Se algo não puder ser concluído com esses dados, diga isso.
 Em cada item, cite o exercício, os valores e as datas comparadas.
@@ -189,15 +191,68 @@ window.salvarNuvem = async () => {
   } catch (e) { alert('Erro ao salvar: ' + e.message); }
 };
 
+// ===== HISTÓRICO: cópia de segurança por sessão =====
+const fila = () => { try { return JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) { return []; } };
+const setFila = f => { try { localStorage.setItem(PKEY, JSON.stringify(f)); } catch (e) {} };
+const tirarDaFila = (uid, id) => setFila(fila().filter(x => !(x.uid === uid && x.s.id === id)));
+
+// Grava uma sessão na subcoleção. Antes, guarda no aparelho; só remove após o envio confirmado.
+async function gravarSessao(uid, s) {
+  tirarDaFila(uid, s.id);
+  setFila([...fila(), { uid, s }]);
+  try {
+    await setDoc(doc(db, COLECAO, uid, SESS, s.id), { dados: JSON.stringify(s), ts: s.ts || 0, tipo: s.tipo || '' });
+    tirarDaFila(uid, s.id);
+    return true;
+  } catch (e) { console.warn('Sessão:', e.message); return false; }
+}
+async function reenviarPendentes() {
+  for (const x of fila()) await gravarSessao(x.uid, x.s);
+}
+
+window.salvarSessao = (s) => {
+  if (!usuario || !alvo || !s?.id) return;
+  gravarSessao(alvo, s).then(ok => {
+    if (!ok) alert('Não foi possível enviar a cópia do treino para a nuvem agora. Ela ficou guardada neste aparelho e será enviada no próximo acesso.');
+  });
+};
+window.excluirSessao = (id) => {
+  if (!usuario || !alvo || !id) return;
+  tirarDaFila(alvo, id);
+  deleteDoc(doc(db, COLECAO, alvo, SESS, id)).catch(e => alert('Erro ao apagar a cópia na nuvem: ' + e.message));
+};
+
+// Junta o histórico do documento com as cópias da subcoleção, sem duplicar (pelo id)
+function mesclar(hist, sub) {
+  const h = Array.isArray(hist) ? hist : [];
+  let mudou = false;
+  h.forEach(s => { if (!s.id) { s.id = novoId(); mudou = true; } });
+  const ids = new Set(h.map(s => s.id)), subIds = new Set(sub.map(s => s.id));
+  const faltamNaNuvem = h.filter(s => !subIds.has(s.id));
+  sub.forEach(s => { if (s.id && !ids.has(s.id)) { h.push(s); ids.add(s.id); mudou = true; } });
+  // Ordem estável por data de criação; sessões antigas (sem ts) ficam no início, na ordem original
+  if (mudou) h.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  return { hist: h, faltamNaNuvem, mudou };
+}
+
 async function abrirUsuario(uid) {
   const snap = await getDoc(doc(db, COLECAO, uid));
-  if (snap.exists()) {
-    const d = snap.data();
-    alvoInfo = { email: d.email, nome: d.nome };
-    setData(JSON.parse(d.dados || '{}'));
-    return true;
-  }
-  return false;
+  const d = snap.exists() ? snap.data() : null;
+  let sub = [], subOk = true;
+  try {
+    const s = await getDocs(collection(db, COLECAO, uid, SESS));
+    sub = s.docs.map(x => { try { return JSON.parse(x.data().dados); } catch (e) { return null; } }).filter(s => s && s.id);
+  } catch (e) { subOk = false; console.warn('Sessões:', e.message); }
+  if (!d && !sub.length) return false;
+  if (d) alvoInfo = { email: d.email, nome: d.nome };
+  const dados = d ? JSON.parse(d.dados || '{}') : {};
+  if (!dados.A && !dados.divs) dados.divs = [];
+  const m = mesclar(dados.hist, sub);
+  dados.hist = m.hist;
+  setData(dados);
+  if (subOk) m.faltamNaNuvem.forEach(s => gravarSessao(uid, s));
+  if (m.mudou && alvo === uid) await window.salvarNuvem();
+  return true;
 }
 
 // ===== ADMIN =====
@@ -282,6 +337,7 @@ onAuthStateChanged(auth, async (u) => {
   alvoInfo = { email: u.email, nome: u.displayName || '' };
 
   try {
+    await reenviarPendentes(); // envia treinos que ficaram guardados no aparelho
     const existe = await abrirUsuario(u.uid);
     alvoInfo = { email: u.email, nome: u.displayName || '' };
     if (!existe) setData(null);
