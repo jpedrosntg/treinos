@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-title" content="Treinos">
 <meta name="theme-color" content="#0f1115">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 <title>Treinos</title>
 </head><body>
 
@@ -156,6 +156,11 @@
       <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importar(this)">
     </div>
     <div class="card">
+      <div class="nm"><i data-lucide="scale"></i>Licenças e créditos</div>
+      <div class="info">Avisos de licença das bibliotecas usadas pelo app.</div>
+      <button class="btn add" onclick="$('dlgLic').classList.add('on')"><i data-lucide="file-text"></i>Ver licenças</button>
+    </div>
+    <div class="card">
       <div class="nm"><i data-lucide="user"></i>Conta</div>
       <button class="btn del" onclick="sair()"><i data-lucide="log-out"></i>Sair da conta</button>
     </div>
@@ -219,6 +224,58 @@
   <button class="btn add" onclick="$('dlgInfo').classList.remove('on')">Fechar</button>
 </div></div>
 
+<!-- DIÁLOGO LICENÇAS -->
+<div class="modal" id="dlgLic" onclick="if(event.target===this)this.classList.remove('on')"><div class="box lic">
+  <div class="nm"><i data-lucide="scale"></i>Licenças e créditos</div>
+
+  <h3>react-native-body-highlighter</h3>
+  <div class="info">Desenhos do corpo humano (traçados SVG) usados na miniatura dos músculos, versão 3.1.3, lidos de <a href="https://github.com/HichamELBSI/react-native-body-highlighter" target="_blank" rel="noopener">github.com/HichamELBSI/react-native-body-highlighter</a>. Usados sem o código React Native; apenas os traçados, com cores aplicadas pelo app.</div>
+<pre>MIT License
+
+Copyright (c) 2022 ELABBASSI Hicham
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+
+  <h3>Lucide</h3>
+  <div class="info">Ícones do app. <a href="https://lucide.dev/license" target="_blank" rel="noopener">lucide.dev/license</a></div>
+<pre>ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+USE OR PERFORMANCE OF THIS SOFTWARE.</pre>
+
+  <h3>Firebase JavaScript SDK</h3>
+  <div class="info">Login, banco de dados, App Check e IA. Licenciado sob a Apache License 2.0: <a href="https://github.com/firebase/firebase-js-sdk/blob/main/LICENSE" target="_blank" rel="noopener">texto completo</a>. O uso dos serviços Firebase/Google segue também os termos de serviço do Google.</div>
+
+  <button class="btn add" onclick="$('dlgLic').classList.remove('on')">Fechar</button>
+</div></div>
+
 <!-- DIÁLOGO CONFIRMAR SÉRIE -->
 <div class="modal" id="dlgSerie"><div class="box">
   <div class="nm"><i data-lucide="clipboard-check"></i>Série executada conforme planejado?</div>
@@ -244,13 +301,14 @@
 <!-- A ordem importa: lucide → arquivos do app (base.js primeiro) → firebase.js
      ?v=N força o navegador a baixar a versão nova: aumente o número a cada publicação -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script src="base.js?v=6"></script>
-<script src="cadastro.js?v=6"></script>
-<script src="treino.js?v=6"></script>
-<script src="historico.js?v=6"></script>
-<script src="analises.js?v=6"></script>
-<script src="catalogo.js?v=6"></script>
-<script src="backup.js?v=6"></script>
-<script src="agenda.js?v=6"></script>
-<script type="module" src="firebase.js?v=6"></script>
+<script src="base.js?v=7"></script>
+<script src="cadastro.js?v=7"></script>
+<script src="treino.js?v=7"></script>
+<script src="historico.js?v=7"></script>
+<script src="analises.js?v=7"></script>
+<script src="catalogo.js?v=7"></script>
+<script src="musculos.js?v=7"></script>
+<script src="backup.js?v=7"></script>
+<script src="agenda.js?v=7"></script>
+<script type="module" src="firebase.js?v=7"></script>
 </body></html>

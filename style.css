@@ -216,3 +216,20 @@ textarea{margin-top:8px;resize:vertical}
 .aluno:active{background:#232733}
 .aluno.eu{border-color:#f59e0b}
 .voltar{background:#2a2f3a;color:#fff;border:0;border-radius:12px;height:44px;padding:0 16px;width:100%;font-size:14px;font-family:inherit;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
+
+/* Miniatura dos músculos no cartão do exercício (frente + costas) */
+.exrow{display:flex;align-items:center;gap:12px}
+.exbody{flex:1;min-width:0}
+.exbody .nm{min-width:0;overflow-wrap:anywhere}
+.musc{flex:none;display:flex;gap:2px;height:64px;align-self:center;pointer-events:none}
+.musc svg{height:100%;width:auto}
+.musc path{fill:#2a2f3a}
+.musc .s path{fill:#3b82f673}
+.musc .p path{fill:var(--pri)}
+.bloq .musc{opacity:.7}
+@media (max-width:360px){ .musc{height:56px} }
+
+/* Licenças */
+.lic h3{font-size:16px;margin:20px 0 4px}
+.lic a{color:var(--pri);word-break:break-all}
+.lic pre{white-space:pre-wrap;font-size:12px;line-height:1.5;color:#9aa;background:#0f1115;border:1px solid #2a2f3a;border-radius:8px;padding:12px;margin:8px 0 0;font-family:ui-monospace,Menlo,monospace}

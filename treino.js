@@ -29,8 +29,6 @@ function encerrar(salvar){
   if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
   let nAt=0, sid=null; const div=cur;
   if(salvar){
-    // series = valores executados (confirmados); plan = valores planejados. "aq" vem junto com o exercício
-    // A sessão é montada ANTES de atualizar o treino, para "plan" guardar o planejado original
     const ex=data[cur].map((e,i)=>{ const d=done[cur+i]||[], plan=series(e);
       return {...e,plan,series:plan.map((s,j)=>feita(d[j])&&d[j].p!=null?{...s,p:d[j].p,w:d[j].w}:s),
         feitas:d.filter(feita).length,
@@ -38,15 +36,14 @@ function encerrar(salvar){
         descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; });
     const s={id:novoId(),ts:Date.now(),tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex};
     data.hist.push(s); sid=s.id;
-    nAt=atualizarPlano(cur); // executado vira o planejado do próximo treino
+    nAt=atualizarPlano(cur);
     save();
-    window.salvarSessao&&window.salvarSessao(s); // cópia de segurança (subcoleção "sessoes")
+    window.salvarSessao&&window.salvarSessao(s);
   }
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
   pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null; pilha=[]; pend=null;
   sessao='encerrado'; sMsg=salvar?ic('circle-check')+'Treino encerrado e salvo no histórico.'
     +(nAt?` ${nAt} exercício(s) atualizado(s) com as reps/cargas executadas para o próximo treino.`:''):'Treino encerrado sem salvar.';
-  // A janela abre mesmo se algo falhar ao redesenhar a tela (uma vez por sessão salva)
   try{ renderAll(); }
   finally{ if(sid&&window.celebrar) celebrar(div,sid); }
 }
@@ -75,17 +72,17 @@ function render(){
 
   $('tabs').innerHTML=data.divs.map(t=>`<button class="${t==cur?'on':''}" onclick="trocar('${t}')">${data.divs.length>3?t:'Treino '+t}</button>`).join('');
   $('list').className=on?'':'bloq';
-  // Cartão enxuto: só o nome e os círculos das séries (detalhes no botão ⓘ e no lápis)
+  // Cartão: miniatura dos músculos (musculos.js) + nome + círculos
   $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
     for(let j=0;j<e.sets;j++){ const sj=serie(e,j), v=d[j], ok=feita(v);
       const rp=ok&&v.p!=null?v.p:sj.p, rw=ok&&v.w!=null?v.w:sj.w;
       s+=`<span class="${ok?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${esc(rp)||j+1}<small>${rw}kg</small></span>`; }
     const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
-    return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
+    return `<div class="card" data-i="${i}"><div class="exrow">${window.musc?musc(e):''}<div class="exbody"><div class="top"><div style="display:flex;align-items:center;min-width:0">
       <span class="drag">${ic('grip-vertical')}</span><div class="nm">${esc(e.name)}</div></div>
       <div style="white-space:nowrap"><button class="ic" aria-label="Informações" onclick="infoEx(${i})">${ic('info')}</button><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
-      <div class="ser">${s}</div>${tp?`<div class="tempos">${ic('timer')}${tp}</div>`:''}</div>`;
+      <div class="ser">${s}</div>${tp?`<div class="tempos">${ic('timer')}${tp}</div>`:''}</div></div></div>`;
   }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
 
   const bs=$('bSessao'); bs.innerHTML=on?ic('square')+'ENCERRAR TREINO':ic('play')+'INICIAR TREINO'; bs.classList.toggle('enc',on);
@@ -98,10 +95,9 @@ function render(){
   $('bVolta').disabled=!on||!pilha.length;
   $('bPausa').innerHTML=pausado?ic('play')+'Retomar':ic('pause')+'Pausar';
   status(); renderHist(); if(aba==='analise') renderAnalise(); tick(); ilha(); renderNav();
-  window.atualizarWake&&atualizarWake(); // tela ligada durante o treino (agenda.js)
+  window.atualizarWake&&atualizarWake();
 }
 
-// Janela de informações do exercício (dados do catálogo). Não interfere no cronômetro.
 function infoEx(i){
   const e=(data[cur]||[])[i]; if(!e) return;
   const c=catAcha(e.name), g=k=>GRUPOS[k]||esc(k);
@@ -117,9 +113,6 @@ function infoEx(i){
 function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
 function proxima(){ const ex=data[cur]; return pos.j+1<ex[pos.i].sets?{i:pos.i,j:pos.j+1}:{i:pos.i+1,j:0}; }
 function guardar(){ pilha.push({pos:{...pos},fase,target,el:decorrido(),done:JSON.parse(JSON.stringify(done))}); }
-// Fases: serie → descanso → serie ... ; última série: serie → fim.
-// O toque em "Descanso" registra a série (valores planejados), inicia o descanso na hora
-// e abre a confirmação por cima, sem interferir no cronômetro.
 function acao(){
   if(sessao!=='andamento') return aviso();
   const ex=data[cur]; if(!ex.length) return;
@@ -138,7 +131,6 @@ function acao(){
   } else return $('dlgFim').classList.add('on');
   render();
 }
-// Janela de confirmação da série já registrada (i = exercício, j = série)
 function abrirSerie(i,j){
   const e=data[cur][i], s=serie(e,j), d=done[cur+i]||[], ant=j>0?d[j-1]:null;
   pend={k:cur+i,j,ult:fase==='fim'};
@@ -156,7 +148,6 @@ function confirmarSerie(){
   if(v){ v.p=p; v.w=w; }
   fecharSerie();
 }
-// Fecha a janela. A série continua registrada (com os valores planejados, se não confirmou)
 function fecharSerie(){
   const ult=pend&&pend.ult; pend=null;
   $('dlgSerie').classList.remove('on');
