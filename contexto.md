@@ -10,7 +10,7 @@
 ---
 
 ## 1. Visão geral
-- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises, catálogo de exercícios, agenda semanal com dias de foco e janela de resumo ao salvar.
+- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises, catálogo de exercícios, agenda semanal com dias de foco e janela de resumo ao salvar (com compartilhamento em imagem).
 - **Público:** uso próprio no início. Depois, abrir para os alunos da esposa (personal trainer).
 - **Usuários:** 5 hoje. Meta de 30 a 50.
 - **Administrador:** só o Joao Pedro. Ele vê e edita o treino de todos os alunos (inclusive a agenda) e gerencia o catálogo.
@@ -20,10 +20,11 @@
 ## 2. Situação das funcionalidades
 | Funcionalidade | Situação |
 |---|---|
-| Código do app dividido em 8 arquivos (`base`, `cadastro`, `treino`, `historico`, `analises`, `catalogo`, `backup`, `agenda`) | Aguardando teste do `agenda.js` |
+| Código do app dividido em 8 arquivos (`base`, `cadastro`, `treino`, `historico`, `analises`, `catalogo`, `backup`, `agenda`) | Funcionando |
 | Etapa 1: botão ⓘ, textos de dica removidos, notificações removidas | Publicada e funcionando (30/10/2026) |
-| Agenda na aba Ajustes: resumo seg–dom, dias de foco, configurações recolhidas (dias de academia, calendário de feriados/exceções) | Alterada em 30/10/2026, aguardando teste |
-| Janela ao salvar (check, dias de foco, resumo seg–dom), uma vez por sessão | Corrigida em 30/10/2026, aguardando teste |
+| Agenda na aba Ajustes: resumo seg–dom, dias de foco, configurações recolhidas | Aguardando teste do novo visual (azul, sem datas) |
+| Janela ao salvar (check, dias de foco, resumo seg–dom) | **Funcionando** (testada 30/10/2026). Animação aprovada: não mexer |
+| Janela ao salvar: checks azuis, círculos sem data, botão "Compartilhar" (imagem PNG) | Nova em 30/10/2026, aguardando teste |
 | Cartão do exercício na aba Treino: só nome e círculos | Alterado em 30/10/2026, aguardando teste |
 | Tela ligada (Ajustes, por aparelho) | Aguardando teste |
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
@@ -45,7 +46,7 @@
 | Notificações de descanso (push) | **Removidas**. Não serão implementadas |
 
 ## 3. Roadmap (em ordem de prioridade)
-1. Testar os ajustes de 30/10/2026 (agenda em Ajustes, janela ao salvar, cartão enxuto).
+1. Testar os ajustes de 30/10/2026 (resumo azul sem datas, compartilhar, cartão enxuto).
 2. Catálogo completo, com descrição e forma de execução (importação por JSON). O usuário não quer enviar o catálogo atual.
 3. Mostrar o grupo muscular principal de cada exercício na aba Treino (**atenção:** o usuário pediu cartão só com nome e círculos; confirmar antes).
 4. Análise da evolução por grupo muscular.
@@ -56,10 +57,11 @@
 - HTML, CSS e JavaScript puros, **sem framework e sem etapa de build**.
 - Ícones: Lucide (CDN `unpkg.com/lucide@latest`, sem versão fixa).
 - Gráfico radar: SVG gerado à mão no `analises.js`.
+- Imagem compartilhável: `<canvas>` desenhado à mão no `agenda.js` (sem biblioteca), Web Share API com arquivo; download como alternativa.
 - Firebase SDK 12.4.0 por CDN (módulos ES): App, App Check, Auth, Firestore, AI.
 - Tela ligada: API Screen Wake Lock (`navigator.wakeLock`). No iPhone, a partir do iOS 16.4.
 - **Aparelhos que precisam funcionar:** iPhone, Android e computador.
-- **Cache:** scripts e CSS são carregados com `?v=N` no `index.html` (atual: `v=5`). **Aumentar N a cada publicação**, senão o navegador pode usar arquivos antigos.
+- **Cache:** scripts e CSS são carregados com `?v=N` no `index.html` (atual: `v=6`). **Aumentar N a cada publicação.**
 
 | Arquivo | Função |
 |---|---|
@@ -71,13 +73,13 @@
 | `analises.js` | `media`, `numReps`, `histEx`, `calcAnalise`/`window.dadosAnalise`, filtros, radar, `renderAnalise` |
 | `catalogo.js` | `GRUPOS`, `catalogo`, `catAcha`, `avisoFora`, `setCatalogo`, `renderCatalogo`, campo Nome, modal do catálogo, `importarCat`, padronização |
 | `backup.js` | `ehMovel`, `baixar`, `compartilhar`, `exportar`, `exportarHist`, `importar` |
-| `agenda.js` | `SEMANA`, `MESES`, `agMes`, `agAberto`, `celeFeita`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `semanaAtual`, `resumoSemana`, `avisoPlano`, `renderAgenda`, `togPlano`, `togExc`, `agNav`; janela: `celebrar`, `fecharCele`; tela ligada: `WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI` e listener de `visibilitychange` |
+| `agenda.js` | `SEMANA`, `MESES`, `agMes`, `agAberto`, `celeFeita`, `celeBlob`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `semanaAtual`, `diasSemana`, `resumoSemana`, `avisoPlano`, `renderAgenda`, `togPlano`, `togExc`, `agNav`; janela: `celebrar`, `fecharCele`, `imgCele`, `compartilharCele`; tela ligada: `WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI` e listener de `visibilitychange` |
 | `firebase.js` | Auth, Firestore (cópia das sessões, importação do catálogo), App Check, IA. Expõe funções em `window.*` |
-| `style.css` | Tema escuro, mobile-first. Agenda: `.agcfg`, `.sem`, `.cal`, `.cleg`; resumo: `.cseq`, `.csem` (+ `.fixo`, `.plan`, `.exc`, `.feito`, `.hoje`); janela: `.cele`, `.chk`; `prefers-reduced-motion` |
+| `style.css` | Tema escuro, mobile-first. Agenda: `.agcfg`, `.sem`, `.cal`, `.cleg`; resumo: `.cseq`, `.csem` (+ `.fixo`, `.plan`, `.exc`, `.feito` azul, `.hoje`); janela: `.cele`, `.chk`; `prefers-reduced-motion` |
 
 - O repositório tem **apenas** esses 11 arquivos. Não há manifest, ícone nem service worker.
 - **Comunicação entre arquivos:** scripts comuns (sem `type="module"`), com globais compartilhadas. Código que roda no carregamento só pode usar o que já foi definido antes. `base.js` vem primeiro. Chamadas para o `agenda.js` são protegidas (`window.renderAgenda&&`, `window.atualizarWake&&`, `window.renderWakeUI&&`, `window.celebrar`).
-- Não declarar o mesmo nome global em dois arquivos.
+- Não declarar o mesmo nome global em dois arquivos (o `agenda.js` **não** usa `compartilhar`/`baixar` do `backup.js`, que não foi revisado; tem o próprio `compartilharCele`).
 - O `index.html` **não deve** ter `apple-mobile-web-app-capable` nem `mobile-web-app-capable`.
 - O `firebase.js` usa globais do app (`data`, `sessao`, `ic`, `esc`, `novoId`, `KEY`, `setTopo`, `tela`, `setData`, `setCatalogo`, `resetSessao`, `stopTimer`, `sairDaSessao`) e **precisa ser carregado por último**.
 - Funções do `firebase.js` usadas pelo app: `salvarNuvem`, `salvarSessao`, `atualizarSessoes`, `excluirSessao`, `salvarExercicio`, `excluirExercicio`, `importarCatalogo`, `souAdmin`, `renderPerfil`, `analisarIA`.
@@ -102,23 +104,24 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 
 ### Agenda (`agenda.js` + `#agenda` na aba Ajustes)
 - Cartão "Sua semana" (aparece quando há treino ou histórico). Atualizado ao abrir Ajustes (`mudarAba`) e pelo `renderInicio` (roda em `renderAll`).
-- **Sempre visível:** dias de foco (`cseq`) e resumo seg–dom (`resumoSemana(f,false)`, classe `.csem.fixo`): verde com ✓ = treinou; azul = planejado; cinza riscado = exceção; laranja = hoje.
-- **Recolhido** em `<details class="agcfg">` ("Configurar dias e feriados"): chips dos dias (`togPlano`), calendário mensal (`agNav`, `togExc` ao tocar numa data), legenda. Estado aberto/fechado em `agAberto` (sobrevive a re-render).
+- **Sempre visível:** dias de foco (`cseq`) e resumo seg–dom (`resumoSemana(f,false)`, `.csem.fixo`).
+- **Resumo seg–dom (Ajustes e janela, mesmo visual):** letra do dia em cima (S T Q Q S S D); círculo **sem data**. Treinou = fundo **azul do app** (`--pri`) com ✓ branco; planejado = contorno azul; exceção = cinza preenchido; hoje = contorno laranja. Estado vem de `diasSemana(f)` (usado também na imagem).
+- **Recolhido** em `<details class="agcfg">` ("Configurar dias e feriados"): chips dos dias (`togPlano`), calendário mensal (`agNav`, `togExc`), legenda. O calendário **continua com datas e "Concluído" verde** (não pedido mudar). Estado aberto/fechado em `agAberto`.
 - **Dias concluídos:** automáticos, do histórico (`diaSessao`). Sem marcação manual.
 - **Dias de foco (`sequencia`)**: conta dias com treino voltando a partir de hoje; para no primeiro dia planejado, passado, sem treino e fora das exceções. Hoje nunca é falta. Dia fora do plano com treino soma. Retorna 0 se `plano` vazio (aviso `avisoPlano`).
 
 ### Janela ao salvar (`agenda.js`)
-- `encerrar(true)` grava a sessão, depois `try{renderAll()} finally{celebrar(div,sid)}`: a janela abre mesmo se o redesenho falhar.
-- `encerrar` ignora chamadas se `sessao!=='andamento'`; `celebrar` ignora o mesmo `id` (`celeFeita`) → sem duplicação. **Não existe** regra de "já treinou hoje": cada sessão salva mostra a janela. Não aparece em "Não salvar".
-- Conteúdo: check SVG animado, "Treino X concluído!", data, chama + contador de dias de foco, aviso sem plano, resumo seg–dom animado (`resumoSemana(f,true)`). Vibra `[30,60,30]`. Fecha em `fecharCele()` (botão ou toque fora). `#dlgCele` criado no `body` na 1ª vez.
-- Causa provável de não ter aparecido no teste anterior: cache de arquivos antigos (resolvido com `?v=N`).
+- `encerrar(true)` grava a sessão, depois `try{renderAll()} finally{celebrar(div,sid)}`.
+- `encerrar` ignora chamadas se `sessao!=='andamento'`; `celebrar` ignora o mesmo `id` (`celeFeita`). Não existe regra de "já treinou hoje". Não aparece em "Não salvar".
+- Conteúdo: check SVG verde animado (**aprovado, não mexer**), "Treino X concluído!", data, chama + contador, aviso sem plano, resumo seg–dom animado, botões **Compartilhar** (`.btn.add`) e **Fechar** (`.btn.fin`). Vibra `[30,60,30]`. Fecha em `fecharCele()` (botão ou toque fora).
+- **Compartilhar:** ao abrir a janela, `imgCele(tipo,f,seq)` desenha um canvas 1080×1350 (fundo, cartão, check verde, título, data, chama Lucide via `Path2D`, número de dias de foco, semana com as mesmas cores, rodapé "Meus Treinos") e guarda o PNG em `celeBlob`. `compartilharCele()` usa `navigator.share({files})` se `canShare`; senão baixa `treino-AAAA-MM-DD.png`. A imagem é gerada antes para o compartilhar sair direto do toque (exigência do Safari).
 
 ### Tela ligada (`agenda.js`)
 - `atualizarWake()` pede `navigator.wakeLock.request('screen')` com opção ligada, treino em andamento e página visível; libera nos outros casos. Chamada em `render()`, `resetSessao()`, `visibilitychange` e `setTelaLigada`.
 - `renderWakeUI()` preenche `#fWake` e `#wakeInfo`.
 
 ### Cartão do exercício (aba Treino)
-- Só: alça de arrastar, nome, botões ⓘ/lápis/lixeira, círculos das séries (reps + kg) e tempos executados. **Sem** linha de resumo, etiqueta de aquecimento ou aviso fora do catálogo (estão no ⓘ, no modal e no histórico).
+- Só: alça de arrastar, nome, botões ⓘ/lápis/lixeira, círculos das séries (reps + kg) e tempos executados. **Sem** linha de resumo, etiqueta de aquecimento ou aviso fora do catálogo.
 
 ### Modal do exercício: séries (`cadastro.js`)
 - `fSer`: lista de trabalho (`{p, w, r, wm}`). `gerarSeries()` monta `.srow`. `lerSeries()` preserva propriedades.
@@ -214,15 +217,17 @@ service cloud.firestore {
 - **Repositório:** https://github.com/jpedrosntg/treinos
 - **Hospedagem:** GitHub Pages, `https://jpedrosntg.github.io/treinos/`. Decisão: **continuar no GitHub Pages**.
 - **Como publica:** upload pelo site do GitHub. Regras do Firestore pelo Console (antes dos arquivos que dependem delas).
-- **Ajuste de 30/10/2026:** subir **juntos** `agenda.js`, `base.js`, `treino.js`, `index.html` e `style.css`. Recarregar depois.
-- **A cada publicação:** aumentar o `?v=N` no `index.html` (próximo: `v=6`).
+- **Ajuste de 30/10/2026 (2º):** subir **juntos** `agenda.js`, `style.css` e `index.html` (`v=6`). Recarregar depois.
+- **A cada publicação:** aumentar o `?v=N` no `index.html` (próximo: `v=7`).
 - **Testes:** não são feitos antes de publicar.
 - **Colaborador:** um amigo cuida do visual pelo GitHub.
 - **Backup:** JSON pelo app + cópia automática em `sessoes`.
 
 ## 7. Pendências conhecidas
-- [ ] Testar: agenda em Ajustes (resumo seg–dom, dias de foco, abrir/fechar configurações, feriados, troca de mês).
-- [ ] Testar: janela ao salvar aparece sempre (inclusive 2º treino no mesmo dia), uma vez só, com o check de hoje; não aparece em "Não salvar".
+- [ ] Testar: resumo seg–dom azul e sem datas (Ajustes e janela).
+- [ ] Testar: botão Compartilhar no iPhone, no Android (tela de compartilhar) e no computador (download do PNG); conferir a imagem.
+- [ ] (Opcional) Passar o "Concluído" do calendário mensal para azul também.
+- [ ] Testar: agenda em Ajustes (abrir/fechar configurações, feriados, troca de mês).
 - [ ] Testar: cartão do exercício só com nome e círculos.
 - [ ] Testar a tela ligada no iPhone, no Android e no computador.
 - [ ] Verificar se "Recomeçar do zero" (`cadastro.js`) apaga `plano`/`excecoes`. Se apagar, pedir o `cadastro.js` e preservar os campos.
@@ -258,9 +263,11 @@ service cloud.firestore {
 - Executado vira o planejado do próximo treino.
 - No modal, reps/descanso copiam para as séries seguintes; peso segue a regra da 1ª série com `wm`.
 - **Agenda fica em Ajustes**; visível só o resumo seg–dom + dias de foco; configurações recolhidas.
+- **Resumo semanal igual nas duas telas:** letra em cima, círculo sem data, check em azul do app.
+- **Animação da janela ao salvar aprovada:** não alterar.
 - **Dias concluídos vêm do histórico**. Exceções/feriados nunca quebram os dias de foco. Hoje nunca conta como falta.
 - **Tela ligada é por aparelho** (`localStorage`) e só vale com treino em andamento.
-- **Janela ao salvar:** toda sessão salva, uma vez por sessão; respeita "reduzir movimento".
+- **Janela ao salvar:** toda sessão salva, uma vez por sessão; respeita "reduzir movimento"; compartilhamento como imagem PNG.
 - Cache: `?v=N` nos scripts/CSS, incrementado a cada publicação.
 
 ## 9. Histórico de alterações
@@ -278,4 +285,5 @@ service cloud.firestore {
 | 30/10/2026 | Etapa 1: botão ⓘ, textos removidos, notificações removidas. Funcionando |
 | 30/10/2026 | Etapa 2: `agenda.js` (agenda, sequência, exceções, tela ligada) |
 | 30/10/2026 | Etapa 3: janela animada ao salvar (`celebrar`) |
-| 30/10/2026 | Ajustes: agenda movida para Ajustes (resumo seg–dom + dias de foco; configurações em `<details>`); janela ao salvar com resumo seg–dom, `try/finally` e trava por sessão (`celeFeita`, `encerrar` só com sessão em andamento); cartão do exercício só com nome e círculos (`tagAq` foi para o ⓘ); `?v=5` nos scripts/CSS contra cache. Arquivos: `agenda.js`, `base.js`, `treino.js`, `index.html`, `style.css`. Regras sem mudanças |
+| 30/10/2026 | Agenda movida para Ajustes; janela com resumo seg–dom e trava por sessão; cartão só com nome e círculos; `?v=5` |
+| 30/10/2026 | Janela ao salvar testada e aprovada. Resumo seg–dom (Ajustes e janela): check azul, círculos sem data (`diasSemana`); botão Compartilhar com imagem PNG em canvas (`imgCele`, `compartilharCele`, `celeBlob`); `?v=6`. Arquivos: `agenda.js`, `style.css`, `index.html`. Regras sem mudanças |
