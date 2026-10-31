@@ -25,8 +25,9 @@ function atualizarPlano(div){
 }
 function encerrar(salvar){
   $('dlgFim').classList.remove('on');
+  if(sessao!=='andamento') return; // evita encerrar (e comemorar) duas vezes
   if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
-  let nAt=0; const div=cur;
+  let nAt=0, sid=null; const div=cur;
   if(salvar){
     // series = valores executados (confirmados); plan = valores planejados. "aq" vem junto com o exercício
     // A sessão é montada ANTES de atualizar o treino, para "plan" guardar o planejado original
@@ -36,7 +37,7 @@ function encerrar(salvar){
         tempos:Array.from({length:e.sets},(_,j)=>feita(d[j])?d[j].t:null),
         descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; });
     const s={id:novoId(),ts:Date.now(),tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex};
-    data.hist.push(s);
+    data.hist.push(s); sid=s.id;
     nAt=atualizarPlano(cur); // executado vira o planejado do próximo treino
     save();
     window.salvarSessao&&window.salvarSessao(s); // cópia de segurança (subcoleção "sessoes")
@@ -45,8 +46,9 @@ function encerrar(salvar){
   pos={i:0,j:0}; fase='serie'; stopTimer(); clearInterval(sInt); sIni=null; pilha=[]; pend=null;
   sessao='encerrado'; sMsg=salvar?ic('circle-check')+'Treino encerrado e salvo no histórico.'
     +(nAt?` ${nAt} exercício(s) atualizado(s) com as reps/cargas executadas para o próximo treino.`:''):'Treino encerrado sem salvar.';
-  renderAll();
-  if(salvar) window.celebrar&&celebrar(div); // janela animada com check do dia e sequência (agenda.js)
+  // A janela abre mesmo se algo falhar ao redesenhar a tela (uma vez por sessão salva)
+  try{ renderAll(); }
+  finally{ if(sid&&window.celebrar) celebrar(div,sid); }
 }
 function status(){
   const st=$('status'); st.className='status '+sessao;
@@ -73,6 +75,7 @@ function render(){
 
   $('tabs').innerHTML=data.divs.map(t=>`<button class="${t==cur?'on':''}" onclick="trocar('${t}')">${data.divs.length>3?t:'Treino '+t}</button>`).join('');
   $('list').className=on?'':'bloq';
+  // Cartão enxuto: só o nome e os círculos das séries (detalhes no botão ⓘ e no lápis)
   $('list').innerHTML=ex.map((e,i)=>{
     const d=done[cur+i]||[]; let s='';
     for(let j=0;j<e.sets;j++){ const sj=serie(e,j), v=d[j], ok=feita(v);
@@ -80,8 +83,7 @@ function render(){
       s+=`<span class="${ok?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${esc(rp)||j+1}<small>${rw}kg</small></span>`; }
     const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
-      <span class="drag">${ic('grip-vertical')}</span><div><div class="nm">${esc(e.name)}</div>
-      <div class="info">${info(e)}</div>${tagAq(e)}${avisoFora(e)}</div></div>
+      <span class="drag">${ic('grip-vertical')}</span><div class="nm">${esc(e.name)}</div></div>
       <div style="white-space:nowrap"><button class="ic" aria-label="Informações" onclick="infoEx(${i})">${ic('info')}</button><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
       <div class="ser">${s}</div>${tp?`<div class="tempos">${ic('timer')}${tp}</div>`:''}</div>`;
   }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
@@ -104,11 +106,11 @@ function infoEx(i){
   const e=(data[cur]||[])[i]; if(!e) return;
   const c=catAcha(e.name), g=k=>GRUPOS[k]||esc(k);
   $('xNome').innerHTML=ic('info')+esc(e.name);
-  $('xCorpo').innerHTML=c
+  $('xCorpo').innerHTML=(c
     ?`<div class="kv"><div><span>Grupo principal</span><b>${g(c.grupo)}</b></div>
       <div><span>Secundários</span><b>${c.secundarios.length?c.secundarios.map(g).join(', '):'—'}</b></div></div>
       <label>Como executar</label><div class="info" style="white-space:pre-line">${c.descricao?esc(c.descricao):'Sem instruções cadastradas.'}</div>`
-    :`<div class="info aviso">${ic('triangle-alert')}Este exercício não está no catálogo.</div>`;
+    :`<div class="info aviso">${ic('triangle-alert')}Este exercício não está no catálogo.</div>`)+tagAq(e);
   $('dlgInfo').classList.add('on');
 }
 

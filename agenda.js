@@ -1,7 +1,9 @@
-// ===== Agenda: dias de academia, check dos dias, sequência e exceções =====
+// ===== Agenda: dias de academia, check dos dias, dias de foco e exceções (aba Ajustes) =====
 const SEMANA=['D','S','T','Q','Q','S','S'];
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 let agMes=new Date(); agMes.setDate(1);
+let agAberto=false;   // configurações recolhidas por padrão
+let celeFeita=null;   // id da última sessão comemorada (evita janela duplicada)
 // Data local no formato AAAA-MM-DD (comparável como texto)
 const dk=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 // Dia de uma sessão do histórico: usa ts; nas antigas (sem ts), lê o texto "dd/mm/aaaa"
@@ -11,7 +13,7 @@ function diaSessao(s){
   return m?m[3]+'-'+m[2]+'-'+m[1]:null;
 }
 const diasFeitos=()=>new Set((data.hist||[]).map(diaSessao).filter(Boolean));
-// Conta os dias com treino voltando a partir de hoje.
+// Dias de foco: conta os dias com treino voltando a partir de hoje.
 // Só termina num dia planejado, já passado, sem treino e que não é exceção. Hoje nunca conta como falta.
 function sequencia(f){
   if(!data.plano.length||!f.size) return 0;
@@ -24,6 +26,21 @@ function sequencia(f){
   }
   return n;
 }
+// Dias da semana atual, de segunda a domingo
+function semanaAtual(){
+  const h=new Date(); h.setHours(0,0,0,0);
+  const s=new Date(h); s.setDate(h.getDate()-(h.getDay()+6)%7);
+  return Array.from({length:7},(_,i)=>{ const d=new Date(s); d.setDate(s.getDate()+i); return d; });
+}
+// Resumo semanal (usado na aba Ajustes e na janela ao salvar). anim = entrada animada
+function resumoSemana(f,anim){
+  const hoje=dk(new Date()), ex=new Set(data.excecoes);
+  return `<div class="csem${anim?'':' fixo'}">${semanaAtual().map((d,n)=>{
+    const k=dk(d), ok=f.has(k), cl=ok?'feito':ex.has(k)?'exc':data.plano.includes(d.getDay())?'plan':'';
+    return `<div class="${cl}${k===hoje?' hoje':''}"${anim?` style="animation-delay:${(.6+n*.08).toFixed(2)}s"`:''}><small>${SEMANA[d.getDay()]}</small><span>${ok?ic('check'):d.getDate()}</span></div>`;
+  }).join('')}</div>`;
+}
+const avisoPlano=()=>data.plano.length?'':`<div class="info aviso">${ic('triangle-alert')}Escolha os dias de academia para contar os dias de foco.</div>`;
 function renderAgenda(){
   const box=$('agenda'); if(!box) return;
   if(!data.divs.length&&!data.hist.length){ box.innerHTML=''; return; }
@@ -36,18 +53,23 @@ function renderAgenda(){
     c+=`<button class="${cl}${k===hoje?' hoje':''}" onclick="togExc('${k}')">${f.has(k)?ic('check'):i}</button>`;
   }
   box.innerHTML=`<div class="card">
-    <div class="nm">${ic('flame')}Sequência: ${seq} dia(s)</div>
-    ${data.plano.length?'':`<div class="info aviso">${ic('triangle-alert')}Escolha os dias de academia para contar a sequência.</div>`}
-    <label>Dias de academia</label>
-    <div class="chips sem">${SEMANA.map((s,i)=>`<button class="chip${data.plano.includes(i)?' on':''}" onclick="togPlano(${i})">${s}</button>`).join('')}</div>
-    <div class="top" style="margin-top:12px">
-      <button class="ic" aria-label="Mês anterior" onclick="agNav(-1)">${ic('chevron-left')}</button>
-      <div class="nm">${MESES[m]} ${y}</div>
-      <button class="ic" aria-label="Próximo mês" onclick="agNav(1)">${ic('chevron-right')}</button>
-    </div>
-    <div class="cal">${c}</div>
-    <div class="cleg"><span><i class="d feito"></i>Concluído</span><span><i class="d plan"></i>Planejado</span><span><i class="d falta"></i>Faltou</span><span><i class="d exc"></i>Exceção</span></div>
-    <div class="info">Toque numa data para marcar ou desmarcar como exceção. Exceções não quebram a sequência.</div>
+    <div class="nm">${ic('calendar-check')}Sua semana</div>
+    <div class="cseq">${ic('flame')}<b>${seq}</b><span>dia(s) de foco</span></div>
+    ${avisoPlano()}
+    ${resumoSemana(f,false)}
+    <details class="agcfg"${agAberto?' open':''} ontoggle="agAberto=this.open">
+      <summary>${ic('settings-2')}Configurar dias e feriados</summary>
+      <label>Dias de academia</label>
+      <div class="chips sem">${SEMANA.map((s,i)=>`<button class="chip${data.plano.includes(i)?' on':''}" onclick="togPlano(${i})">${s}</button>`).join('')}</div>
+      <div class="top" style="margin-top:12px">
+        <button class="ic" aria-label="Mês anterior" onclick="agNav(-1)">${ic('chevron-left')}</button>
+        <div class="nm">${MESES[m]} ${y}</div>
+        <button class="ic" aria-label="Próximo mês" onclick="agNav(1)">${ic('chevron-right')}</button>
+      </div>
+      <div class="cal">${c}</div>
+      <div class="cleg"><span><i class="d feito"></i>Concluído</span><span><i class="d plan"></i>Planejado</span><span><i class="d falta"></i>Faltou</span><span><i class="d exc"></i>Feriado/exceção</span></div>
+      <div class="info">Toque numa data para marcar ou desmarcar como feriado/exceção. Exceções não quebram os dias de foco.</div>
+    </details>
   </div>`;
 }
 function togPlano(i){
@@ -62,29 +84,28 @@ function togExc(k){
 }
 function agNav(n){ agMes=new Date(agMes.getFullYear(),agMes.getMonth()+n,1); renderAgenda(); }
 
-// ===== Comemoração ao salvar o treino (janela criada aqui, sem mexer no index.html) =====
-function celebrar(tipo){
+// ===== Janela ao salvar o treino (criada aqui, sem mexer no index.html) =====
+// id = id da sessão salva: a mesma sessão nunca abre a janela duas vezes
+function celebrar(tipo,id){
+  if(id&&celeFeita===id) return; celeFeita=id||null;
   let m=$('dlgCele');
   if(!m){
     m=document.createElement('div'); m.className='modal cele'; m.id='dlgCele';
     m.onclick=e=>{ if(e.target===m) fecharCele(); };
     document.body.appendChild(m);
   }
-  const f=diasFeitos(), seq=sequencia(f), hoje=new Date(), dias=[];
-  for(let k=6;k>=0;k--){ const d=new Date(hoje); d.setDate(d.getDate()-k); dias.push(d); }
+  const f=diasFeitos(), seq=sequencia(f);
   m.innerHTML=`<div class="box">
     <svg class="chk" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-15"/></svg>
     <div class="nm" style="justify-content:center">Treino ${esc(tipo)} concluído!</div>
-    <div class="info">Dia ${hoje.toLocaleDateString('pt-BR')} marcado no calendário.</div>
-    <div class="cseq">${ic('flame')}<b id="celeN">0</b><span>dia(s) de sequência</span></div>
-    ${data.plano.length?'':`<div class="info aviso">${ic('triangle-alert')}Escolha os dias de academia na tela Início para contar a sequência.</div>`}
-    <div class="csem">${dias.map((d,n)=>{ const k=dk(d), ok=f.has(k);
-      return `<div class="${ok?'feito':''}" style="animation-delay:${(.6+n*.08).toFixed(2)}s"><small>${SEMANA[d.getDay()]}</small><span>${ok?ic('check'):d.getDate()}</span></div>`; }).join('')}</div>
+    <div class="info">Dia ${new Date().toLocaleDateString('pt-BR')} marcado na sua semana.</div>
+    <div class="cseq">${ic('flame')}<b id="celeN">0</b><span>dia(s) de foco</span></div>
+    ${data.plano.length?'':`<div class="info aviso">${ic('triangle-alert')}Escolha os dias de academia em Ajustes para contar os dias de foco.</div>`}
+    ${resumoSemana(f,true)}
     <button class="btn fin" onclick="fecharCele()">${ic('check')}Fechar</button>
   </div>`;
   m.classList.add('on');
   navigator.vibrate&&navigator.vibrate([30,60,30]);
-  // Contador da sequência subindo de 0 até o valor atual
   const el=$('celeN'), t0=performance.now()+500, dur=Math.min(1200,200+seq*80);
   const passo=t=>{ const p=Math.max(0,Math.min(1,(t-t0)/dur)); el.textContent=Math.round(seq*p);
     if(p<1&&m.classList.contains('on')) requestAnimationFrame(passo); };

@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-title" content="Treinos">
 <meta name="theme-color" content="#0f1115">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=5">
 <title>Treinos</title>
 </head><body>
 
@@ -45,7 +45,6 @@
   <button class="btn fin" style="font-size:18px" onclick="novoTreino()"><i data-lucide="plus"></i>Cadastrar novo treino</button>
   <h2>Selecionar treino existente</h2>
   <div id="listaTreinos"></div>
-  <div id="agenda" style="margin-top:12px"></div>
 </div>
 
 <!-- ESCOLHA DA DIVISÃO -->
@@ -140,6 +139,7 @@
       </div>
       <div class="kv" id="pDados"></div>
     </div>
+    <div id="agenda"></div>
     <div class="card">
       <div class="nm"><i data-lucide="sun"></i>Tela ligada</div>
       <label for="fWake" style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -241,15 +241,16 @@
   <button class="btn add" onclick="$('dlgFim').classList.remove('on')">Continuar treinando</button>
 </div></div>
 
-<!-- A ordem importa: lucide → arquivos do app (base.js primeiro) → firebase.js -->
+<!-- A ordem importa: lucide → arquivos do app (base.js primeiro) → firebase.js
+     ?v=N força o navegador a baixar a versão nova: aumente o número a cada publicação -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script src="base.js"></script>
-<script src="cadastro.js"></script>
-<script src="treino.js"></script>
-<script src="historico.js"></script>
-<script src="analises.js"></script>
-<script src="catalogo.js"></script>
-<script src="backup.js"></script>
-<script src="agenda.js"></script>
-<script type="module" src="firebase.js"></script>
+<script src="base.js?v=5"></script>
+<script src="cadastro.js?v=5"></script>
+<script src="treino.js?v=5"></script>
+<script src="historico.js?v=5"></script>
+<script src="analises.js?v=5"></script>
+<script src="catalogo.js?v=5"></script>
+<script src="backup.js?v=5"></script>
+<script src="agenda.js?v=5"></script>
+<script type="module" src="firebase.js?v=5"></script>
 </body></html>

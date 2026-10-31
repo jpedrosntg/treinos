@@ -89,7 +89,7 @@ function mudarAba(a){
   const [i,t]=TITULOS[a]||TITULOS.treino; $('tituloApp').innerHTML=ic(i)+t;
   render(); renderNav();
   if(a==='catalogo') renderCatalogo();
-  if(a==='backup'){ window.renderWakeUI&&renderWakeUI(); window.renderPerfil&&renderPerfil(); }
+  if(a==='backup'){ window.renderWakeUI&&renderWakeUI(); window.renderPerfil&&renderPerfil(); window.renderAgenda&&renderAgenda(); }
   scrollTo(0,0);
 }
 function setTopo(txt,adm,icone){
@@ -108,5 +108,5 @@ function renderInicio(){
       <div class="info">${data.divs.map(l=>l+': '+data[l].length+' exercício(s)').join(' • ')}</div>
       <div class="info">Toque para abrir</div></div>`
     :'<div class="info">Nenhum treino cadastrado. Toque em "Cadastrar novo treino".</div>';
-  window.renderAgenda&&renderAgenda();
+  window.renderAgenda&&renderAgenda(); // mantém a agenda (aba Ajustes) atualizada
 }

@@ -117,7 +117,12 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .leg{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:14px;color:#bbb}
 .leg .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
 
-/* Agenda: dias de academia e calendário */
+/* Agenda (aba Ajustes): resumo semanal + configurações recolhidas */
+.agcfg{margin-top:12px;border-top:1px solid #2a2f3a}
+.agcfg summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 0 4px;color:var(--pri);font-weight:600;font-size:14px}
+.agcfg summary::-webkit-details-marker{display:none}
+.agcfg summary svg.lucide{width:16px;height:16px}
+.agcfg[open] summary{color:#9aa}
 .sem{flex-wrap:nowrap;gap:4px;margin-top:4px}
 .sem .chip{flex:1;padding:8px 0;text-align:center;font-weight:600}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;text-align:center}
@@ -132,14 +137,7 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .cleg{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12px;color:#9aa}
 .cleg .d{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid transparent;margin-right:4px;vertical-align:-2px}
 
-/* Comemoração ao salvar o treino */
-.cele{align-items:center;justify-content:center;padding:16px}
-.cele .box{max-width:400px;border-radius:24px;text-align:center;padding:24px 16px;animation:pop .45s cubic-bezier(.2,.9,.3,1.3)}
-@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
-.chk{width:88px;height:88px;display:block;margin:0 auto 12px}
-.chk circle{fill:none;stroke:#22c55e;stroke-width:3;stroke-dasharray:151;stroke-dashoffset:151;animation:draw .5s ease-out .1s forwards}
-.chk path{fill:none;stroke:#22c55e;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:32;stroke-dashoffset:32;animation:draw .35s ease-out .55s forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
+/* Resumo da semana (Ajustes e janela ao salvar) e dias de foco */
 .cseq{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:16px 0 4px;color:#f59e0b}
 .cseq svg.lucide{width:28px;height:28px;align-self:center;animation:chama 1s ease-in-out infinite alternate}
 @keyframes chama{to{transform:scale(1.15) rotate(-6deg)}}
@@ -147,11 +145,24 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .cseq span{color:#9aa;font-size:14px}
 .csem{display:flex;justify-content:center;gap:6px;margin:12px 0 8px}
 .csem div{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0;animation:sobe .3s ease-out forwards}
+.csem.fixo div{animation:none;opacity:1}
 @keyframes sobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .csem small{font-size:12px;color:#9aa}
 .csem span{width:36px;height:36px;border-radius:50%;border:2px solid #2a2f3a;display:flex;align-items:center;justify-content:center;font-size:14px}
+.csem .plan span{border-color:var(--pri)}
+.csem .exc span{background:#374151;color:#9aa;text-decoration:line-through}
 .csem .feito span{background:#22c55e;border-color:#22c55e;color:#fff}
+.csem .hoje span{outline:2px solid #f59e0b;outline-offset:1px}
 .csem svg.lucide{width:16px;height:16px}
+
+/* Janela ao salvar o treino */
+.cele{align-items:center;justify-content:center;padding:16px}
+.cele .box{max-width:400px;border-radius:24px;text-align:center;padding:24px 16px;animation:pop .45s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+.chk{width:88px;height:88px;display:block;margin:0 auto 12px}
+.chk circle{fill:none;stroke:#22c55e;stroke-width:3;stroke-dasharray:151;stroke-dashoffset:151;animation:draw .5s ease-out .1s forwards}
+.chk path{fill:none;stroke:#22c55e;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:32;stroke-dashoffset:32;animation:draw .35s ease-out .55s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
 .cele .btn{margin-top:16px}
 @media (prefers-reduced-motion:reduce){
   .cele .box,.cseq svg.lucide{animation:none}
