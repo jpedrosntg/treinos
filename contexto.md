@@ -10,7 +10,7 @@
 ---
 
 ## 1. Visão geral
-- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises, catálogo de exercícios e agenda semanal com sequência.
+- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises, catálogo de exercícios, agenda semanal com sequência e comemoração ao salvar.
 - **Público:** uso próprio no início. Depois, abrir para os alunos da esposa (personal trainer).
 - **Usuários:** 5 hoje. Meta de 30 a 50.
 - **Administrador:** só o Joao Pedro. Ele vê e edita o treino de todos os alunos (inclusive a agenda) e gerencia o catálogo.
@@ -20,10 +20,10 @@
 ## 2. Situação das funcionalidades
 | Funcionalidade | Situação |
 |---|---|
-| Código do app dividido em 8 arquivos (`base`, `cadastro`, `treino`, `historico`, `analises`, `catalogo`, `backup`, `agenda`) | `agenda.js` novo em 30/10/2026, aguardando teste |
+| Código do app dividido em 8 arquivos (`base`, `cadastro`, `treino`, `historico`, `analises`, `catalogo`, `backup`, `agenda`) | Aguardando teste do `agenda.js` |
 | Etapa 1: botão ⓘ, textos de dica removidos, notificações removidas | Publicada e funcionando (30/10/2026) |
-| Agenda (Início): dias de academia, calendário mensal com check automático, sequência, exceções | Nova em 30/10/2026, aguardando teste |
-| Manter a tela ligada durante o treino (Ajustes, por aparelho) | Nova em 30/10/2026, aguardando teste |
+| Etapa 2: agenda (dias de academia, calendário com check automático, sequência, exceções) e tela ligada | Publicada em 30/10/2026; testes pendentes |
+| Etapa 3: janela animada ao salvar (check do dia, sequência, últimos 7 dias) | Nova em 30/10/2026, aguardando teste |
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
 | Preenchimento automático das séries no modal | Aguardando teste |
 | Nome do exercício obrigatório do catálogo | Aguardando teste |
@@ -44,10 +44,7 @@
 | Notificações de descanso | **Removidas** em 30/10/2026. Não serão implementadas |
 
 ## 3. Roadmap (em ordem de prioridade)
-1. **Pedidos em andamento (em etapas):**
-   - ~~Etapa 1: textos informativos, botão de informações, remoção das notificações~~ (30/10/2026).
-   - ~~Etapa 2: planejamento semanal, check nos dias, sequência, exceções, tela ligada~~ (30/10/2026, aguardando teste).
-   - Etapa 3: janela animada ao salvar o treino, com o check do dia e a sequência atual (usar `diasFeitos()` e `sequencia()` do `agenda.js`).
+1. ~~Pedidos em etapas (1: informações/notificações; 2: agenda e tela ligada; 3: comemoração ao salvar)~~ (30/10/2026, testes pendentes).
 2. Catálogo completo, com descrição e forma de execução (importação por JSON).
 3. Mostrar o grupo muscular principal de cada exercício na aba Treino.
 4. Análise da evolução por grupo muscular.
@@ -67,17 +64,17 @@
 | `index.html` | Telas, modais (exercício `#fAq`, catálogo, padronizar, informações `#dlgInfo`, confirmar série, encerrar), `#agenda` na tela Início, cartão "Tela ligada" (`#fWake`, `#wakeInfo`) nos Ajustes, barra de navegação. Ordem dos scripts: lucide → base → cadastro → treino → historico → analises → catalogo → backup → agenda → firebase.js |
 | `base.js` | Estado global, auxiliares (`$`, `esc`, `mmss`, `novoId`, `normNome`, `serie`, `series`, `faixa`, `lista`, `info`, `feita`, `linhaTempo`, `divLabel`, `tagAq`, `ic`), ícones, `norm` (preserva `plano` e `excecoes`), `setData`, `save`, `renderAll`, telas (`tela`, `ilha`, `renderNav`, `irAba`, `mudarAba` → `renderWakeUI` nos Ajustes), `setTopo`, `sairDaSessao`, `irInicio`, `renderInicio` (→ `renderAgenda`) |
 | `cadastro.js` | Divisão, `renderCad`, `iniciarDoCadastro`, `abrirExec`, modal do exercício (`del`, `lerSeries`, `gerarSeries`, `autoPeso`, `openForm`, `closeForm`, `saveForm`) |
-| `treino.js` | Sessão (`resetSessao` → `atualizarWake`, `iniciarSessao`, `atualizarPlano`, `encerrar`, `status`, `trocar`), `render` (→ `atualizarWake`), `infoEx`, execução (`acao`, `abrirSerie`, `confirmarSerie`, `fecharSerie`, `voltar`), arrastar, cronômetro |
+| `treino.js` | Sessão (`resetSessao` → `atualizarWake`, `iniciarSessao`, `atualizarPlano`, `encerrar` → `celebrar` ao salvar, `status`, `trocar`), `render` (→ `atualizarWake`), `infoEx`, execução (`acao`, `abrirSerie`, `confirmarSerie`, `fecharSerie`, `voltar`), arrastar, cronômetro |
 | `historico.js` | `renderHist`, `delHist`, `togAq` |
 | `analises.js` | `media`, `numReps`, `histEx`, `calcAnalise`/`window.dadosAnalise`, filtros, radar, `renderAnalise` |
 | `catalogo.js` | `GRUPOS`, `catalogo`, `catAcha`, `avisoFora`, `setCatalogo`, `renderCatalogo`, campo Nome, modal do catálogo, `importarCat`, padronização |
 | `backup.js` | `ehMovel`, `baixar`, `compartilhar`, `exportar`, `exportarHist`, `importar` |
-| `agenda.js` | `SEMANA`, `MESES`, `agMes`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `renderAgenda`, `togPlano`, `togExc`, `agNav`; tela ligada: `WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI` e listener de `visibilitychange` |
+| `agenda.js` | `SEMANA`, `MESES`, `agMes`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `renderAgenda`, `togPlano`, `togExc`, `agNav`; comemoração: `celebrar`, `fecharCele`; tela ligada: `WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI` e listener de `visibilitychange` |
 | `firebase.js` | Auth, Firestore (cópia das sessões, importação do catálogo), App Check, IA. Expõe funções em `window.*` |
-| `style.css` | Tema escuro, mobile-first. Inclui `.sem`, `.cal`, `.cleg` (agenda) |
+| `style.css` | Tema escuro, mobile-first. Inclui `.sem`, `.cal`, `.cleg` (agenda) e `.cele`, `.chk`, `.cseq`, `.csem` (comemoração, com `prefers-reduced-motion`) |
 
 - O repositório tem **apenas** esses 11 arquivos. Não há manifest, ícone nem service worker.
-- **Comunicação entre arquivos:** scripts comuns (sem `type="module"`), com globais compartilhadas. Código que roda no carregamento só pode usar o que já foi definido antes. `base.js` vem primeiro. Chamadas de `base.js`/`treino.js` para o `agenda.js` são protegidas (`window.renderAgenda&&`, `window.atualizarWake&&`, `window.renderWakeUI&&`).
+- **Comunicação entre arquivos:** scripts comuns (sem `type="module"`), com globais compartilhadas. Código que roda no carregamento só pode usar o que já foi definido antes. `base.js` vem primeiro. Chamadas de `base.js`/`treino.js` para o `agenda.js` são protegidas (`window.renderAgenda&&`, `window.atualizarWake&&`, `window.renderWakeUI&&`, `window.celebrar&&`).
 - Não declarar o mesmo nome global em dois arquivos.
 - O `index.html` **não deve** ter `apple-mobile-web-app-capable` nem `mobile-web-app-capable`.
 - O `firebase.js` usa globais do app (`data`, `sessao`, `ic`, `esc`, `novoId`, `KEY`, `setTopo`, `tela`, `setData`, `setCatalogo`, `resetSessao`, `stopTimer`, `sairDaSessao`) e **precisa ser carregado por último**.
@@ -102,39 +99,44 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 - **Grupos do catálogo:** peito, costas, ombros, trapezio, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco (`GRUPOS`).
 
 ### Agenda (`agenda.js` + `#agenda` na tela Início)
-- O cartão aparece quando há treino ou histórico. É atualizado pelo `renderInicio` (que roda em `renderAll`, portanto também depois de salvar um treino).
+- O cartão aparece quando há treino ou histórico. É atualizado pelo `renderInicio` (que roda em `renderAll`).
 - **Dias concluídos:** automáticos, derivados do histórico (`diaSessao`: dia local de `ts`; sem `ts`, lê "dd/mm/aaaa" de `data`). Não há marcação manual.
-- **Sequência (`sequencia`)**: conta os dias com treino voltando a partir de hoje e para no primeiro dia planejado, já passado, sem treino e fora das exceções. Hoje nunca é falta. Dia não planejado com treino soma. Não olha antes do primeiro dia com treino. Retorna 0 se `plano` estiver vazio (o cartão mostra um aviso).
-- **Calendário:** mês em `agMes` (setas `agNav`). Classes: `feito` (verde com ✓), `plan` (planejado futuro/hoje, azul), `falta` (planejado passado sem treino, a partir do 1º treino, vermelho), `exc` (cinza riscado), `hoje` (contorno laranja). Tocar numa data chama `togExc` (marca/desmarca exceção). `togPlano(i)` alterna o dia da semana. Os dois salvam (`save()`).
+- **Sequência (`sequencia`)**: conta os dias com treino voltando a partir de hoje e para no primeiro dia planejado, já passado, sem treino e fora das exceções. Hoje nunca é falta. Dia não planejado com treino soma. Não olha antes do primeiro dia com treino. Retorna 0 se `plano` estiver vazio.
+- **Calendário:** mês em `agMes` (`agNav`). Classes: `feito`, `plan`, `falta`, `exc`, `hoje`. Tocar numa data chama `togExc`; `togPlano(i)` alterna o dia da semana. Os dois salvam.
+
+### Comemoração ao salvar (`agenda.js`)
+- `encerrar(true)` chama `celebrar(div)` depois do `renderAll()` (não aparece em "Não salvar").
+- `celebrar` cria `#dlgCele` (`.modal.cele`) no `body` na primeira vez, sem markup no `index.html`. Mostra: círculo + check desenhados em SVG (`.chk`), "Treino X concluído!", data de hoje, chama pulsando e contador da sequência subindo de 0 (`requestAnimationFrame`), últimos 7 dias (`.csem`, verde = treinou) e aviso se `plano` estiver vazio. Vibra `[30,60,30]`.
+- Fecha com `fecharCele()` (botão ou toque fora).
 
 ### Tela ligada (`agenda.js`)
-- `atualizarWake()` pede `navigator.wakeLock.request('screen')` quando a opção está ligada, o treino está em andamento e a página está visível; libera nos outros casos. É chamada em `render()`, `resetSessao()`, `visibilitychange` e `setTelaLigada`.
-- `renderWakeUI()` preenche `#fWake` e `#wakeInfo` (avisa se o navegador não oferece o recurso).
+- `atualizarWake()` pede `navigator.wakeLock.request('screen')` com opção ligada, treino em andamento e página visível; libera nos outros casos. Chamada em `render()`, `resetSessao()`, `visibilitychange` e `setTelaLigada`.
+- `renderWakeUI()` preenche `#fWake` e `#wakeInfo`.
 
 ### Modal do exercício: séries (`cadastro.js`)
 - `fSer`: lista de trabalho (`{p, w, r, wm}`). `gerarSeries()` monta `.srow` (`.p`, `.w`, `.r`). `lerSeries()` preserva propriedades.
-- `autoPeso(ev)`: reps e descanso digitados na série *j* vão para todas as seguintes (inclusive escondidas); peso da 1ª vai para as seguintes sem `wm`.
+- `autoPeso(ev)`: reps e descanso digitados na série *j* vão para todas as seguintes; peso da 1ª vai para as seguintes sem `wm`.
 - Nada é gravado até o `saveForm`, que grava `{w, r, p}`.
 
 ### Informações do exercício (`treino.js` + `index.html`)
-- Botão ⓘ (`infoEx(i)`) antes do lápis. Funciona durante o treino, sem mexer no cronômetro. Mostra grupo principal, secundários e "Como executar" (`descricao`, `white-space:pre-line`). Fora do catálogo: aviso.
+- Botão ⓘ (`infoEx(i)`) antes do lápis. Funciona durante o treino, sem mexer no cronômetro. Mostra grupo principal, secundários e "Como executar". Fora do catálogo: aviso.
 
 ### Aquecimento
-- `#fAq` no modal; `tagAq(e)`; `encerrar` leva `aq`; `togAq(k,n)` no histórico (confirmação, salva, `atualizarSessoes([h])`, zera `anSel`); `histEx()` ignora `aq`; `padLista` usa chave `nome|aq`.
+- `#fAq` no modal; `tagAq(e)`; `encerrar` leva `aq`; `togAq(k,n)` no histórico; `histEx()` ignora `aq`; `padLista` usa chave `nome|aq`.
 
 ### Nomes e catálogo
-- `normNome` (`base.js`), `catAcha`, sugestões `#fnSug` e aviso `#fnAviso` (`prepNome`), `saveForm` só aceita nome do catálogo, `avisoFora`, `salvarCat` sem nomes repetidos.
+- `normNome`, `catAcha`, sugestões `#fnSug`, aviso `#fnAviso` (`prepNome`), `saveForm` só aceita nome do catálogo, `avisoFora`, `salvarCat` sem nomes repetidos.
 - Importar catálogo (`importarCat`, só admin): `[{nome, grupo, secundarios?, descricao?}]` ou `{exercicios:[...]}`.
 - Padronizar nomes (só admin, sem treino em andamento): troca `name`, guarda `nomeOriginal`, salva e chama `atualizarSessoes`.
 
 ### Backup (`backup.js`)
-- `compartilhar(obj,nome)`: menu de compartilhar no celular; download direto no computador (`baixar()`).
-- `importar(inp)`: aceita `A` ou `divs`; sem treino em andamento; com confirmação. (`plano`/`excecoes` do arquivo são lidos pelo `norm` se o `importar` usar `setData`; não confirmado.)
+- `compartilhar(obj,nome)`: compartilhar no celular; download direto no computador (`baixar()`).
+- `importar(inp)`: aceita `A` ou `divs`; sem treino em andamento; com confirmação. (`plano`/`excecoes` mantidos só se usar `setData`; não confirmado.)
 
 ### Execução e confirmação de série (`treino.js`)
 - Fases: `serie` → `descanso` → `serie`…; última: `serie` → `fim`.
-- "Descanso" registra `done[div+i][j]={t,d:null,p,w}`, inicia o descanso no mesmo toque e abre `dlgSerie`. O modal não interfere no cronômetro.
-- Faixa de status sem dicas extras. "Voltar" desfaz. `d` gravado no "Próximo" ou ao encerrar no descanso.
+- "Descanso" registra `done[div+i][j]={t,d:null,p,w}`, inicia o descanso e abre `dlgSerie`, sem interferir no cronômetro.
+- "Voltar" desfaz. `d` gravado no "Próximo" ou ao encerrar no descanso.
 - `atualizarPlano(div)` em `encerrar(true)`: executado vira o próximo planejado.
 
 ### Histórico na nuvem (`firebase.js`)
@@ -205,20 +207,21 @@ service cloud.firestore {
 - **Repositório:** https://github.com/jpedrosntg/treinos
 - **Hospedagem:** GitHub Pages, `https://jpedrosntg.github.io/treinos/`. Decisão: **continuar no GitHub Pages**.
 - **Como publica:** upload pelo site do GitHub. Regras do Firestore pelo Console (antes dos arquivos que dependem delas).
-- **Etapa 2 (30/10/2026):** subir **juntos** `agenda.js` (novo), `base.js`, `treino.js`, `index.html` e `style.css`. Recarregar depois.
+- **Etapa 3 (30/10/2026):** subir **juntos** `agenda.js`, `treino.js` e `style.css`. Recarregar depois.
 - **Testes:** não são feitos antes de publicar.
 - **Colaborador:** um amigo cuida do visual pelo GitHub.
 - **Backup:** JSON pelo app + cópia automática em `sessoes`.
 
 ## 7. Pendências conhecidas
-- [ ] Testar a Etapa 2: escolher dias, check automático (inclusive em sessões antigas), sequência (falta, exceção, dia fora do plano, hoje), troca de mês, recarregar a página, agenda de um aluno pelo admin.
-- [ ] Testar a tela ligada no iPhone, no Android e no computador (liga só com treino em andamento; volta a valer depois de sair e voltar ao app; solta ao encerrar).
+- [ ] Testar a Etapa 3: janela ao salvar (animações, contador, últimos 7 dias, aviso sem plano, não aparece em "Não salvar", fechar tocando fora).
+- [ ] Testar a Etapa 2: dias, check automático (inclusive sessões antigas), sequência (falta, exceção, dia fora do plano, hoje), troca de mês, recarregar, agenda de aluno pelo admin.
+- [ ] Testar a tela ligada no iPhone, no Android e no computador.
 - [ ] Verificar se "Recomeçar do zero" (`cadastro.js`) apaga `plano`/`excecoes`. Se apagar, pedir o `cadastro.js` e preservar os campos.
 - [ ] Verificar se `importar` (`backup.js`) mantém `plano`/`excecoes`.
 - [ ] Testar o preenchimento automático no modal.
 - [ ] Testar a atualização do planejado.
 - [ ] Testar o aquecimento.
-- [ ] (Opcional) Estilizar o checkbox `#fAq`, o `#fWake` e a chama do histórico.
+- [ ] (Opcional) Estilizar os checkboxes `#fAq`, `#fWake` e a chama do histórico.
 - [ ] Testar o backup no computador, no iPhone e no Android.
 - [ ] Publicar a regra `sessoes` no Console, se ainda não foi publicada.
 - [ ] Importar o catálogo completo por JSON.
@@ -234,7 +237,7 @@ service cloud.firestore {
 ## 8. Decisões e preferências
 - Arquivos **sempre completos**, só os que mudaram.
 - **Nunca presumir nem reconstruir** arquivos não recebidos completos.
-- Código **dividido por área**. Arquivo novo só para área nova ou grande, atualizando a ordem dos scripts e este contexto (`agenda.js` criado na Etapa 2).
+- Código **dividido por área**. Arquivo novo só para área nova ou grande, atualizando a ordem dos scripts e este contexto.
 - Explicações detalhadas, em linguagem simples.
 - Preservar visual e funcionamento existentes.
 - Sem Blaze, sem PWA, sem sair do GitHub Pages, **sem notificações push**.
@@ -249,6 +252,7 @@ service cloud.firestore {
 - No modal, reps/descanso copiam para as séries seguintes; peso segue a regra da 1ª série com `wm`.
 - **Dias concluídos vêm do histórico** (sem marcação manual). Exceções nunca quebram a sequência. Hoje nunca conta como falta.
 - **Tela ligada é por aparelho** (`localStorage`) e só vale com treino em andamento.
+- **Comemoração só ao salvar**; janela criada pelo `agenda.js`; respeita "reduzir movimento".
 
 ## 9. Histórico de alterações
 | Data | Alteração |
@@ -263,4 +267,5 @@ service cloud.firestore {
 | 30/10/2026 | Backup corrigido; aquecimento; `atualizarPlano`; preenchimento automático no modal |
 | 30/10/2026 | `app.js` dividido em 7 arquivos. Testado e funcionando |
 | 30/10/2026 | Etapa 1: botão ⓘ, textos removidos, notificações removidas. Funcionando |
-| 30/10/2026 | Etapa 2: `agenda.js` (dias de academia, calendário com check automático, sequência, exceções, tela ligada com Wake Lock); `base.js` (`plano`/`excecoes` em `VAZIO`/`norm`, `renderAgenda` no `renderInicio`, `renderWakeUI` nos Ajustes, removidos `agendada` e `atualizarNotifUI`); `treino.js` (`atualizarWake` em `render`/`resetSessao`); `index.html` (`#agenda`, cartão Tela ligada, script `agenda.js`); `style.css` (`.sem`, `.cal`, `.cleg`). Regras sem mudanças |
+| 30/10/2026 | Etapa 2: `agenda.js` (agenda, sequência, exceções, tela ligada); `base.js`, `treino.js`, `index.html`, `style.css` ajustados. Regras sem mudanças |
+| 30/10/2026 | Etapa 3: `agenda.js` (`celebrar`, `fecharCele`); `treino.js` (`encerrar` chama `celebrar` ao salvar); `style.css` (`.cele`, `.chk`, `.cseq`, `.csem`, `prefers-reduced-motion`). `index.html` e regras sem mudanças |

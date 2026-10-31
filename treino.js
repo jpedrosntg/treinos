@@ -26,7 +26,7 @@ function atualizarPlano(div){
 function encerrar(salvar){
   $('dlgFim').classList.remove('on');
   if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
-  let nAt=0;
+  let nAt=0; const div=cur;
   if(salvar){
     // series = valores executados (confirmados); plan = valores planejados. "aq" vem junto com o exercício
     // A sessão é montada ANTES de atualizar o treino, para "plan" guardar o planejado original
@@ -46,6 +46,7 @@ function encerrar(salvar){
   sessao='encerrado'; sMsg=salvar?ic('circle-check')+'Treino encerrado e salvo no histórico.'
     +(nAt?` ${nAt} exercício(s) atualizado(s) com as reps/cargas executadas para o próximo treino.`:''):'Treino encerrado sem salvar.';
   renderAll();
+  if(salvar) window.celebrar&&celebrar(div); // janela animada com check do dia e sequência (agenda.js)
 }
 function status(){
   const st=$('status'); st.className='status '+sessao;

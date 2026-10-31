@@ -62,6 +62,36 @@ function togExc(k){
 }
 function agNav(n){ agMes=new Date(agMes.getFullYear(),agMes.getMonth()+n,1); renderAgenda(); }
 
+// ===== Comemoração ao salvar o treino (janela criada aqui, sem mexer no index.html) =====
+function celebrar(tipo){
+  let m=$('dlgCele');
+  if(!m){
+    m=document.createElement('div'); m.className='modal cele'; m.id='dlgCele';
+    m.onclick=e=>{ if(e.target===m) fecharCele(); };
+    document.body.appendChild(m);
+  }
+  const f=diasFeitos(), seq=sequencia(f), hoje=new Date(), dias=[];
+  for(let k=6;k>=0;k--){ const d=new Date(hoje); d.setDate(d.getDate()-k); dias.push(d); }
+  m.innerHTML=`<div class="box">
+    <svg class="chk" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-15"/></svg>
+    <div class="nm" style="justify-content:center">Treino ${esc(tipo)} concluído!</div>
+    <div class="info">Dia ${hoje.toLocaleDateString('pt-BR')} marcado no calendário.</div>
+    <div class="cseq">${ic('flame')}<b id="celeN">0</b><span>dia(s) de sequência</span></div>
+    ${data.plano.length?'':`<div class="info aviso">${ic('triangle-alert')}Escolha os dias de academia na tela Início para contar a sequência.</div>`}
+    <div class="csem">${dias.map((d,n)=>{ const k=dk(d), ok=f.has(k);
+      return `<div class="${ok?'feito':''}" style="animation-delay:${(.6+n*.08).toFixed(2)}s"><small>${SEMANA[d.getDay()]}</small><span>${ok?ic('check'):d.getDate()}</span></div>`; }).join('')}</div>
+    <button class="btn fin" onclick="fecharCele()">${ic('check')}Fechar</button>
+  </div>`;
+  m.classList.add('on');
+  navigator.vibrate&&navigator.vibrate([30,60,30]);
+  // Contador da sequência subindo de 0 até o valor atual
+  const el=$('celeN'), t0=performance.now()+500, dur=Math.min(1200,200+seq*80);
+  const passo=t=>{ const p=Math.max(0,Math.min(1,(t-t0)/dur)); el.textContent=Math.round(seq*p);
+    if(p<1&&m.classList.contains('on')) requestAnimationFrame(passo); };
+  requestAnimationFrame(passo);
+}
+function fecharCele(){ const m=$('dlgCele'); if(m) m.classList.remove('on'); }
+
 // ===== Manter a tela ligada durante o treino (vale só para este aparelho) =====
 const WKEY='treinos_tela';
 let wLock=null, wPed=false;
