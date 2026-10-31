@@ -140,12 +140,6 @@
       <div class="kv" id="pDados"></div>
     </div>
     <div class="card">
-      <div class="nm"><i data-lucide="bell"></i>Aviso de fim do descanso</div>
-      <div class="info" id="nInfo">Carregando...</div>
-      <button id="bNotif" class="btn add" onclick="notifToggle()">Ativar notificações</button>
-      <button class="btn add" onclick="notifTeste()"><i data-lucide="flask-conical"></i>Testar (5 s — bloqueie o celular)</button>
-    </div>
-    <div class="card">
       <div class="nm"><i data-lucide="save"></i>Backup</div>
       <div class="info">Salve uma cópia dos seus dados ou restaure um backup.</div>
       <button class="btn add" onclick="exportar()"><i data-lucide="download"></i>Exportar tudo (treino + histórico)</button>
@@ -208,6 +202,13 @@
   <div id="padErr" class="erro"></div>
   <button class="btn fin" onclick="aplicarPadronizar()"><i data-lucide="check"></i>Aplicar</button>
   <button class="btn add" onclick="$('modalPad').classList.remove('on')">Cancelar</button>
+</div></div>
+
+<!-- DIÁLOGO INFORMAÇÕES DO EXERCÍCIO -->
+<div class="modal" id="dlgInfo"><div class="box">
+  <div class="nm" id="xNome">Exercício</div>
+  <div id="xCorpo"></div>
+  <button class="btn add" onclick="$('dlgInfo').classList.remove('on')">Fechar</button>
 </div></div>
 
 <!-- DIÁLOGO CONFIRMAR SÉRIE -->

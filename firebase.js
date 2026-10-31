@@ -2,8 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebas
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app-check.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
-import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js";
 import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-ai.js";
 
 const firebaseConfig = {
@@ -14,7 +12,6 @@ const firebaseConfig = {
   messagingSenderId: "846488130737",
   appId: "1:846488130737:web:36e06bff4eb998475a3e90"
 };
-const VAPID_KEY = 'BCf0WcCmzfJgVoul0i0OPiK67q_JqCEeSoD6ZF06KyHqNkWQqJ5tcZkRXcvWsr_QcAHborLxLEPo4LNalk-Yo-k';
 const RECAPTCHA_KEY = '6LflcPctAAAAAHgYzAFnVC-lTLc5h42zmfpRGC4O';
 
 const COLECAO = 'treinos_teste';
@@ -33,7 +30,6 @@ initializeAppCheck(app, {
 const auth = getAuth(app);
 setPersistence(auth, indexedDBLocalPersistence).catch(() => setPersistence(auth, browserLocalPersistence));
 const db = getFirestore(app);
-const fns = getFunctions(app);
 const ai = getAI(app, { backend: new GoogleAIBackend() });
 const modelo = getGenerativeModel(ai, {
   model: 'gemini-2.5-flash',
@@ -74,7 +70,6 @@ Dados: ${JSON.stringify(a)}`;
 };
 
 // ===== LOGIN / LOGOUT =====
-const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 window.entrar = async () => {
   const prov = new GoogleAuthProvider();
   prov.setCustomParameters({ prompt: 'select_account' });
@@ -120,64 +115,6 @@ window.renderPerfil = () => {
     const d = document.createElement('div'), s = document.createElement('span'), b = document.createElement('b');
     s.textContent = k; b.innerHTML = v; d.append(s, b); box.append(d);
   });
-};
-
-// ===== NOTIFICAÇÕES =====
-const NKEY = 'notif_descanso';
-const fAgendar = httpsCallable(fns, 'agendarDescanso', { timeout: 560000 });
-const fCancelar = httpsCallable(fns, 'cancelarDescanso');
-let fcmToken = null, idAtual = null;
-const notifOn = () => localStorage.getItem(NKEY) === '1' && 'Notification' in window && Notification.permission === 'granted';
-
-async function obterToken(pedir) {
-  if (!(await isSupported()) || !('Notification' in window))
-    throw new Error('Notificações não suportadas aqui. No iPhone: iOS 16.4+ e app instalado na Tela de Início.');
-  const perm = pedir ? await Notification.requestPermission() : Notification.permission;
-  if (perm !== 'granted') throw new Error('Permissão negada. Libere em Ajustes > Notificações > Treinos.');
-  const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
-  await navigator.serviceWorker.ready;
-  fcmToken = await getToken(getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-  if (!fcmToken) throw new Error('Não foi possível obter o token de notificação.');
-  return fcmToken;
-}
-
-window.atualizarNotifUI = () => {
-  const on = notifOn(), b = el('bNotif');
-  b.innerHTML = on ? ic('bell') + 'Notificações ativadas (toque para desativar)' : ic('bell-off') + 'Ativar notificações';
-  b.classList.toggle('ativo', on);
-  el('nInfo').textContent = on
-    ? 'Você será avisado quando o descanso acabar, mesmo com a tela bloqueada.'
-    : (!standalone && /iPhone|iPad/.test(navigator.userAgent)
-      ? 'No iPhone, instale o app na Tela de Início (Compartilhar > Adicionar à Tela de Início) para ativar.'
-      : 'Receba um aviso quando o descanso terminar, mesmo com a tela bloqueada.');
-};
-
-window.notifToggle = async () => {
-  if (notifOn()) { localStorage.removeItem(NKEY); return atualizarNotifUI(); }
-  try { await obterToken(true); localStorage.setItem(NKEY, '1'); }
-  catch (e) { alert(e.message); localStorage.removeItem(NKEY); }
-  atualizarNotifUI();
-};
-
-window.notifAgendar = (seg, corpo) => {
-  if (!notifOn() || !usuario) return false;
-  const id = idAtual = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
-  (fcmToken ? Promise.resolve(fcmToken) : obterToken(false))
-    .then(token => fAgendar({ token, id, segundos: Math.round(seg), titulo: 'Descanso terminou!', corpo }))
-    .catch(e => console.warn('Notificação:', e.message));
-  return true;
-};
-
-window.notifCancelar = () => {
-  if (!idAtual || !usuario) return;
-  const id = idAtual; idAtual = null;
-  fCancelar({ id }).catch(() => {});
-};
-
-window.notifTeste = () => {
-  if (!notifOn()) return alert('Ative as notificações primeiro.');
-  window.notifAgendar(5, 'Teste OK! As notificações estão funcionando.');
-  alert('Bloqueie o celular agora. A notificação chega em ~5 segundos.');
 };
 
 // ===== NUVEM =====
@@ -345,7 +282,6 @@ window.importarCatalogo = async (itens) => {
 onAuthStateChanged(auth, async (u) => {
   usuario = u; ehAdmin = false;
   setTopo('', false);
-  atualizarNotifUI();
 
   if (!u) {
     el('msgLogin').textContent = 'Entre para acessar seus treinos';
@@ -373,7 +309,6 @@ onAuthStateChanged(auth, async (u) => {
 
   window.renderPerfil();
   carregarCatalogo().catch(e => console.warn('Catálogo:', e.message));
-  if (notifOn()) obterToken(false).catch(() => {});
 
   if (ehAdmin) {
     try { await carregarAlunos(); } catch (e) { alert('Erro: ' + e.message); }

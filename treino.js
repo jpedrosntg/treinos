@@ -50,8 +50,8 @@ function encerrar(salvar){
 function status(){
   const st=$('status'); st.className='status '+sessao;
   st.innerHTML=sessao==='andamento'?ic('circle-dot')+'Treino '+cur+' em andamento • '+mmss(Math.floor((Date.now()-sIni)/1000))
-    :sessao==='encerrado'?sMsg+' Toque em INICIAR TREINO para uma nova sessão.'
-    :ic('circle')+'Treino não iniciado. Toque em INICIAR TREINO para começar.';
+    :sessao==='encerrado'?sMsg
+    :ic('circle')+'Treino não iniciado.';
 }
 const aviso=()=>alert('Toque em "INICIAR TREINO" para começar a sessão.');
 
@@ -81,7 +81,7 @@ function render(){
     return `<div class="card" data-i="${i}"><div class="top"><div style="display:flex;align-items:center">
       <span class="drag">${ic('grip-vertical')}</span><div><div class="nm">${esc(e.name)}</div>
       <div class="info">${info(e)}</div>${tagAq(e)}${avisoFora(e)}</div></div>
-      <div style="white-space:nowrap"><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
+      <div style="white-space:nowrap"><button class="ic" aria-label="Informações" onclick="infoEx(${i})">${ic('info')}</button><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
       <div class="ser">${s}</div>${tp?`<div class="tempos">${ic('timer')}${tp}</div>`:''}</div>`;
   }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
 
@@ -95,6 +95,19 @@ function render(){
   $('bVolta').disabled=!on||!pilha.length;
   $('bPausa').innerHTML=pausado?ic('play')+'Retomar':ic('pause')+'Pausar';
   status(); renderHist(); if(aba==='analise') renderAnalise(); tick(); ilha(); renderNav();
+}
+
+// Janela de informações do exercício (dados do catálogo). Não interfere no cronômetro.
+function infoEx(i){
+  const e=(data[cur]||[])[i]; if(!e) return;
+  const c=catAcha(e.name), g=k=>GRUPOS[k]||esc(k);
+  $('xNome').innerHTML=ic('info')+esc(e.name);
+  $('xCorpo').innerHTML=c
+    ?`<div class="kv"><div><span>Grupo principal</span><b>${g(c.grupo)}</b></div>
+      <div><span>Secundários</span><b>${c.secundarios.length?c.secundarios.map(g).join(', '):'—'}</b></div></div>
+      <label>Como executar</label><div class="info" style="white-space:pre-line">${c.descricao?esc(c.descricao):'Sem instruções cadastradas.'}</div>`
+    :`<div class="info aviso">${ic('triangle-alert')}Este exercício não está no catálogo.</div>`;
+  $('dlgInfo').classList.add('on');
 }
 
 function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
@@ -111,7 +124,7 @@ function acao(){
     const e=ex[pos.i], s=serie(e,pos.j), k=cur+pos.i;
     done[k]=done[k]||[]; done[k][pos.j]={t:Math.floor(decorrido()/1000),d:null,p:s.p,w:s.w};
     if(ultimaSerie()){ stopTimer(); fase='fim'; }
-    else { target=s.r>0?s.r:60; fase='descanso'; startTimer(); agendar(target); }
+    else { target=s.r>0?s.r:60; fase='descanso'; startTimer(); }
     render();
     return abrirSerie(pos.i,pos.j);
   } else if(fase==='descanso'){
@@ -126,8 +139,7 @@ function abrirSerie(i,j){
   const e=data[cur][i], s=serie(e,j), d=done[cur+i]||[], ant=j>0?d[j-1]:null;
   pend={k:cur+i,j,ult:fase==='fim'};
   $('sInfo').innerHTML=`${esc(e.name)} — série ${j+1}/${e.sets} • planejado: ${esc(s.p)} reps • ${s.w} kg`
-    +(ant&&ant.p!=null?`<br>Série anterior: ${esc(ant.p)} reps • ${ant.w} kg`:'')
-    +(pend.ult?'':'<br>O descanso já está contando.');
+    +(ant&&ant.p!=null?`<br>Série anterior: ${esc(ant.p)} reps • ${ant.w} kg`:'');
   $('sReps').value=s.p; $('sPeso').value=s.w; $('sErr').textContent='';
   const bc=$('dlgSerie').querySelector('.btn.add'); if(bc) bc.textContent='Manter o planejado';
   $('dlgSerie').classList.add('on');
@@ -152,25 +164,13 @@ function voltar(){
   const s=pilha.pop(); if(!s) return;
   pend=null; $('dlgSerie').classList.remove('on');
   const extra=decorrido();
-  cancelar(); clearInterval(tInt);
+  clearInterval(tInt);
   done=s.done; pos=s.pos; fase=s.fase; target=s.target;
   tAcc=s.el+extra; beeped=fase==='descanso'&&tAcc>=target*1000;
   if(pausado) tStart=null;
-  else {
-    tStart=Date.now(); tInt=setInterval(tick,250);
-    if(fase==='descanso') agendar(target-Math.floor(decorrido()/1000));
-  }
+  else { tStart=Date.now(); tInt=setInterval(tick,250); }
   render();
 }
-
-// ===== Notificação de descanso =====
-function agendar(seg){
-  if(!window.notifAgendar||seg<=0) return;
-  const n=proxima(), e=data[cur][n.i];
-  const s=e?serie(e,n.j):null;
-  agendada=window.notifAgendar(seg, e?`Próximo: ${e.name} — série ${n.j+1}/${e.sets} • ${s.p} reps • ${s.w} kg`:'Bora para a próxima!');
-}
-function cancelar(){ if(agendada&&window.notifCancelar) window.notifCancelar(); agendada=false; }
 
 // ===== Arrastar para reordenar =====
 let drag=null;
@@ -222,23 +222,20 @@ document.addEventListener('pointercancel',soltar);
 // ===== Cronômetro (sem som) =====
 const decorrido=()=>tAcc+(tStart?Date.now()-tStart:0);
 function startTimer(){
-  cancelar(); tAcc=0; pausado=false; tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
+  tAcc=0; pausado=false; tStart=Date.now(); beeped=false; clearInterval(tInt); tInt=setInterval(tick,250); tick();
 }
-function stopTimer(){ cancelar(); clearInterval(tInt); tStart=null; tAcc=0; pausado=false; tick(); }
+function stopTimer(){ clearInterval(tInt); tStart=null; tAcc=0; pausado=false; tick(); }
 function pausar(){
   if(sessao!=='andamento') return aviso();
-  if(tStart){ tAcc+=Date.now()-tStart; tStart=null; pausado=true; clearInterval(tInt); cancelar(); }
-  else if(pausado){
-    tStart=Date.now(); pausado=false; clearInterval(tInt); tInt=setInterval(tick,250);
-    if(fase==='descanso') agendar(target-Math.floor(decorrido()/1000));
-  }
+  if(tStart){ tAcc+=Date.now()-tStart; tStart=null; pausado=true; clearInterval(tInt); }
+  else if(pausado){ tStart=Date.now(); pausado=false; clearInterval(tInt); tInt=setInterval(tick,250); }
   else return;
   render();
 }
 function parar(){
   if(sessao!=='andamento') return aviso();
   if(fase==='fim') return;
-  cancelar(); clearInterval(tInt); tStart=null; tAcc=0; pausado=true; beeped=false; render();
+  clearInterval(tInt); tStart=null; tAcc=0; pausado=true; beeped=false; render();
 }
 function tick(){
   const ativo=!!(tStart||pausado), s=Math.floor(decorrido()/1000);
