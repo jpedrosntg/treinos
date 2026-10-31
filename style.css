@@ -117,6 +117,21 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .leg{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:14px;color:#bbb}
 .leg .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
 
+/* Agenda: dias de academia e calendário */
+.sem{flex-wrap:nowrap;gap:4px;margin-top:4px}
+.sem .chip{flex:1;padding:8px 0;text-align:center;font-weight:600}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;text-align:center}
+.cal b{font-size:12px;color:#9aa;font-weight:600;padding:4px 0}
+.cal button{aspect-ratio:1;border:2px solid transparent;border-radius:50%;background:none;color:#eee;font-size:14px;font-family:inherit;display:flex;align-items:center;justify-content:center;padding:0}
+.cal svg.lucide{width:16px;height:16px}
+.cal .plan,.cleg .plan{border-color:var(--pri)}
+.cal .feito,.cleg .feito{background:#22c55e;border-color:#22c55e;color:#fff}
+.cal .falta,.cleg .falta{border-color:#ef4444;color:#f87171}
+.cal .exc,.cleg .exc{background:#374151;color:#9aa;text-decoration:line-through}
+.cal .hoje{outline:2px solid #f59e0b;outline-offset:1px}
+.cleg{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12px;color:#9aa}
+.cleg .d{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid transparent;margin-right:4px;vertical-align:-2px}
+
 /* Modal e formulários */
 .modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:40}
 .modal.on{display:flex}

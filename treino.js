@@ -1,5 +1,5 @@
 // ===== Sessão =====
-function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; pilha=[]; pend=null; const m=$('dlgSerie'); if(m) m.classList.remove('on'); }
+function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; pilha=[]; pend=null; const m=$('dlgSerie'); if(m) m.classList.remove('on'); window.atualizarWake&&atualizarWake(); }
 function botaoSessao(){ sessao==='andamento'?$('dlgFim').classList.add('on'):iniciarSessao(); }
 function iniciarSessao(){
   if(!(data[cur]||[]).length) return alert('Adicione exercícios ao Treino '+cur+' antes de iniciar.');
@@ -95,6 +95,7 @@ function render(){
   $('bVolta').disabled=!on||!pilha.length;
   $('bPausa').innerHTML=pausado?ic('play')+'Retomar':ic('pause')+'Pausar';
   status(); renderHist(); if(aba==='analise') renderAnalise(); tick(); ilha(); renderNav();
+  window.atualizarWake&&atualizarWake(); // tela ligada durante o treino (agenda.js)
 }
 
 // Janela de informações do exercício (dados do catálogo). Não interfere no cronômetro.

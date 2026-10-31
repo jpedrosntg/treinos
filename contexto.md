@@ -10,42 +10,45 @@
 ---
 
 ## 1. Visão geral
-- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises e catálogo de exercícios.
+- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises, catálogo de exercícios e agenda semanal com sequência.
 - **Público:** uso próprio no início. Depois, abrir para os alunos da esposa (personal trainer).
 - **Usuários:** 5 hoje. Meta de 30 a 50.
-- **Administrador:** só o Joao Pedro. Ele vê e edita o treino de todos os alunos e gerencia o catálogo.
-- **Alunos:** podem editar o próprio treino, mas só com nomes do catálogo. Podem marcar exercícios como aquecimento (no treino e no histórico).
+- **Administrador:** só o Joao Pedro. Ele vê e edita o treino de todos os alunos (inclusive a agenda) e gerencia o catálogo.
+- **Alunos:** podem editar o próprio treino, mas só com nomes do catálogo. Podem marcar exercícios como aquecimento e configurar a própria agenda.
 - **Forma de uso:** site aberto no navegador. No iPhone, por um **atalho comum do Safari** na Tela de Início. **Não** é um app instalado (PWA), e isso é intencional.
 
 ## 2. Situação das funcionalidades
 | Funcionalidade | Situação |
 |---|---|
-| Código do app dividido em 7 arquivos (`base`, `cadastro`, `treino`, `historico`, `analises`, `catalogo`, `backup`) | Nova em 30/10/2026, aguardando teste. Sem mudança de funcionamento |
+| Código do app dividido em 8 arquivos (`base`, `cadastro`, `treino`, `historico`, `analises`, `catalogo`, `backup`, `agenda`) | `agenda.js` novo em 30/10/2026, aguardando teste |
+| Etapa 1: botão ⓘ, textos de dica removidos, notificações removidas | Publicada e funcionando (30/10/2026) |
+| Agenda (Início): dias de academia, calendário mensal com check automático, sequência, exceções | Nova em 30/10/2026, aguardando teste |
+| Manter a tela ligada durante o treino (Ajustes, por aparelho) | Nova em 30/10/2026, aguardando teste |
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
-| Preenchimento automático das séries no modal (reps e descanso para as séries seguintes; peso da 1ª série) | Reps/descanso novos em 30/10/2026, aguardando teste |
-| Nome do exercício obrigatório do catálogo (lista de sugestões) | Nova em 30/10/2026, aguardando teste |
-| Exercício de aquecimento (`aq`): opção no modal, etiqueta, chama no histórico, fora das análises | Nova em 30/10/2026, aguardando teste |
-| Execução: sessão, cronômetro, descanso, "ilha", desfazer, arrastar para reordenar | Estável |
-| Confirmação de cada série (reps e carga), aberta junto com o descanso | Refeita em 28/10/2026, aguardando teste |
-| Executado vira o planejado do próximo treino (`atualizarPlano`) | Nova em 30/10/2026, aguardando teste |
-| Cópia de segurança do histórico (subcoleção `sessoes` + fila local) | Nova em 28/10/2026, aguardando teste |
-| Login com Google (inclusive pelo atalho do iPhone) | Corrigido em 23/10/2026, aguardando teste |
-| Histórico | Em ajuste. Grava os valores executados. Permite marcar/desmarcar aquecimento |
-| Análises: filtro de divisão, filtro de exercícios, radar dos 3 últimos treinos da divisão, comparação penúltima × última | Refeita em 28/10/2026, aguardando teste. Ignora aquecimentos |
-| Análise com IA (Gemini, só admin) | Em ajuste. Compara a 1ª com a última sessão, com todas as divisões. Ignora aquecimentos |
-| Catálogo de exercícios (grupo principal + secundários, inclui Trapézio) | Em ajuste |
-| Importar catálogo por JSON (admin) | Nova em 30/10/2026, aguardando teste |
-| Padronizar nomes do treino e do histórico de um aluno (admin) | Nova em 30/10/2026, aguardando teste. Aquecimento não conflita com trabalho |
-| Backup (exportar/importar JSON) | Corrigido em 30/10/2026 (não funcionava no computador), aguardando teste |
-| Ajustes: perfil | Em ajuste |
-| Notificações de descanso | **Desconsiderada.** Não funciona e não será implementada (exige plano Blaze) |
+| Preenchimento automático das séries no modal | Aguardando teste |
+| Nome do exercício obrigatório do catálogo | Aguardando teste |
+| Exercício de aquecimento (`aq`) | Aguardando teste |
+| Execução: sessão, cronômetro, descanso, "ilha", desfazer, arrastar | Estável |
+| Confirmação de cada série, aberta junto com o descanso | Aguardando teste |
+| Executado vira o planejado do próximo treino (`atualizarPlano`) | Aguardando teste |
+| Cópia de segurança do histórico (subcoleção `sessoes` + fila local) | Aguardando teste |
+| Login com Google (inclusive pelo atalho do iPhone) | Aguardando teste |
+| Histórico | Em ajuste |
+| Análises (filtros, radar, penúltima × última) | Aguardando teste. Ignora aquecimentos |
+| Análise com IA (Gemini, só admin) | Em ajuste |
+| Catálogo (grupo principal + secundários) | Em ajuste |
+| Importar catálogo por JSON (admin) | Aguardando teste |
+| Padronizar nomes (admin) | Aguardando teste |
+| Backup (exportar/importar JSON) | Aguardando teste |
+| Ajustes: perfil, tela ligada | Em ajuste |
+| Notificações de descanso | **Removidas** em 30/10/2026. Não serão implementadas |
 
 ## 3. Roadmap (em ordem de prioridade)
 1. **Pedidos em andamento (em etapas):**
-   - Etapa 1: remover textos informativos de telas de treino; botão de informações do exercício (grupo principal, secundários e instruções do catálogo); remover notificações do perfil e o código delas.
-   - Etapa 2: planejamento semanal dos dias de academia, check nos dias concluídos, contador de sequência, calendário de datas excepcionais que não quebram a sequência e opção de manter a tela ligada durante o cronômetro.
-   - Etapa 3: janela animada ao salvar o treino, com o check do dia e a sequência atual.
-2. Catálogo completo, com descrição e forma de execução de cada exercício (usar a importação por JSON).
+   - ~~Etapa 1: textos informativos, botão de informações, remoção das notificações~~ (30/10/2026).
+   - ~~Etapa 2: planejamento semanal, check nos dias, sequência, exceções, tela ligada~~ (30/10/2026, aguardando teste).
+   - Etapa 3: janela animada ao salvar o treino, com o check do dia e a sequência atual (usar `diasFeitos()` e `sequencia()` do `agenda.js`).
+2. Catálogo completo, com descrição e forma de execução (importação por JSON).
 3. Mostrar o grupo muscular principal de cada exercício na aba Treino.
 4. Análise da evolução por grupo muscular.
 5. Melhorar a análise com IA.
@@ -54,134 +57,109 @@
 ## 4. Tecnologias e estrutura
 - HTML, CSS e JavaScript puros, **sem framework e sem etapa de build**.
 - Ícones: Lucide (CDN `unpkg.com/lucide@latest`, sem versão fixa).
-- Gráfico radar: SVG gerado à mão no `analises.js`, sem biblioteca.
-- Firebase SDK 12.4.0, carregado por CDN (módulos ES).
+- Gráfico radar: SVG gerado à mão no `analises.js`.
+- Firebase SDK 12.4.0 por CDN (módulos ES): App, App Check, Auth, Firestore, AI.
+- Tela ligada: API Screen Wake Lock (`navigator.wakeLock`). No iPhone, a partir do iOS 16.4.
 - **Aparelhos que precisam funcionar:** iPhone, Android e computador.
 
 | Arquivo | Função |
 |---|---|
-| `index.html` | Telas, modais (exercício com `#fAq`, catálogo, padronizar nomes, confirmar série, encerrar) e barra de navegação. `#fSeries` tem `oninput="autoPeso(event)"`. Ordem dos scripts: lucide → base → cadastro → treino → historico → analises → catalogo → backup → firebase.js |
-| `base.js` | Estado global (`data`, `cur`, `done`, `pos`, `fase`, `sessao`, cronômetro…), auxiliares (`$`, `esc`, `mmss`, `novoId`, `normNome`, `serie`, `series`, `faixa`, `lista`, `info`, `feita`, `linhaTempo`, `divLabel`, `tagAq`, `ic`), ícones, `norm`, `setData`, `save`, `renderAll`, telas (`tela`, `ilha`, `renderNav`, `irAba`, `mudarAba`, `TITULOS`), `setTopo`, `sairDaSessao`, `irInicio`, `renderInicio` |
-| `cadastro.js` | Escolha/mudança de divisão, `renderCad`, `iniciarDoCadastro`, `abrirExec`, modal do exercício (`del`, `lerSeries`, `gerarSeries`, `autoPeso`, `openForm`, `closeForm`, `saveForm`) |
-| `treino.js` | Sessão (`resetSessao`, `iniciarSessao`, `atualizarPlano`, `encerrar`, `status`, `trocar`), `render` da aba Treino, execução (`acao`, `abrirSerie`, `confirmarSerie`, `fecharSerie`, `voltar`), `agendar`/`cancelar` (notificação), arrastar para reordenar, cronômetro (`decorrido`, `startTimer`, `stopTimer`, `pausar`, `parar`, `tick`) |
+| `index.html` | Telas, modais (exercício `#fAq`, catálogo, padronizar, informações `#dlgInfo`, confirmar série, encerrar), `#agenda` na tela Início, cartão "Tela ligada" (`#fWake`, `#wakeInfo`) nos Ajustes, barra de navegação. Ordem dos scripts: lucide → base → cadastro → treino → historico → analises → catalogo → backup → agenda → firebase.js |
+| `base.js` | Estado global, auxiliares (`$`, `esc`, `mmss`, `novoId`, `normNome`, `serie`, `series`, `faixa`, `lista`, `info`, `feita`, `linhaTempo`, `divLabel`, `tagAq`, `ic`), ícones, `norm` (preserva `plano` e `excecoes`), `setData`, `save`, `renderAll`, telas (`tela`, `ilha`, `renderNav`, `irAba`, `mudarAba` → `renderWakeUI` nos Ajustes), `setTopo`, `sairDaSessao`, `irInicio`, `renderInicio` (→ `renderAgenda`) |
+| `cadastro.js` | Divisão, `renderCad`, `iniciarDoCadastro`, `abrirExec`, modal do exercício (`del`, `lerSeries`, `gerarSeries`, `autoPeso`, `openForm`, `closeForm`, `saveForm`) |
+| `treino.js` | Sessão (`resetSessao` → `atualizarWake`, `iniciarSessao`, `atualizarPlano`, `encerrar`, `status`, `trocar`), `render` (→ `atualizarWake`), `infoEx`, execução (`acao`, `abrirSerie`, `confirmarSerie`, `fecharSerie`, `voltar`), arrastar, cronômetro |
 | `historico.js` | `renderHist`, `delHist`, `togAq` |
-| `analises.js` | `media`, `numReps`, `histEx`, `calcAnalise`/`window.dadosAnalise`, filtros (`anSel`, `anKeys`, `anDiv`), radar e `renderAnalise` |
-| `catalogo.js` | `GRUPOS`, `catalogo`, `catAcha`, `avisoFora`, `setCatalogo`, `renderCatalogo`, campo Nome (`prepNome`, `sugerir`, `escolherNome`, `avisoNome`), modal do catálogo, `importarCat`, padronização (`abrirPadronizar`, `padLista`, `aplicarPadronizar`) |
+| `analises.js` | `media`, `numReps`, `histEx`, `calcAnalise`/`window.dadosAnalise`, filtros, radar, `renderAnalise` |
+| `catalogo.js` | `GRUPOS`, `catalogo`, `catAcha`, `avisoFora`, `setCatalogo`, `renderCatalogo`, campo Nome, modal do catálogo, `importarCat`, padronização |
 | `backup.js` | `ehMovel`, `baixar`, `compartilhar`, `exportar`, `exportarHist`, `importar` |
-| `firebase.js` | Auth, Firestore (incluindo a cópia das sessões e a importação do catálogo), App Check, Functions, Messaging, IA. Expõe funções em `window.*` |
-| `style.css` | Visual em tema escuro, mobile-first |
+| `agenda.js` | `SEMANA`, `MESES`, `agMes`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `renderAgenda`, `togPlano`, `togExc`, `agNav`; tela ligada: `WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI` e listener de `visibilitychange` |
+| `firebase.js` | Auth, Firestore (cópia das sessões, importação do catálogo), App Check, IA. Expõe funções em `window.*` |
+| `style.css` | Tema escuro, mobile-first. Inclui `.sem`, `.cal`, `.cleg` (agenda) |
 
-- O repositório tem **apenas** esses 10 arquivos. Não há manifest, ícone nem service worker. O antigo `app.js` foi removido.
-- **Como os arquivos do app se comunicam:** são scripts comuns (sem `type="module"`), então variáveis e funções de nível superior são globais e compartilhadas. Funções podem chamar funções de outros arquivos, porque só rodam depois que tudo carregou. **Código que roda no carregamento** (ex.: `$('opcDiv').innerHTML`, `prepNome`, listeners do `#cSec`, `MutationObserver`, listeners de arrastar) só pode usar o que já foi definido em arquivos anteriores ou no próprio arquivo. Por isso `base.js` vem primeiro.
-- Não declarar o mesmo nome global (`let`/`const`/`function`) em dois arquivos: isso dá erro e o app para.
-- O `index.html` **não deve** ter `apple-mobile-web-app-capable` nem `mobile-web-app-capable`. Com essas linhas, o atalho do iPhone abre em modo app isolado e o login quebra.
-- O `firebase.js` usa globais dos arquivos do app (`data`, `sessao`, `ic`, `esc`, `novoId`, `KEY`, `setTopo`, `tela`, `setData`, `setCatalogo`, `resetSessao`, `stopTimer`, `sairDaSessao`). Por isso, ele **precisa ser carregado por último**.
-- Funções do `firebase.js` usadas pelo app: `salvarNuvem`, `salvarSessao`, `atualizarSessoes`, `excluirSessao`, `salvarExercicio`, `excluirExercicio`, `importarCatalogo`, `souAdmin`, `notifAgendar`, `notifCancelar`, `atualizarNotifUI`, `renderPerfil`.
+- O repositório tem **apenas** esses 11 arquivos. Não há manifest, ícone nem service worker.
+- **Comunicação entre arquivos:** scripts comuns (sem `type="module"`), com globais compartilhadas. Código que roda no carregamento só pode usar o que já foi definido antes. `base.js` vem primeiro. Chamadas de `base.js`/`treino.js` para o `agenda.js` são protegidas (`window.renderAgenda&&`, `window.atualizarWake&&`, `window.renderWakeUI&&`).
+- Não declarar o mesmo nome global em dois arquivos.
+- O `index.html` **não deve** ter `apple-mobile-web-app-capable` nem `mobile-web-app-capable`.
+- O `firebase.js` usa globais do app (`data`, `sessao`, `ic`, `esc`, `novoId`, `KEY`, `setTopo`, `tela`, `setData`, `setCatalogo`, `resetSessao`, `stopTimer`, `sairDaSessao`) e **precisa ser carregado por último**.
+- Funções do `firebase.js` usadas pelo app: `salvarNuvem`, `salvarSessao`, `atualizarSessoes`, `excluirSessao`, `salvarExercicio`, `excluirExercicio`, `importarCatalogo`, `souAdmin`, `renderPerfil`, `analisarIA`.
 
 ### Modelo de dados (`data` em base.js)
 ```js
-{ divs:['A','B'], A:[exercicio], B:[...], C:[], D:[], E:[], hist:[sessao] }
-exercicio = { name, sets, reps, weight, rest, series:[{p:reps, w:peso, r:descanso}], nomeOriginal?, aq? }
+{ divs:['A','B'], A:[exercicio], B:[...], C:[], D:[], E:[], hist:[sessao],
+  plano:[1,3,5],                 // dias da semana de academia (0 = domingo … 6 = sábado)
+  excecoes:['2026-11-02'] }      // datas (AAAA-MM-DD, horário local) que não quebram a sequência
+exercicio = { name, sets, reps, weight, rest, series:[{p, w, r}], nomeOriginal?, aq? }
 sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
               ex:[{...exercicio, plan:[planejado], series:[executado], feitas, tempos[], descansos[]}] }
 ```
-- **`id`:** código único da sessão, gerado por `novoId()`. **`ts`:** momento em que a sessão foi salva (`Date.now()`). Sessões antigas recebem `id` no primeiro carregamento, mas não têm `ts`.
-- **`nomeOriginal`** (opcional): o primeiro nome que o exercício teve antes de ser trocado para o nome do catálogo (na edição ou na padronização). Nunca é sobrescrito.
-- **`aq`** (opcional, `true`): exercício de aquecimento. Fica no histórico, mas não entra nas análises nem na IA. Quando é falso, o campo não é gravado.
-- **No histórico,** `series` guarda os valores **executados** e `plan` guarda os planejados. Sessões antigas não têm `plan`, e nelas `series` = planejado.
-- **Ordem cronológica:** é a posição em `hist`. Ao juntar as cópias, o app ordena por `ts` com ordenação estável, e as sessões sem `ts` ficam no início. Não ordenar pelo texto de `data`.
-- **Grupos do catálogo** (podem mudar): peito, costas, ombros, trapezio, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco. Ficam na constante `GRUPOS` do `catalogo.js`.
+- `id` vem de `novoId()`. `ts` = `Date.now()` ao salvar (sessões antigas não têm).
+- `nomeOriginal` (opcional): primeiro nome antes da troca para o do catálogo. Nunca é sobrescrito.
+- `aq` (opcional, `true`): aquecimento. Fica no histórico, fora das análises e da IA.
+- No histórico, `series` = executado e `plan` = planejado (antigas sem `plan`).
+- **Ordem cronológica** = posição em `hist` (ordenação estável por `ts` ao mesclar). Não ordenar pelo texto de `data`.
+- `plano` e `excecoes` são salvos na nuvem junto com `dados`. `norm` filtra valores inválidos e remove repetidos.
+- **Tela ligada não fica em `data`:** fica em `localStorage['treinos_tela']` (`'1'`/`'0'`), por aparelho.
+- **Grupos do catálogo:** peito, costas, ombros, trapezio, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco (`GRUPOS`).
+
+### Agenda (`agenda.js` + `#agenda` na tela Início)
+- O cartão aparece quando há treino ou histórico. É atualizado pelo `renderInicio` (que roda em `renderAll`, portanto também depois de salvar um treino).
+- **Dias concluídos:** automáticos, derivados do histórico (`diaSessao`: dia local de `ts`; sem `ts`, lê "dd/mm/aaaa" de `data`). Não há marcação manual.
+- **Sequência (`sequencia`)**: conta os dias com treino voltando a partir de hoje e para no primeiro dia planejado, já passado, sem treino e fora das exceções. Hoje nunca é falta. Dia não planejado com treino soma. Não olha antes do primeiro dia com treino. Retorna 0 se `plano` estiver vazio (o cartão mostra um aviso).
+- **Calendário:** mês em `agMes` (setas `agNav`). Classes: `feito` (verde com ✓), `plan` (planejado futuro/hoje, azul), `falta` (planejado passado sem treino, a partir do 1º treino, vermelho), `exc` (cinza riscado), `hoje` (contorno laranja). Tocar numa data chama `togExc` (marca/desmarca exceção). `togPlano(i)` alterna o dia da semana. Os dois salvam (`save()`).
+
+### Tela ligada (`agenda.js`)
+- `atualizarWake()` pede `navigator.wakeLock.request('screen')` quando a opção está ligada, o treino está em andamento e a página está visível; libera nos outros casos. É chamada em `render()`, `resetSessao()`, `visibilitychange` e `setTelaLigada`.
+- `renderWakeUI()` preenche `#fWake` e `#wakeInfo` (avisa se o navegador não oferece o recurso).
 
 ### Modal do exercício: séries (`cadastro.js`)
-- `fSer`: lista de trabalho das séries no modal (`{p, w, r, wm}`). `gerarSeries()` monta as linhas `.srow` com os campos `.p` (reps), `.w` (peso) e `.r` (descanso). Novas séries copiam a última. `lerSeries()` lê os campos sem perder outras propriedades (`...fSer[j]`).
-- **`autoPeso(ev)`** (nome mantido por causa do `oninput` no `index.html`):
-  - **Reps (`.p`) e descanso (`.r`):** o valor digitado na série *j* é copiado para **todas** as séries seguintes (*j+1* até a última), inclusive as que estão escondidas em `fSer` (quando o número de séries foi reduzido). As séries anteriores não mudam. Os dois campos são independentes e não alteram o peso.
-  - **Peso (`.w`):** o da 1ª série vai para as seguintes que ainda não foram editadas à mão. A marca `wm` (peso manual) protege essas séries. `openForm` marca `wm` nas séries com peso diferente do da 1ª.
-- Nada é gravado até o **Salvar** (`saveForm`), que grava só `{w, r, p}` em cada série.
+- `fSer`: lista de trabalho (`{p, w, r, wm}`). `gerarSeries()` monta `.srow` (`.p`, `.w`, `.r`). `lerSeries()` preserva propriedades.
+- `autoPeso(ev)`: reps e descanso digitados na série *j* vão para todas as seguintes (inclusive escondidas); peso da 1ª vai para as seguintes sem `wm`.
+- Nada é gravado até o `saveForm`, que grava `{w, r, p}`.
+
+### Informações do exercício (`treino.js` + `index.html`)
+- Botão ⓘ (`infoEx(i)`) antes do lápis. Funciona durante o treino, sem mexer no cronômetro. Mostra grupo principal, secundários e "Como executar" (`descricao`, `white-space:pre-line`). Fora do catálogo: aviso.
 
 ### Aquecimento
-- **Modal do exercício (`cadastro.js`):** checkbox `#fAq`. `openForm` preenche, `saveForm` grava `aq:true` se marcado.
-- **`tagAq(e)`** (`base.js`): etiqueta "Aquecimento • fora das análises" nos cartões do Treino, do Cadastro e do Histórico.
-- **`encerrar`** (`treino.js`): copia o exercício com `...e`, então a sessão já leva o `aq`.
-- **`togAq(k,n)`** (`historico.js`, todos os usuários): botão de chama em cada exercício do card do histórico. Pede confirmação, só alterna o `aq`, salva o documento e chama `atualizarSessoes([h])`. Zera `anSel`.
-- **`histEx()`** (`analises.js`) ignora `e.aq`. Com isso, o radar, a comparação e `calcAnalise` (IA) excluem aquecimentos.
-- **`padLista`** (`catalogo.js`): a chave de conflito é `nome normalizado + '|aq'` quando é aquecimento. Aquecimento e trabalho com o mesmo nome convivem. Dois exercícios do mesmo tipo com o mesmo nome continuam bloqueados.
+- `#fAq` no modal; `tagAq(e)`; `encerrar` leva `aq`; `togAq(k,n)` no histórico (confirmação, salva, `atualizarSessoes([h])`, zera `anSel`); `histEx()` ignora `aq`; `padLista` usa chave `nome|aq`.
 
-### Nomes e catálogo (`catalogo.js`, exceto onde indicado)
-- `normNome(s)` (`base.js`): tira acentos, deixa minúsculo e junta espaços. Serve para comparar nomes.
-- `catAcha(nome)`: procura no catálogo pelo nome normalizado.
-- **Campo Nome do modal de exercício:** lista de sugestões própria (`#fnSug`, até 8 itens), sem `datalist`. Mostra o aviso `#fnAviso`: verde se o nome está no catálogo, laranja se não está. `prepNome()` cria esses elementos se eles faltarem.
-- **`saveForm`** (`cadastro.js`): só salva se o nome estiver no catálogo (alunos e admin) e grava o nome com a escrita exata do catálogo. Com o catálogo vazio ou ainda carregando, não salva.
-- **`avisoFora(e)`:** mostra "Fora do catálogo" nos cartões do treino e do cadastro.
-- `setCatalogo` chama `renderAll()` para atualizar esses avisos.
-- **`salvarCat`:** não aceita nome repetido no catálogo (comparando pelo nome normalizado).
-- **Importar catálogo** (`importarCat`, botão `#bImpCat`, só admin): o arquivo é uma lista JSON `[{nome, grupo, secundarios?, descricao?}]` ou `{exercicios:[...]}`.
-  - O grupo aceita a chave (`peito`) ou o nome (`Peito`).
-  - Se o nome já existe, o exercício é atualizado, e os campos ausentes no arquivo continuam como estavam.
-  - Itens inválidos ou repetidos no arquivo são ignorados.
-  - O app pede confirmação antes de gravar e mostra quantos são novos, atualizados e ignorados.
-- **Padronizar nomes** (`abrirPadronizar` / `aplicarPadronizar`, `#modalPad`, botão `#bPadr`, só admin): age no aluno que está aberto e não funciona com treino em andamento.
-  - Lista os nomes do treino e do histórico que são diferentes do catálogo.
-  - Diferença só de escrita: o nome do catálogo já vem marcado. Outros casos começam em "Não alterar" e mostram os mais parecidos primeiro (`parecidos`).
-  - Só troca o `name` e guarda `nomeOriginal`. Séries, cargas, tempos e datas não mudam.
-  - `padLista` não troca quando a troca juntaria dois exercícios diferentes (do mesmo tipo: trabalho ou aquecimento) no mesmo treino ou sessão, e avisa quais ficaram de fora, com a dica de marcar aquecimento.
-  - Depois, salva o documento e chama `atualizarSessoes` com as sessões alteradas.
+### Nomes e catálogo
+- `normNome` (`base.js`), `catAcha`, sugestões `#fnSug` e aviso `#fnAviso` (`prepNome`), `saveForm` só aceita nome do catálogo, `avisoFora`, `salvarCat` sem nomes repetidos.
+- Importar catálogo (`importarCat`, só admin): `[{nome, grupo, secundarios?, descricao?}]` ou `{exercicios:[...]}`.
+- Padronizar nomes (só admin, sem treino em andamento): troca `name`, guarda `nomeOriginal`, salva e chama `atualizarSessoes`.
 
 ### Backup (`backup.js`)
-- `exportar()` (tudo), `exportarHist()` (só histórico) e o botão "Baixar backup antes" usam `compartilhar(obj,nome)`.
-- **`compartilhar`:** no celular (`ehMovel()`), usa o menu de compartilhar se `navigator.canShare` aceitar arquivos. No computador, ou se compartilhar falhar, faz download direto com `baixar()` (link colocado na página, clicado e removido em seguida). Se o usuário cancelar (`AbortError`), nada acontece. Qualquer outro erro aparece em `alert`.
-- **`importar(inp)`:** aceita arquivos com `A` ou `divs`. Se faltar `hist`, usa uma lista vazia. Não importa com treino em andamento. Pede confirmação mostrando o número de sessões e avisa quando termina. Erros de leitura também aparecem.
+- `compartilhar(obj,nome)`: menu de compartilhar no celular; download direto no computador (`baixar()`).
+- `importar(inp)`: aceita `A` ou `divs`; sem treino em andamento; com confirmação. (`plano`/`excecoes` do arquivo são lidos pelo `norm` se o `importar` usar `setData`; não confirmado.)
 
 ### Execução e confirmação de série (`treino.js`)
-- **Fases (`fase`):** `serie` → `descanso` → `serie`… Na última série: `serie` → `fim`.
-- **Toque em "Descanso"** (fase `serie`):
-  1. `guardar()` (para poder desfazer).
-  2. Registra `done[div+i][j]={t,d:null,p,w}` com os valores **planejados**.
-  3. Inicia o cronômetro de descanso **no mesmo toque**. Na última série, para o cronômetro e vai para `fim`.
-  4. Abre o modal `dlgSerie` (`abrirSerie(i,j)`).
-- **O modal não interfere no cronômetro.** `confirmarSerie()` só troca `p` e `w`. "Manter o planejado" (`fecharSerie()`) mantém o planejado. Na última série, os dois botões abrem o `dlgFim` em seguida.
-- O modal mostra o planejado e a **série anterior** do mesmo exercício.
-- **"Voltar"** desfaz o registro e fecha o modal.
-- O descanso real (`d`) é gravado no "Próximo" ou ao encerrar durante o descanso.
-- **Executado vira o próximo planejado** (`atualizarPlano(div)`, chamada em `encerrar(true)`):
-  - Só roda ao **salvar** no histórico. "Não salvar" não altera o treino.
-  - Roda **depois** de montar a sessão (`plan` = planejado original, `series` = executado) e **antes** do único `save()`.
-  - Para cada série feita (`done`) com `p`/`w` diferentes do planejado, grava em `e.series[j]` as reps e a carga executadas. O descanso (`r`), as séries não feitas, `aq`, `nomeOriginal` e o nome não mudam.
-  - Recalcula `reps`, `weight` e `rest` (campos antigos). A mensagem de encerramento mostra quantos exercícios foram atualizados.
-  - Não mexe na subcoleção `sessoes`.
+- Fases: `serie` → `descanso` → `serie`…; última: `serie` → `fim`.
+- "Descanso" registra `done[div+i][j]={t,d:null,p,w}`, inicia o descanso no mesmo toque e abre `dlgSerie`. O modal não interfere no cronômetro.
+- Faixa de status sem dicas extras. "Voltar" desfaz. `d` gravado no "Próximo" ou ao encerrar no descanso.
+- `atualizarPlano(div)` em `encerrar(true)`: executado vira o próximo planejado.
 
 ### Histórico na nuvem (`firebase.js`)
-- **Documento principal:** `treinos_teste/{uid}.dados` (JSON completo, incluindo `hist`).
-- **Cópia de segurança:** `treinos_teste/{uid}/sessoes/{id}` → `{ dados, ts, tipo }`. É gravada ao encerrar com "Salvar" (`salvarSessao`) e regravada depois da padronização e da marcação de aquecimento (`atualizarSessoes`).
-- **Fila local** (`localStorage['treinos_pend']`): a sessão entra na fila antes do envio e só sai depois que o Firestore confirma. `reenviarPendentes()` roda no login.
-- **`abrirUsuario`:** junta o documento e a subcoleção com `mesclar()` (sem duplicar, pelo `id`). As sessões que só existem na cópia voltam para o `hist`, e as que faltam na nuvem são enviadas. Se a leitura da subcoleção falhar, o app não tenta reenviar tudo.
-- **`delHist`** apaga a sessão nos dois lugares (`excluirSessao`).
-- Importar um backup substitui o `hist` do documento, mas as cópias continuam. Por isso, as sessões que não estão no backup voltam no próximo carregamento.
+- Documento `treinos_teste/{uid}.dados` (JSON completo) + cópia `treinos_teste/{uid}/sessoes/{id}` → `{dados, ts, tipo}`.
+- Fila local `localStorage['treinos_pend']`; `reenviarPendentes()` no login; `mesclar()` por `id`; `delHist` apaga nos dois lugares.
 
 ### Análises (`analises.js`)
-- `histEx()`: agrupa o histórico por exercício, usando o nome em minúsculas como chave. Considera só ocorrências com `feitas > 0` e **sem `aq`**. Depois da padronização, nomes antes diferentes passam a contar como um exercício só.
-- Métricas: `peso` (máximo), `reps` (média), `series`, `volume` (Σ peso×reps), `tSerie`, `tDesc`.
-- `calcAnalise()` / `window.dadosAnalise`: dados para a IA (1ª × última, todas as divisões).
-- **Filtro de divisão** (`anDiv`, `anSetDiv`) e **filtro de exercícios** (`anSel`, `anKeys`, `anToggle`, `anTodos`) voltam ao padrão no `setData`. A padronização e o `togAq` também zeram o `anSel`.
-- **Radar** (`radar(ex,sel,div)`): viewBox 400×340, as 3 sessões mais recentes da divisão. Nomes com quebra de linha (`quebra`). Métrica: volume, ou total de reps em exercícios sem carga. 100% = maior valor do exercício. Com menos de 3 exercícios, aparece um aviso.
-- **Comparação detalhada:** penúltima × última ocorrência dentro da divisão.
-- O texto do cartão "Sua evolução" é trocado pelo `renderAnalise`.
+- `histEx()`: por nome, `feitas > 0`, sem `aq`. Métricas: `peso`, `reps`, `series`, `volume`, `tSerie`, `tDesc`.
+- IA: 1ª × última, todas as divisões. Radar: 3 últimas da divisão. Comparação: penúltima × última.
 
 ## 5. Firebase
-- **Projeto:** `treinos-teste`, plano **Spark** (gratuito). Não há intenção de migrar para o Blaze.
+- **Projeto:** `treinos-teste`, plano **Spark**. Sem migração para o Blaze.
 - **authDomain:** `treinos-teste.firebaseapp.com`.
-- **Login:** Google por popup, com `signInWithRedirect` se o popup for bloqueado. `getAuth` + `setPersistence` (IndexedDB e, como alternativa, localStorage). Não usa `initializeAuth` nem `getRedirectResult`.
+- **Login:** Google por popup, com `signInWithRedirect` como alternativa; `setPersistence` (IndexedDB, depois localStorage).
 - **Firestore:**
-  - `treinos_teste/{uid}` → `{ email, nome, dados: JSON.stringify(data), atualizado }`
+  - `treinos_teste/{uid}` → `{ email, nome, dados: JSON.stringify(data), atualizado }` (inclui `plano` e `excecoes`)
   - `treinos_teste/{uid}/sessoes/{id}` → `{ dados, ts, tipo }`
-  - `exercicios/{id}` → `{ nome, grupo, secundarios[], descricao, atualizado }`. A importação usa `writeBatch` em blocos de 400.
-  - `admins/{email}` → se o documento existir, o usuário é admin (criado só pelo Console)
+  - `exercicios/{id}` → `{ nome, grupo, secundarios[], descricao, atualizado }`
+  - `admins/{email}` → existe = admin (criado só pelo Console)
 - **App Check:** reCAPTCHA Enterprise. Modo de aplicação obrigatória: não sei.
 - **IA:** Firebase AI Logic, `gemini-2.5-flash`, resposta em JSON.
-- **Functions** (`agendarDescanso`/`cancelarDescanso`): não existem. O código de notificações está inativo.
+- Messaging, Functions e VAPID removidos em 30/10/2026.
 - **Domínios autorizados:** não confirmados. `jpedrosntg.github.io` precisa estar na lista.
 
-### Regras do Firestore (versão com `sessoes`; sem mudanças em 30/10/2026)
+### Regras do Firestore (sem mudanças em 30/10/2026)
 ```
 rules_version = '2';
 service cloud.firestore {
@@ -220,78 +198,69 @@ service cloud.firestore {
   }
 }
 ```
-- **Ao criar uma coleção nova,** é preciso adicionar a regra dela aqui e publicar no Console.
-- **Limite:** cada documento tem no máximo 1 MB. O histórico inteiro ainda fica em `dados`.
+- Coleção nova exige regra nova publicada no Console.
+- Limite de 1 MB por documento; o histórico inteiro ainda fica em `dados`.
 
 ## 6. Publicação
 - **Repositório:** https://github.com/jpedrosntg/treinos
-- **Hospedagem:** GitHub Pages, em `https://jpedrosntg.github.io/treinos/`. A decisão é **continuar no GitHub Pages**.
-- **Como publica:** upload de arquivos pelo site do GitHub. As regras do Firestore são publicadas pelo Console (**antes** de subir arquivos que dependem delas).
-- **Divisão do código (30/10/2026):** apagar o `app.js` do repositório e subir **juntos** `index.html` + os 7 arquivos novos (`base.js`, `cadastro.js`, `treino.js`, `historico.js`, `analises.js`, `catalogo.js`, `backup.js`). `firebase.js` e `style.css` não mudaram. Se o app abrir em branco, recarregar para limpar o cache.
+- **Hospedagem:** GitHub Pages, `https://jpedrosntg.github.io/treinos/`. Decisão: **continuar no GitHub Pages**.
+- **Como publica:** upload pelo site do GitHub. Regras do Firestore pelo Console (antes dos arquivos que dependem delas).
+- **Etapa 2 (30/10/2026):** subir **juntos** `agenda.js` (novo), `base.js`, `treino.js`, `index.html` e `style.css`. Recarregar depois.
 - **Testes:** não são feitos antes de publicar.
 - **Colaborador:** um amigo cuida do visual pelo GitHub.
-- **Backup:** exportação em JSON pelo app + cópia automática das sessões em `sessoes`.
+- **Backup:** JSON pelo app + cópia automática em `sessoes`.
 
 ## 7. Pendências conhecidas
-- [ ] Testar o app depois da divisão em 7 arquivos: login, cadastro, execução completa, histórico, análises, catálogo, backup.
-- [ ] Testar o preenchimento automático no modal: reps e descanso editados numa série vão para as seguintes (não para as anteriores), um não altera o outro nem o peso, o peso da 1ª série continua respeitando `wm`, e as séries escondidas recebem o valor ao aumentar o número de séries.
-- [ ] Testar a atualização do planejado: mudar carga/reps no modal, salvar, conferir o cartão do treino (novo valor), o histórico (`plan` antigo × `series` executado) e a permanência após recarregar. Conferir que "Não salvar" não muda o treino.
-- [ ] Testar o aquecimento: marcar no modal, etiqueta nos cartões, chama no histórico (marcar/desmarcar), conferir que sai das análises e que a padronização passa no caso "Puxada Frente" × aquecimento.
-- [ ] (Opcional) Estilizar no `style.css` o checkbox `#fAq` e a chama do histórico.
-- [ ] Testar o backup no computador (exportar tudo, só histórico, "Baixar backup antes" e importar). Se o importar não abrir a janela de arquivo, revisar o botão no `index.html`.
-- [ ] Testar o backup no iPhone e no Android (menu de compartilhar).
-- [ ] Publicar a regra nova (`sessoes`) no Console, se ainda não foi publicada.
-- [ ] Importar o catálogo completo por JSON e conferir a contagem de novos, atualizados e ignorados.
-- [ ] Testar o campo Nome: sugestões, aviso verde e laranja, bloqueio ao salvar com nome fora do catálogo, aviso "Fora do catálogo" nos cartões.
-- [ ] Testar a padronização em um aluno: baixar o backup antes, aplicar, conferir histórico e análises, e conferir no Console as sessões atualizadas em `sessoes`.
-- [ ] Testar o novo fluxo da série (descanso no toque, modal, Voltar, última série, valores executados no histórico).
-- [ ] Testar a cópia de segurança (Console, treino sem internet, reabrir com internet).
-- [ ] Testar o login pelo novo atalho do iPhone (apagar o atalho antigo e criar de novo).
-- [ ] Testar a aba de Análises e confirmar que os filtros voltam ao padrão ao trocar de aluno.
-- [ ] (Opcional) Renomear `autoPeso` para `autoSeries` (exige mudar o `oninput` no `index.html` junto).
-- [ ] (Opcional) Fazer a IA comparar a penúltima com a última sessão e/ou usar a divisão escolhida.
-- [ ] (Opcional) Mostrar no histórico a diferença entre o planejado (`plan`) e o executado.
+- [ ] Testar a Etapa 2: escolher dias, check automático (inclusive em sessões antigas), sequência (falta, exceção, dia fora do plano, hoje), troca de mês, recarregar a página, agenda de um aluno pelo admin.
+- [ ] Testar a tela ligada no iPhone, no Android e no computador (liga só com treino em andamento; volta a valer depois de sair e voltar ao app; solta ao encerrar).
+- [ ] Verificar se "Recomeçar do zero" (`cadastro.js`) apaga `plano`/`excecoes`. Se apagar, pedir o `cadastro.js` e preservar os campos.
+- [ ] Verificar se `importar` (`backup.js`) mantém `plano`/`excecoes`.
+- [ ] Testar o preenchimento automático no modal.
+- [ ] Testar a atualização do planejado.
+- [ ] Testar o aquecimento.
+- [ ] (Opcional) Estilizar o checkbox `#fAq`, o `#fWake` e a chama do histórico.
+- [ ] Testar o backup no computador, no iPhone e no Android.
+- [ ] Publicar a regra `sessoes` no Console, se ainda não foi publicada.
+- [ ] Importar o catálogo completo por JSON.
+- [ ] Testar o campo Nome, a padronização, o fluxo da série, a cópia de segurança, o login pelo atalho do iPhone e as Análises.
+- [ ] (Opcional) Renomear `autoPeso` para `autoSeries`.
+- [ ] (Opcional) IA penúltima × última e/ou por divisão.
+- [ ] (Opcional) Mostrar no histórico a diferença entre `plan` e executado.
 - [ ] (Opcional) Mover o texto do cartão "Sua evolução" para o `index.html`.
-- [ ] Remover o cartão "Aviso de fim do descanso" e o código de notificações (`firebase.js` + `agendar`/`cancelar` no `treino.js`), alterando os arquivos juntos (Etapa 1 do roadmap).
-- [ ] Fixar a versão do Lucide em vez de `@latest`.
-- [ ] Conferir no Console os domínios autorizados e o modo do App Check.
-- [ ] Revisar histórico, catálogo e ajustes.
-- [ ] (Futuro) Tirar o `hist` do campo `dados` e ler só da subcoleção `sessoes`.
+- [ ] Fixar a versão do Lucide.
+- [ ] Conferir domínios autorizados e modo do App Check.
+- [ ] (Futuro) Tirar o `hist` do campo `dados` e ler só de `sessoes`.
 
 ## 8. Decisões e preferências
-- Respostas com **arquivos sempre completos**, sem trechos nem reticências. Enviar **só os arquivos que mudaram**, cada um inteiro.
-- **Nunca presumir nem reconstruir** o conteúdo de arquivos que não foram recebidos completos. Pedir os arquivos necessários antes de alterar.
-- O código do app fica **dividido por área** (7 arquivos). Arquivos novos só se uma área crescer demais, sempre atualizando a ordem dos scripts no `index.html` e este contexto.
-- **Explicações detalhadas** e em linguagem simples.
-- Preservar o visual e o funcionamento existentes.
-- Sem plano Blaze, sem PWA instalado, sem sair do GitHub Pages.
-- Sempre enviar este `CONTEXTO.md` atualizado junto com as alterações.
-- O toque em "Descanso" inicia o descanso **na hora**. A confirmação nunca bloqueia nem atrasa o cronômetro.
-- O histórico precisa ficar salvo de forma redundante (documento principal + `sessoes`).
-- Nomes de exercícios vêm **sempre do catálogo**. Alterações no histórico só podem **trocar nomes ou a marcação de aquecimento**, nunca apagar ou substituir sessões, séries ou cargas.
-- No computador, o backup **baixa direto**. O menu de compartilhar só é usado no celular.
-- Aquecimento fica **no histórico**, mas **fora das análises**. Qualquer usuário pode marcar ou desmarcar.
-- As reps e cargas **executadas** (confirmadas) numa sessão salva viram o **planejado do próximo treino**. O histórico mantém a distinção `plan` × `series`.
-- No modal do exercício, editar as **reps** ou o **descanso** de uma série copia o valor para **todas as séries seguintes**, nunca para as anteriores. Os campos são independentes. O peso mantém a regra da 1ª série com proteção `wm`.
+- Arquivos **sempre completos**, só os que mudaram.
+- **Nunca presumir nem reconstruir** arquivos não recebidos completos.
+- Código **dividido por área**. Arquivo novo só para área nova ou grande, atualizando a ordem dos scripts e este contexto (`agenda.js` criado na Etapa 2).
+- Explicações detalhadas, em linguagem simples.
+- Preservar visual e funcionamento existentes.
+- Sem Blaze, sem PWA, sem sair do GitHub Pages, **sem notificações push**.
+- Telas de treino sem dicas repetidas; informações do exercício no botão ⓘ.
+- Sempre enviar este `CONTEXTO.md` atualizado.
+- "Descanso" inicia o descanso na hora; a confirmação nunca bloqueia o cronômetro.
+- Histórico salvo de forma redundante (documento + `sessoes`).
+- Nomes sempre do catálogo. Alterações no histórico só trocam nomes ou aquecimento.
+- Backup baixa direto no computador; compartilhar só no celular.
+- Aquecimento no histórico, fora das análises.
+- Executado vira o planejado do próximo treino.
+- No modal, reps/descanso copiam para as séries seguintes; peso segue a regra da 1ª série com `wm`.
+- **Dias concluídos vêm do histórico** (sem marcação manual). Exceções nunca quebram a sequência. Hoje nunca conta como falta.
+- **Tela ligada é por aparelho** (`localStorage`) e só vale com treino em andamento.
 
 ## 9. Histórico de alterações
 | Data | Alteração |
 |---|---|
-| — | Grupos secundários do catálogo passaram a usar lista de seleção múltipla |
-| — | Login: popup com redirect como alternativa e persistência por `setPersistence` |
-| 23/10/2026 | Criação deste arquivo de contexto |
-| 23/10/2026 | Removidas do `index.html` as linhas de modo app e de manifest |
-| 23/10/2026 | Regras do Firestore confirmadas e registradas |
-| 23/10/2026 | Revisão dos 4 arquivos: nenhum erro. Contexto corrigido |
-| 28/10/2026 | Análises refeitas: filtro de exercícios, radar SVG e comparação penúltima × última |
-| 28/10/2026 | Análises: filtro de divisão (`anDiv`, `anSetDiv`) |
-| 28/10/2026 | Radar: nomes com quebra de linha e área ampliada (400×340) |
-| 28/10/2026 | Confirmação de série: modal `dlgSerie`; histórico grava executado em `series` e planejado em `plan` |
-| 28/10/2026 | Fluxo da série refeito: descanso no toque e confirmação sem interferir; fase `conf` removida |
-| 28/10/2026 | Histórico na nuvem: `id`/`ts`, subcoleção `sessoes`, fila local, junção sem duplicar, exclusão nos dois lugares |
-| 30/10/2026 | Catálogo (`app.js`, `index.html`, `style.css`, `firebase.js`): grupo Trapézio; nome do exercício obrigatório do catálogo com lista de sugestões; aviso "Fora do catálogo"; `nomeOriginal`; importação por JSON (`importarCatalogo`, `writeBatch`); padronização de nomes no treino e no histórico (`atualizarSessoes`); botão "Manter o planejado" direto no `index.html`. Regras sem mudanças |
-| 30/10/2026 | Backup corrigido (só `app.js`): download direto no computador (`ehMovel`, `baixar`), compartilhar só no celular com download como alternativa, erros visíveis; `importar` com confirmação, aviso de conclusão e tratamento de erro de leitura |
-| 30/10/2026 | Aquecimento (`app.js` + `index.html`): campo `aq`, checkbox `#fAq`, etiqueta `tagAq`, `togAq` no histórico (todos os usuários, com `atualizarSessoes`), `histEx` ignora aquecimento, `padLista` separa aquecimento de trabalho. Regras sem mudanças |
-| 30/10/2026 | Executado vira o próximo planejado (só `app.js`): `atualizarPlano(div)` em `encerrar(true)`, depois de montar a sessão e antes do `save()`; mensagem com a quantidade de exercícios atualizados; `encerrar` passa a chamar `renderAll()`. Regras sem mudanças |
-| 30/10/2026 | Preenchimento automático no modal (só `app.js`): `autoPeso` passa a copiar reps (`.p`) e descanso (`.r`) da série editada para todas as seguintes (inclusive as escondidas em `fSer`), sem mexer nas anteriores nem nos outros campos; regra do peso mantida. Regras sem mudanças |
-| 30/10/2026 | `app.js` dividido em `base.js`, `cadastro.js`, `treino.js`, `historico.js`, `analises.js`, `catalogo.js` e `backup.js`, sem mudar o código (só `mudarAba`/`TITULOS` foram para `base.js`). `index.html`: nova ordem dos scripts. Regra registrada: não presumir arquivos incompletos. Regras do Firestore sem mudanças |
+| — | Grupos secundários com seleção múltipla |
+| — | Login: popup com redirect e `setPersistence` |
+| 23/10/2026 | Criação deste arquivo; `index.html` sem modo app/manifest; regras registradas; revisão |
+| 28/10/2026 | Análises refeitas (filtros, radar, penúltima × última) |
+| 28/10/2026 | Confirmação de série (`dlgSerie`, `plan` × `series`); fluxo com descanso no toque |
+| 28/10/2026 | Histórico na nuvem: `id`/`ts`, `sessoes`, fila local, mesclagem |
+| 30/10/2026 | Catálogo: Trapézio, nome obrigatório, importação JSON, padronização |
+| 30/10/2026 | Backup corrigido; aquecimento; `atualizarPlano`; preenchimento automático no modal |
+| 30/10/2026 | `app.js` dividido em 7 arquivos. Testado e funcionando |
+| 30/10/2026 | Etapa 1: botão ⓘ, textos removidos, notificações removidas. Funcionando |
+| 30/10/2026 | Etapa 2: `agenda.js` (dias de academia, calendário com check automático, sequência, exceções, tela ligada com Wake Lock); `base.js` (`plano`/`excecoes` em `VAZIO`/`norm`, `renderAgenda` no `renderInicio`, `renderWakeUI` nos Ajustes, removidos `agendada` e `atualizarNotifUI`); `treino.js` (`atualizarWake` em `render`/`resetSessao`); `index.html` (`#agenda`, cartão Tela ligada, script `agenda.js`); `style.css` (`.sem`, `.cal`, `.cleg`). Regras sem mudanças |

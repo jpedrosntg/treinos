@@ -45,6 +45,7 @@
   <button class="btn fin" style="font-size:18px" onclick="novoTreino()"><i data-lucide="plus"></i>Cadastrar novo treino</button>
   <h2>Selecionar treino existente</h2>
   <div id="listaTreinos"></div>
+  <div id="agenda" style="margin-top:12px"></div>
 </div>
 
 <!-- ESCOLHA DA DIVISÃO -->
@@ -138,6 +139,13 @@
         <div><div class="nm" id="pNome">—</div><div class="info" id="pEmail"></div></div>
       </div>
       <div class="kv" id="pDados"></div>
+    </div>
+    <div class="card">
+      <div class="nm"><i data-lucide="sun"></i>Tela ligada</div>
+      <label for="fWake" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="fWake" style="width:auto;margin:0" onchange="setTelaLigada(this.checked)">Manter a tela ligada durante o treino
+      </label>
+      <div class="info" id="wakeInfo"></div>
     </div>
     <div class="card">
       <div class="nm"><i data-lucide="save"></i>Backup</div>
@@ -242,5 +250,6 @@
 <script src="analises.js"></script>
 <script src="catalogo.js"></script>
 <script src="backup.js"></script>
+<script src="agenda.js"></script>
 <script type="module" src="firebase.js"></script>
 </body></html>

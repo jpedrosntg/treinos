@@ -1,10 +1,10 @@
 const KEY='treinos_v1';
 const LETRAS=['A','B','C','D','E'];
-const VAZIO=()=>({divs:[],A:[],B:[],C:[],D:[],E:[],hist:[]});
+const VAZIO=()=>({divs:[],A:[],B:[],C:[],D:[],E:[],hist:[],plano:[],excecoes:[]});
 let data=VAZIO(), cur='A', done={}, edit=-1, formDiv='A', fSer=[], pilha=[];
 let tStart=null, tAcc=0, pausado=false, target=60, tInt=null, beeped=false;
 let pos={i:0,j:0}, fase='serie', pend=null;
-let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', agendada=false, telaAtual='telaLogin';
+let sessao='nao', sIni=null, sInt=null, sMsg='', aba='treino', telaAtual='telaLogin';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
@@ -40,6 +40,9 @@ function norm(d){
   n.hist=Array.isArray(d.hist)?d.hist:[];
   if(Array.isArray(d.divs)) n.divs=d.divs.filter(l=>LETRAS.includes(l));
   else { let u=-1; LETRAS.forEach((l,k)=>{ if(n[l].length) u=k; }); n.divs=LETRAS.slice(0,u+1); }
+  // Agenda: dias da semana planejados (0 = domingo) e datas de exceção (AAAA-MM-DD)
+  if(Array.isArray(d.plano)) n.plano=[...new Set(d.plano.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b);
+  if(Array.isArray(d.excecoes)) n.excecoes=[...new Set(d.excecoes.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort();
   return n;
 }
 function setData(d){
@@ -86,7 +89,7 @@ function mudarAba(a){
   const [i,t]=TITULOS[a]||TITULOS.treino; $('tituloApp').innerHTML=ic(i)+t;
   render(); renderNav();
   if(a==='catalogo') renderCatalogo();
-  if(a==='backup'){ window.atualizarNotifUI&&atualizarNotifUI(); window.renderPerfil&&renderPerfil(); }
+  if(a==='backup'){ window.renderWakeUI&&renderWakeUI(); window.renderPerfil&&renderPerfil(); }
   scrollTo(0,0);
 }
 function setTopo(txt,adm,icone){
@@ -105,4 +108,5 @@ function renderInicio(){
       <div class="info">${data.divs.map(l=>l+': '+data[l].length+' exercício(s)').join(' • ')}</div>
       <div class="info">Toque para abrir</div></div>`
     :'<div class="info">Nenhum treino cadastrado. Toque em "Cadastrar novo treino".</div>';
+  window.renderAgenda&&renderAgenda();
 }
