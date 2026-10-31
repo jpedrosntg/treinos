@@ -3,13 +3,11 @@
 // O arquivo .ts é lido como texto: nada dele é executado.
 const MUSC_VER='3.1.3';
 const MUSC_URL=l=>`https://cdn.jsdelivr.net/npm/react-native-body-highlighter@${MUSC_VER}/assets/${l}.ts`;
-// Grupo do catálogo → músculos (slugs) da biblioteca
 const MUSC_MAP={peito:['chest'],costas:['upper-back','lower-back'],ombros:['deltoids'],trapezio:['trapezius'],
   biceps:['biceps'],triceps:['triceps'],pernas:['quadriceps','hamstring','adductors'],gluteos:['gluteal'],
   panturrilha:['calves'],abdomen:['abs','obliques'],antebraco:['forearm']};
-let muscDados=null, muscCache={}, muscTentou=false;
-const MUSC_OK=/^[\d\s.,eE+\-MmLlHhVvCcSsQqTtAaZz]+$/; // só comandos de traçado SVG
-// Extrai [{s: slug, p: [traçados]}] do texto do arquivo
+let muscDados=null, muscCache={}, muscTentou=false, muscEspera=null, muscTentativas=0;
+const MUSC_OK=/^[\d\s.,eE+\-MmLlHhVvCcSsQqTtAaZz]+$/;
 function muscLer(txt){
   const out=[];
   (txt||'').split(/slug\s*:\s*/).slice(1).forEach(b=>{
@@ -19,7 +17,6 @@ function muscLer(txt){
   });
   return out;
 }
-// Calcula o enquadramento (viewBox) desenhando uma vez fora da tela
 function muscBox(partes){
   const ns='http://www.w3.org/2000/svg', s=document.createElementNS(ns,'svg'), g=document.createElementNS(ns,'g');
   s.setAttribute('style','position:absolute;width:0;height:0;visibility:hidden');
@@ -27,6 +24,13 @@ function muscBox(partes){
   s.appendChild(g); document.body.appendChild(s);
   const b=g.getBBox(); s.remove();
   return `${b.x-4} ${b.y-4} ${b.width+8} ${b.height+8}`;
+}
+// Redesenha a aba Treino sem nunca quebrar o app
+function muscRedesenhar(){ try{ render(); }catch(e){ console.warn('Músculos: render',e); } }
+// Catálogo ainda não chegou: tenta redesenhar de novo (1 s, no máximo 15 vezes)
+function muscAguardar(){
+  if(muscEspera||muscTentativas>=15) return;
+  muscEspera=setTimeout(()=>{ muscEspera=null; muscTentativas++; muscCache={}; muscRedesenhar(); },1000);
 }
 async function muscCarregar(){
   if(muscTentou) return; muscTentou=true;
@@ -37,13 +41,13 @@ async function muscCarregar(){
     const lados=txt.map(muscLer).filter(p=>p.length).map(p=>({p,vb:muscBox(p)}));
     if(!lados.length){ muscTentou=false; return console.warn('Músculos: desenho não carregado'); }
     muscDados=lados; muscCache={};
-    render(); // redesenha os cartões já com a miniatura
+    muscRedesenhar();
   }catch(e){ muscTentou=false; console.warn('Músculos: erro',e); }
 }
-// HTML da miniatura de um exercício ('' se não estiver no catálogo)
 function musc(e){
-  const c=window.catAcha&&catAcha(e.name); if(!c) return '';
   if(!muscDados){ muscCarregar(); return ''; }
+  const c=typeof catAcha==='function'&&catAcha(e.name);
+  if(!c){ muscAguardar(); return ''; }
   const sec=c.secundarios||[], k=c.grupo+'|'+sec.join(','); if(muscCache[k]) return muscCache[k];
   const pri=new Set(MUSC_MAP[c.grupo]||[]), ss=new Set(sec.flatMap(g=>MUSC_MAP[g]||[]));
   const cl=s=>pri.has(s)?' class="p"':ss.has(s)?' class="s"':'';
@@ -51,3 +55,12 @@ function musc(e){
   return muscCache[k]=`<div class="musc" role="img" aria-label="Músculos: ${esc(nome)}">${muscDados.map(l=>
     `<svg viewBox="${l.vb}" aria-hidden="true">${l.p.map(x=>`<g${cl(x.s)}>${x.p.map(d=>`<path d="${d}"/>`).join('')}</g>`).join('')}</svg>`).join('')}</div>`;
 }
+// Quando o catálogo chegar da nuvem, redesenha os cartões (funciona se setCatalogo for "function")
+try{
+  if(typeof setCatalogo==='function'){
+    const muscSetCatOrig=setCatalogo;
+    window.setCatalogo=function(...a){ const r=muscSetCatOrig.apply(this,a); muscCache={}; if(muscDados) muscRedesenhar(); return r; };
+  }
+}catch(e){ console.warn('Músculos: setCatalogo',e); }
+// Baixa o desenho logo ao abrir, sem esperar o catálogo
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',muscCarregar); else muscCarregar();

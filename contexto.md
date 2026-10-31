@@ -25,7 +25,7 @@
 | Agenda na aba Ajustes: resumo seg–dom, dias de foco, configurações recolhidas | Aguardando teste do visual azul sem datas |
 | Janela ao salvar (check, dias de foco, resumo seg–dom) | Funcionando. Animação aprovada: não mexer |
 | Janela ao salvar: checks azuis, círculos sem data, "Compartilhar" (PNG) | Aguardando teste |
-| Cartão do exercício: miniatura dos músculos + nome + círculos | **Não apareceu na v=7** (erro: `telaAtual` inexistente). Corrigido na v=8, aguardando teste |
+| Cartão do exercício: miniatura dos músculos + nome + círculos | **Não apareceu na v=8**: render antes do catálogo chegar. Diagnóstico no console: download 200, desenho lido, catálogo encontrado. Corrigido na v=9, aguardando teste |
 | Licenças e créditos (Ajustes, `#dlgLic`) | **Funcionando** (31/10/2026) |
 | Tela ligada (Ajustes, por aparelho) | Aguardando teste |
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
@@ -47,7 +47,7 @@
 | Notificações de descanso (push) | **Removidas**. Não serão implementadas |
 
 ## 3. Roadmap (em ordem de prioridade)
-1. Testar a miniatura dos músculos (v=8) e os ajustes de 30/10/2026 (resumo azul, compartilhar).
+1. Testar a miniatura dos músculos (v=9) e os ajustes de 30/10/2026 (resumo azul, compartilhar).
 2. Catálogo completo, com descrição e forma de execução (importação por JSON). O usuário não quer enviar o catálogo atual.
 3. ~~Mostrar o grupo muscular de cada exercício na aba Treino~~ (miniatura, 31/10/2026).
 4. Análise da evolução por grupo muscular (pode reaproveitar `MUSC_MAP`/`musc`).
@@ -58,12 +58,12 @@
 - HTML, CSS e JavaScript puros, **sem framework e sem etapa de build**.
 - Ícones: Lucide (CDN `unpkg.com/lucide@latest`, sem versão fixa).
 - Gráfico radar: SVG gerado à mão no `analises.js`.
-- **Miniatura dos músculos:** traçados SVG de `react-native-body-highlighter@3.1.3` (MIT), baixados de `cdn.jsdelivr.net/npm/react-native-body-highlighter@3.1.3/assets/bodyFront.ts` e `bodyBack.ts`, lidos como texto (regex, **sem eval**). O componente React Native **não** é usado.
+- **Miniatura dos músculos:** traçados SVG de `react-native-body-highlighter@3.1.3` (MIT), baixados de `cdn.jsdelivr.net/npm/react-native-body-highlighter@3.1.3/assets/bodyFront.ts` e `bodyBack.ts` (**ambos confirmados, HTTP 200**), lidos como texto (regex, **sem eval**). O componente React Native **não** é usado.
 - Imagem compartilhável: `<canvas>` no `agenda.js`, Web Share API com arquivo; download como alternativa.
 - Firebase SDK 12.4.0 por CDN (módulos ES): App, App Check, Auth, Firestore, AI.
 - Tela ligada: Screen Wake Lock (`navigator.wakeLock`). iPhone a partir do iOS 16.4.
 - **Aparelhos que precisam funcionar:** iPhone, Android e computador.
-- **Cache:** scripts e CSS com `?v=N` no `index.html` (atual: `v=8`). **Aumentar N a cada publicação.**
+- **Cache:** scripts e CSS com `?v=N` no `index.html` (atual: `v=9`). **Aumentar N a cada publicação.**
 
 | Arquivo | Função |
 |---|---|
@@ -74,7 +74,7 @@
 | `historico.js` | `renderHist`, `delHist`, `togAq` |
 | `analises.js` | `media`, `numReps`, `histEx`, `calcAnalise`/`window.dadosAnalise`, filtros, radar, `renderAnalise` |
 | `catalogo.js` | `GRUPOS`, `catalogo`, `catAcha`, `avisoFora`, `setCatalogo`, `renderCatalogo`, campo Nome, modal do catálogo, `importarCat`, padronização |
-| `musculos.js` | `MUSC_VER`, `MUSC_URL`, `MUSC_MAP`, `MUSC_OK`, `muscDados`, `muscCache`, `muscTentou`, `muscLer`, `muscBox`, `muscCarregar`, `musc` |
+| `musculos.js` | `MUSC_VER`, `MUSC_URL`, `MUSC_MAP`, `MUSC_OK`, `muscDados`, `muscCache`, `muscTentou`, `muscEspera`, `muscTentativas`, `muscLer`, `muscBox`, `muscRedesenhar`, `muscAguardar`, `muscCarregar`, `musc`; envolve `window.setCatalogo` |
 | `backup.js` | `ehMovel`, `baixar`, `compartilhar`, `exportar`, `exportarHist`, `importar` |
 | `agenda.js` | Agenda (`SEMANA`, `MESES`, `agMes`, `agAberto`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `semanaAtual`, `diasSemana`, `resumoSemana`, `avisoPlano`, `renderAgenda`, `togPlano`, `togExc`, `agNav`); janela (`celeFeita`, `celeBlob`, `celebrar`, `fecharCele`, `imgCele`, `compartilharCele`); tela ligada (`WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI`, `visibilitychange`) |
 | `firebase.js` | Auth, Firestore, App Check, IA. Expõe funções em `window.*` |
@@ -106,13 +106,15 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 - **Grupos do catálogo:** peito, costas, ombros, trapezio, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco (`GRUPOS`). Exercícios **não** guardam músculos: vêm do catálogo (`catAcha(name)` → `grupo`, `secundarios`).
 
 ### Miniatura dos músculos (`musculos.js`)
-- `musc(e)`: busca no catálogo; sem catálogo → `''`. Sem desenho carregado → dispara `muscCarregar()` e devolve `''`.
-- `muscCarregar()`: baixa frente e costas; ao terminar chama `render()` direto. Em falha, registra `Músculos: …` no console e libera nova tentativa (`muscTentou=false`).
+- Download do desenho **ao abrir o app** (`DOMContentLoaded`), sem esperar o catálogo.
+- `musc(e)`: sem desenho → dispara `muscCarregar()` e devolve `''`. Busca o catálogo com `typeof catAcha==='function'` (não usa `window.catAcha`). Exercício não encontrado → `muscAguardar()` (redesenha a cada 1 s, no máximo 15 vezes) e devolve `''`.
+- `muscCarregar()`: baixa frente e costas; ao terminar chama `muscRedesenhar()` (`render()` protegido por try). Em falha, registra `Músculos: …` e libera nova tentativa.
+- `setCatalogo` é envolvido em `window.setCatalogo` para redesenhar quando o catálogo chega. **Só funciona se `setCatalogo` for declarado com `function`** (não confirmado). O plano B é `muscAguardar`.
+- **Causa da falha na v=8:** `render()` rodava antes de o catálogo chegar da nuvem, e a aba Treino não era redesenhada depois.
 - `muscLer` separa por `slug:` e pega traçados `"M…"` (filtro `MUSC_OK`). `muscBox` calcula o `viewBox` com `getBBox()`.
 - `MUSC_MAP`: peito→chest; costas→upper-back, lower-back; ombros→deltoids; trapezio→trapezius; biceps; triceps; pernas→quadriceps, hamstring, adductors; gluteos→gluteal; panturrilha→calves; abdomen→abs, obliques; antebraco→forearm.
 - Cores: `.p` = `--pri`; `.s` = `#3b82f673`; demais `#2a2f3a`. Cache por `grupo|secundarios`.
 - 64 px de altura (56 px em ≤360 px), à esquerda, centralizada; `pointer-events:none`.
-- **Não confirmado:** `assets/bodyBack.ts` na 3.1.3 (se faltar, só a frente).
 
 ### Licenças (`index.html` → `#dlgLic`)
 - Cartão "Licenças e créditos" em Ajustes abre `#dlgLic` (fecha no botão ou tocando fora). Funcionando.
@@ -214,13 +216,13 @@ service cloud.firestore {
 ## 6. Publicação
 - **Repositório:** https://github.com/jpedrosntg/treinos — **GitHub Pages** `https://jpedrosntg.github.io/treinos/`.
 - Upload pelo site do GitHub. Regras pelo Console.
-- **Ajuste de 31/10/2026 (2º):** subir juntos `musculos.js` e `index.html` (`v=8`).
-- **A cada publicação:** aumentar `?v=N` (próximo: `v=9`).
+- **Ajuste de 31/10/2026 (3º):** subir juntos `musculos.js` e `index.html` (`v=9`).
+- **A cada publicação:** aumentar `?v=N` (próximo: `v=10`).
 - Testes não são feitos antes de publicar. Um amigo cuida do visual pelo GitHub.
 
 ## 7. Pendências conhecidas
-- [ ] Testar a miniatura dos músculos na v=8; se não aparecer, coletar a mensagem `Músculos:` do console.
-- [ ] Confirmar o nome `assets/bodyBack.ts` na 3.1.3.
+- [ ] Testar a miniatura dos músculos na v=9; se não aparecer, coletar as mensagens `Músculos:` do console e pedir `catalogo.js` e `firebase.js`.
+- [ ] Confirmar se `setCatalogo` e `catAcha` são declarados com `function` ou `const` no `catalogo.js`.
 - [ ] Conferir o texto da licença do Lucide e fixar a versão do Lucide.
 - [ ] Verificar se termos de reCAPTCHA/Google precisam de aviso no app.
 - [ ] Testar resumo seg–dom azul sem datas e o botão Compartilhar (iPhone, Android, computador).
@@ -264,3 +266,4 @@ service cloud.firestore {
 | 30/10/2026 | Agenda em Ajustes; cartão enxuto; `?v=5`. Resumo azul sem datas; Compartilhar PNG; `?v=6` |
 | 31/10/2026 | `musculos.js` (miniatura dos músculos, react-native-body-highlighter 3.1.3, MIT); `treino.js` (`.exrow`/`.exbody` + `musc`); `index.html` (`#dlgLic`, script novo, `?v=7`); `style.css` (`.musc`, `.lic`) |
 | 31/10/2026 | Licenças funcionando. Miniatura não aparecia (`telaAtual` inexistente em `muscCarregar`): `render()` direto, logs `Músculos:` e nova tentativa em falha; `?v=8`. Arquivos: `musculos.js`, `index.html` |
+| 31/10/2026 | Miniatura: desenho baixado ao abrir; `typeof catAcha`; redesenho quando o catálogo chega (`window.setCatalogo` + `muscAguardar`, até 15×); `?v=9`. Arquivos: `musculos.js`, `index.html` |
