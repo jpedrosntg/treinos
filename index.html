@@ -232,8 +232,14 @@
   <button class="btn add" onclick="$('dlgFim').classList.remove('on')">Continuar treinando</button>
 </div></div>
 
-<!-- A ordem importa: lucide → app.js → firebase.js -->
+<!-- A ordem importa: lucide → arquivos do app (base.js primeiro) → firebase.js -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script src="app.js"></script>
+<script src="base.js"></script>
+<script src="cadastro.js"></script>
+<script src="treino.js"></script>
+<script src="historico.js"></script>
+<script src="analises.js"></script>
+<script src="catalogo.js"></script>
+<script src="backup.js"></script>
 <script type="module" src="firebase.js"></script>
 </body></html>
