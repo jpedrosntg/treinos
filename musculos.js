@@ -30,20 +30,23 @@ function muscBox(partes){
 }
 async function muscCarregar(){
   if(muscTentou) return; muscTentou=true;
-  const txt=await Promise.all(['bodyFront','bodyBack'].map(l=>
-    fetch(MUSC_URL(l)).then(r=>r.ok?r.text():'').catch(()=>'')));
-  const lados=txt.map(muscLer).filter(p=>p.length).map(p=>({p,vb:muscBox(p)}));
-  if(!lados.length) return console.warn('Músculos: desenho não carregado');
-  muscDados=lados; muscCache={};
-  if(telaAtual==='app'&&aba==='treino') render();
+  try{
+    const txt=await Promise.all(['bodyFront','bodyBack'].map(l=>
+      fetch(MUSC_URL(l)).then(r=>{ if(!r.ok) console.warn('Músculos: '+l+' HTTP '+r.status); return r.ok?r.text():''; })
+        .catch(e=>{ console.warn('Músculos: falha ao baixar '+l,e); return ''; })));
+    const lados=txt.map(muscLer).filter(p=>p.length).map(p=>({p,vb:muscBox(p)}));
+    if(!lados.length){ muscTentou=false; return console.warn('Músculos: desenho não carregado'); }
+    muscDados=lados; muscCache={};
+    render(); // redesenha os cartões já com a miniatura
+  }catch(e){ muscTentou=false; console.warn('Músculos: erro',e); }
 }
 // HTML da miniatura de um exercício ('' se não estiver no catálogo)
 function musc(e){
   const c=window.catAcha&&catAcha(e.name); if(!c) return '';
   if(!muscDados){ muscCarregar(); return ''; }
-  const k=c.grupo+'|'+c.secundarios.join(','); if(muscCache[k]) return muscCache[k];
-  const pri=new Set(MUSC_MAP[c.grupo]||[]), sec=new Set(c.secundarios.flatMap(g=>MUSC_MAP[g]||[]));
-  const cl=s=>pri.has(s)?' class="p"':sec.has(s)?' class="s"':'';
+  const sec=c.secundarios||[], k=c.grupo+'|'+sec.join(','); if(muscCache[k]) return muscCache[k];
+  const pri=new Set(MUSC_MAP[c.grupo]||[]), ss=new Set(sec.flatMap(g=>MUSC_MAP[g]||[]));
+  const cl=s=>pri.has(s)?' class="p"':ss.has(s)?' class="s"':'';
   const nome=GRUPOS[c.grupo]||c.grupo;
   return muscCache[k]=`<div class="musc" role="img" aria-label="Músculos: ${esc(nome)}">${muscDados.map(l=>
     `<svg viewBox="${l.vb}" aria-hidden="true">${l.p.map(x=>`<g${cl(x.s)}>${x.p.map(d=>`<path d="${d}"/>`).join('')}</g>`).join('')}</svg>`).join('')}</div>`;
