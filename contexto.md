@@ -25,9 +25,9 @@
 | Agenda na aba Ajustes: resumo seg–dom, dias de foco, configurações recolhidas | Aguardando teste do visual azul sem datas |
 | Janela ao salvar (check, dias de foco, resumo seg–dom) | Funcionando. Animação aprovada: não mexer |
 | Janela ao salvar: checks azuis, círculos sem data, "Compartilhar" (PNG) | Aguardando teste |
-| Cartão do exercício: alça à esquerda + miniatura com zoom no grupo principal + nome + círculos | Aguardando teste (v=10) |
-| Bloqueio de exercício (`bl`, cadeado no cartão) | Aguardando teste (v=10) |
-| Análises: filtro de exercícios recolhido; desmarca quem aparece em ≤1 dos 3 últimos | Aguardando teste (v=10) |
+| Cartão do exercício: alça à esquerda + miniatura com zoom no grupo principal + nome + círculos | Miniatura aparece (v=10). Na v=10 o nome quebrava letra por letra no celular quando havia frente + costas; corrigido na v=11, aguardando teste |
+| Bloqueio de exercício (`bl`, cadeado no cartão) | Aguardando teste |
+| Análises: filtro de exercícios recolhido; desmarca quem aparece em ≤1 dos 3 últimos | Aguardando teste |
 | Licenças e créditos (Ajustes, `#dlgLic`) | **Funcionando** (31/10/2026) |
 | Tela ligada (Ajustes, por aparelho) | Aguardando teste |
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
@@ -49,7 +49,7 @@
 | Notificações de descanso (push) | **Removidas**. Não serão implementadas |
 
 ## 3. Roadmap (em ordem de prioridade)
-1. Testar v=10 (bloqueio, filtro recolhido, zoom da miniatura, alça à esquerda) e os ajustes de 30/10/2026 (resumo azul, compartilhar).
+1. Testar v=11 (cartão no celular, bloqueio, filtro recolhido, zoom da miniatura, alça à esquerda) e os ajustes de 30/10/2026 (resumo azul, compartilhar).
 2. Catálogo completo, com descrição e forma de execução (importação por JSON). O usuário não quer enviar o catálogo atual.
 3. ~~Mostrar o grupo muscular de cada exercício na aba Treino~~ (miniatura, 31/10/2026).
 4. Análise da evolução por grupo muscular (pode reaproveitar `MUSC_MAP`/`musc`).
@@ -65,7 +65,7 @@
 - Firebase SDK 12.4.0 por CDN (módulos ES): App, App Check, Auth, Firestore, AI.
 - Tela ligada: Screen Wake Lock (`navigator.wakeLock`). iPhone a partir do iOS 16.4.
 - **Aparelhos que precisam funcionar:** iPhone, Android e computador.
-- **Cache:** scripts e CSS com `?v=N` no `index.html` (atual: `v=10`). **Aumentar N a cada publicação.**
+- **Cache:** scripts e CSS com `?v=N` no `index.html` (atual: `v=11`). **Aumentar N a cada publicação.**
 
 | Arquivo | Função |
 |---|---|
@@ -80,7 +80,7 @@
 | `backup.js` | `ehMovel`, `baixar`, `compartilhar`, `exportar`, `exportarHist`, `importar` |
 | `agenda.js` | Agenda (`SEMANA`, `MESES`, `agMes`, `agAberto`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `semanaAtual`, `diasSemana`, `resumoSemana`, `avisoPlano`, `renderAgenda`, `togPlano`, `togExc`, `agNav`); janela (`celeFeita`, `celeBlob`, `celebrar`, `fecharCele`, `imgCele`, `compartilharCele`); tela ligada (`WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI`, `visibilitychange`) |
 | `firebase.js` | Auth, Firestore, App Check, IA. Expõe funções em `window.*` |
-| `style.css` | Tema escuro, mobile-first. Agenda/resumo/janela; `.exrow`, `.exrow>.drag`, `.exbody`, `.musc` (`.p` azul, `.s` azul translúcido); bloqueio (`.card.blk`, `.blq`, `.ic.on`); filtro da análise (`.agcfg.anf`); `.lic` |
+| `style.css` | Tema escuro, mobile-first. Agenda/resumo/janela; `.exrow`, `.exrow>.drag`, `.exbody`, `.musc` (`.p` azul, `.s` azul translúcido, `max-width`); botões abaixo do nome em ≤480 px; bloqueio (`.card.blk`, `.blq`, `.ic.on`); filtro da análise (`.agcfg.anf`); `.lic` |
 
 - O repositório tem **apenas** esses 12 arquivos. Não há manifest, ícone nem service worker.
 - **Comunicação entre arquivos:** scripts comuns, globais compartilhadas. Chamadas protegidas: `window.renderAgenda&&`, `window.atualizarWake&&`, `window.renderWakeUI&&`, `window.celebrar`, `window.musc?`.
@@ -117,11 +117,11 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 ### Miniatura dos músculos (`musculos.js`)
 - Download do desenho **ao abrir o app** (`DOMContentLoaded`), sem esperar o catálogo.
 - `musc(e)`: sem desenho → `muscCarregar()` e `''`. Catálogo via `typeof catAcha==='function'`. Não encontrado → `muscAguardar()` (1 s, até 15×).
-- **Zoom (v=10):** `muscBox` guarda o retângulo de cada slug (`bx`) e a altura do corpo (`H`). `muscVb(l,pri)` recorta na união dos músculos **principais** do lado (margem 30%, altura mínima 35% do corpo, proporção largura/altura entre 0,6 e 1,2). Só aparecem os lados onde o principal existe; sem correspondência → corpo inteiro.
+- **Zoom:** `muscBox` guarda o retângulo de cada slug (`bx`) e a altura do corpo (`H`). `muscVb(l,pri)` recorta na união dos músculos **principais** do lado (margem 30%, altura mínima 35% do corpo, proporção largura/altura entre 0,6 e 1,2). Só aparecem os lados onde o principal existe; sem correspondência → corpo inteiro.
 - `setCatalogo` envolvido em `window.setCatalogo` (só funciona se for `function`; não confirmado). Plano B: `muscAguardar`.
 - `MUSC_MAP`: peito→chest; costas→upper-back, lower-back; ombros→deltoids; trapezio→trapezius; biceps; triceps; pernas→quadriceps, hamstring, adductors; gluteos→gluteal; panturrilha→calves; abdomen→abs, obliques; antebraco→forearm.
 - Cores: `.p` = `--pri`; `.s` = `#3b82f673`; demais `#2a2f3a`. Cache por `grupo|secundarios`.
-- 64 px de altura (56 px em ≤360 px); `pointer-events:none`. Alça `.drag` à esquerda da miniatura.
+- 64 px de altura e `max-width` 96 px (56/80 px em ≤360 px); com dois lados, cada SVG encolhe (`flex:0 1 auto`). `pointer-events:none`. Alça `.drag` à esquerda da miniatura.
 
 ### Licenças (`index.html` → `#dlgLic`)
 - Cartão "Licenças e créditos" em Ajustes abre `#dlgLic` (fecha no botão ou tocando fora). Funcionando.
@@ -145,6 +145,7 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 
 ### Cartão do exercício (aba Treino)
 - Alça (esquerda) + miniatura dos músculos + nome, cadeado/ⓘ/lápis/lixeira, faixa de bloqueio, círculos (reps + kg) e tempos.
+- Nome quebra só entre palavras. Em ≤480 px os botões ficam numa linha abaixo do nome.
 
 ### Modal do exercício: séries (`cadastro.js`)
 - `fSer` (`{p, w, r, wm}`), `gerarSeries()`, `lerSeries()`, `autoPeso(ev)`; grava só no `saveForm`.
@@ -225,13 +226,13 @@ service cloud.firestore {
 ## 6. Publicação
 - **Repositório:** https://github.com/jpedrosntg/treinos — **GitHub Pages** `https://jpedrosntg.github.io/treinos/`.
 - Upload pelo site do GitHub. Regras pelo Console.
-- **Ajuste de 12/11/2026:** subir juntos `treino.js`, `analises.js`, `musculos.js`, `style.css` e `index.html` (`v=10`).
-- **A cada publicação:** aumentar `?v=N` (próximo: `v=11`).
+- **Ajuste de 12/11/2026 (2º):** subir juntos `style.css` e `index.html` (`v=11`). Se a v=10 ainda não foi publicada, subir também `treino.js`, `analises.js` e `musculos.js`.
+- **A cada publicação:** aumentar `?v=N` (próximo: `v=12`).
 - Testes não são feitos antes de publicar. Um amigo cuida do visual pelo GitHub.
 
 ## 7. Pendências conhecidas
-- [ ] Testar v=10: bloqueio (antes e durante o treino), filtro recolhido, zoom da miniatura, alça à esquerda.
-- [ ] Confirmar se a miniatura aparece (v=9/10); se não, coletar mensagens `Músculos:` do console e pedir `catalogo.js` e `firebase.js`.
+- [ ] Testar v=11: cartão no celular (nome e botões), bloqueio (antes e durante o treino), filtro recolhido, zoom da miniatura, alça à esquerda.
+- [ ] (Opcional) Se as duas imagens ficarem pequenas, mostrar só a frente quando o principal aparecer nos dois lados.
 - [ ] Confirmar se `setCatalogo` e `catAcha` são declarados com `function` ou `const` no `catalogo.js`.
 - [ ] Verificar se o `renderCad` (`cadastro.js`) deve mostrar o bloqueio.
 - [ ] Conferir o texto da licença do Lucide e fixar a versão do Lucide.
@@ -255,7 +256,7 @@ service cloud.firestore {
 - Código **dividido por área**; arquivo novo só para área nova (ex.: `musculos.js`).
 - Explicações detalhadas, em linguagem simples. Preservar visual e funcionamento.
 - Sem Blaze, sem PWA, sem sair do GitHub Pages, **sem notificações push**, **sem build**.
-- Cartão do exercício: alça à esquerda + miniatura (zoom no grupo principal) + nome + círculos; detalhes no ⓘ.
+- Cartão do exercício: alça à esquerda + miniatura (zoom no grupo principal) + nome + círculos; detalhes no ⓘ. No celular, botões abaixo do nome.
 - Bloqueio de exercício: **manual** (só sai ao desbloquear); tratado como excluído naquele treino.
 - Filtro de exercícios da análise recolhido por padrão.
 - Código de terceiros: usar só dados (traçados), nunca executar código baixado; versão fixa; licença exibida em Ajustes.
@@ -281,3 +282,4 @@ service cloud.firestore {
 | 31/10/2026 | Licenças funcionando. Miniatura: `render()` direto, logs `Músculos:` e nova tentativa em falha; `?v=8` |
 | 31/10/2026 | Miniatura: desenho baixado ao abrir; `typeof catAcha`; redesenho quando o catálogo chega (`window.setCatalogo` + `muscAguardar`); `?v=9` |
 | 12/11/2026 | Bloqueio de exercício (`bl`, `togBloq`); filtro da análise recolhido com padrão "≤1 dos 3 últimos" desmarcado (`anSel` por divisão); miniatura com zoom no grupo principal (`muscVb`); alça à esquerda; correção do contexto (`base.js` tem `telaAtual`); `?v=10`. Arquivos: `treino.js`, `analises.js`, `musculos.js`, `style.css`, `index.html` |
+| 12/11/2026 | Correção no celular: miniatura limitada a 96 px (80 px em ≤360 px), nome quebra só por palavra, botões abaixo do nome em ≤480 px; `?v=11`. Arquivos: `style.css`, `index.html` |

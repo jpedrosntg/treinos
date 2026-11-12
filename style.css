@@ -233,15 +233,23 @@ textarea{margin-top:8px;resize:vertical}
 .exrow{display:flex;align-items:center;gap:12px}
 .exrow>.drag{align-self:stretch;align-items:center;padding:0 4px 0 0;margin-right:-6px}
 .exbody{flex:1;min-width:0}
-.exbody .nm{min-width:0;overflow-wrap:anywhere}
+.exbody .top{gap:4px}
+.exbody .top>div:first-child{flex:1;min-width:0}
+.exbody .nm{min-width:0;overflow-wrap:break-word;word-break:normal;hyphens:auto}
 .exbody .ic{padding:6px}
-.musc{flex:none;display:flex;gap:2px;height:64px;align-self:center;pointer-events:none}
-.musc svg{height:100%;width:auto}
+.musc{flex:none;display:flex;gap:2px;height:64px;max-width:96px;align-self:center;pointer-events:none}
+.musc svg{height:100%;width:auto;min-width:0;flex:0 1 auto}
 .musc path{fill:#2a2f3a}
 .musc .s path{fill:#3b82f673}
 .musc .p path{fill:var(--pri)}
 .bloq .musc{opacity:.7}
-@media (max-width:360px){ .musc{height:56px} }
+/* Celular: botões descem para baixo do nome, liberando a largura toda para ele */
+@media (max-width:480px){
+  .exbody .top{flex-wrap:wrap}
+  .exbody .top>div:first-child{flex:1 1 100%}
+  .exbody .top>div:last-child{margin-left:-6px}
+}
+@media (max-width:360px){ .musc{height:56px;max-width:80px} }
 
 /* Licenças */
 .lic h3{font-size:16px;margin:20px 0 4px}
