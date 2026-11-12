@@ -5,16 +5,16 @@
 > e (3) **este CONTEXTO.md atualizado e completo** no final.
 > **Nunca presuma nem reconstrua arquivos que não recebeu completos.** Se faltar um arquivo ou ele vier incompleto, peça ao usuário antes de alterar.
 
-**Última atualização:** 31/10/2026
+**Última atualização:** 12/11/2026
 
 ---
 
 ## 1. Visão geral
-- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises, catálogo de exercícios, miniatura dos músculos por exercício, agenda semanal com dias de foco e janela de resumo ao salvar (com compartilhamento em imagem).
+- **O que é:** app web para registrar e executar treinos de musculação, com cronômetro de séries e descanso, histórico, análises, catálogo de exercícios, miniatura dos músculos por exercício, bloqueio temporário de exercícios, agenda semanal com dias de foco e janela de resumo ao salvar (com compartilhamento em imagem).
 - **Público:** uso próprio no início. Depois, abrir para os alunos da esposa (personal trainer).
 - **Usuários:** 5 hoje. Meta de 30 a 50.
 - **Administrador:** só o Joao Pedro. Ele vê e edita o treino de todos os alunos (inclusive a agenda) e gerencia o catálogo.
-- **Alunos:** podem editar o próprio treino, mas só com nomes do catálogo. Podem marcar exercícios como aquecimento e configurar a própria agenda.
+- **Alunos:** podem editar o próprio treino, mas só com nomes do catálogo. Podem marcar exercícios como aquecimento, bloquear exercícios e configurar a própria agenda.
 - **Forma de uso:** site aberto no navegador. No iPhone, por um **atalho comum do Safari** na Tela de Início. **Não** é um app instalado (PWA), e isso é intencional.
 
 ## 2. Situação das funcionalidades
@@ -25,7 +25,9 @@
 | Agenda na aba Ajustes: resumo seg–dom, dias de foco, configurações recolhidas | Aguardando teste do visual azul sem datas |
 | Janela ao salvar (check, dias de foco, resumo seg–dom) | Funcionando. Animação aprovada: não mexer |
 | Janela ao salvar: checks azuis, círculos sem data, "Compartilhar" (PNG) | Aguardando teste |
-| Cartão do exercício: miniatura dos músculos + nome + círculos | **Não apareceu na v=8**: render antes do catálogo chegar. Diagnóstico no console: download 200, desenho lido, catálogo encontrado. Corrigido na v=9, aguardando teste |
+| Cartão do exercício: alça à esquerda + miniatura com zoom no grupo principal + nome + círculos | Aguardando teste (v=10) |
+| Bloqueio de exercício (`bl`, cadeado no cartão) | Aguardando teste (v=10) |
+| Análises: filtro de exercícios recolhido; desmarca quem aparece em ≤1 dos 3 últimos | Aguardando teste (v=10) |
 | Licenças e créditos (Ajustes, `#dlgLic`) | **Funcionando** (31/10/2026) |
 | Tela ligada (Ajustes, por aparelho) | Aguardando teste |
 | Cadastro de treino (divisões A a E, séries individuais) | Estável |
@@ -38,7 +40,7 @@
 | Cópia de segurança do histórico (subcoleção `sessoes` + fila local) | Aguardando teste |
 | Login com Google (inclusive pelo atalho do iPhone) | Aguardando teste |
 | Histórico | Em ajuste |
-| Análises (filtros, radar, penúltima × última) | Aguardando teste. Ignora aquecimentos |
+| Análises (filtros, radar, penúltima × última) | Aguardando teste. Ignora aquecimentos e bloqueados |
 | Análise com IA (Gemini, só admin) | Em ajuste |
 | Catálogo (grupo principal + secundários) | Em ajuste |
 | Importar catálogo por JSON (admin) | Aguardando teste |
@@ -47,7 +49,7 @@
 | Notificações de descanso (push) | **Removidas**. Não serão implementadas |
 
 ## 3. Roadmap (em ordem de prioridade)
-1. Testar a miniatura dos músculos (v=9) e os ajustes de 30/10/2026 (resumo azul, compartilhar).
+1. Testar v=10 (bloqueio, filtro recolhido, zoom da miniatura, alça à esquerda) e os ajustes de 30/10/2026 (resumo azul, compartilhar).
 2. Catálogo completo, com descrição e forma de execução (importação por JSON). O usuário não quer enviar o catálogo atual.
 3. ~~Mostrar o grupo muscular de cada exercício na aba Treino~~ (miniatura, 31/10/2026).
 4. Análise da evolução por grupo muscular (pode reaproveitar `MUSC_MAP`/`musc`).
@@ -63,22 +65,22 @@
 - Firebase SDK 12.4.0 por CDN (módulos ES): App, App Check, Auth, Firestore, AI.
 - Tela ligada: Screen Wake Lock (`navigator.wakeLock`). iPhone a partir do iOS 16.4.
 - **Aparelhos que precisam funcionar:** iPhone, Android e computador.
-- **Cache:** scripts e CSS com `?v=N` no `index.html` (atual: `v=9`). **Aumentar N a cada publicação.**
+- **Cache:** scripts e CSS com `?v=N` no `index.html` (atual: `v=10`). **Aumentar N a cada publicação.**
 
 | Arquivo | Função |
 |---|---|
 | `index.html` | Telas, modais (exercício `#fAq`, catálogo, padronizar, `#dlgInfo`, `#dlgLic`, confirmar série, encerrar), aba Ajustes: perfil → `#agenda` → Tela ligada → Backup → Licenças e créditos → Conta; barra de navegação. Scripts: lucide → base → cadastro → treino → historico → analises → catalogo → musculos → backup → agenda → firebase.js (todos `?v=N`) |
-| `base.js` | Estado global, auxiliares (`$`, `esc`, `mmss`, `novoId`, `normNome`, `serie`, `series`, `faixa`, `lista`, `info`, `feita`, `linhaTempo`, `divLabel`, `tagAq`, `ic`), ícones, `norm`, `setData`, `save`, `renderAll`, telas (`tela`, `ilha`, `renderNav`, `irAba`, `mudarAba`), `setTopo`, `sairDaSessao`, `irInicio`, `renderInicio` (→ `renderAgenda`). **Não tem `telaAtual`** |
+| `base.js` | Estado global (inclui `telaAtual`, usado por `tela`/`renderNav`), auxiliares (`$`, `esc`, `mmss`, `novoId`, `normNome`, `serie`, `series`, `faixa`, `lista`, `info`, `feita`, `linhaTempo`, `divLabel`, `tagAq`, `ic`), ícones, `norm` (mantém campos extras dos exercícios, como `bl`), `setData` (zera `anSel`/`anDiv`), `save`, `renderAll`, telas (`tela`, `ilha`, `renderNav`, `irAba`, `mudarAba`), `setTopo`, `sairDaSessao`, `irInicio`, `renderInicio` (→ `renderAgenda`) |
 | `cadastro.js` | Divisão, `renderCad`, `iniciarDoCadastro`, `abrirExec`, modal do exercício (`del`, `lerSeries`, `gerarSeries`, `autoPeso`, `openForm`, `closeForm`, `saveForm`) |
-| `treino.js` | Sessão (`resetSessao`, `iniciarSessao`, `atualizarPlano`, `encerrar` → `celebrar(div,id)`, `status`, `trocar`), `render` (cartão `.exrow`: `musc(e)` + `.exbody` com arrastar/nome/ⓘ/lápis/lixeira/círculos/tempos), `infoEx`, execução, arrastar, cronômetro |
+| `treino.js` | Sessão (`resetSessao`, `iniciarSessao`, `proxAtivo`, `ultimoAtivo`, `togBloq`, `atualizarPlano`, `encerrar` → `celebrar(div,id)`, `status`, `trocar`), `render` (cartão `.exrow`: `.drag` + `musc(e)` + `.exbody` com nome/cadeado/ⓘ/lápis/lixeira/faixa `.blq`/círculos/tempos), `infoEx`, execução (`ultimaSerie`, `proxima` pulam bloqueados), arrastar, cronômetro |
 | `historico.js` | `renderHist`, `delHist`, `togAq` |
-| `analises.js` | `media`, `numReps`, `histEx`, `calcAnalise`/`window.dadosAnalise`, filtros, radar, `renderAnalise` |
+| `analises.js` | `media`, `numReps`, `histEx` (ignora `aq` e `bl`), `calcAnalise`/`window.dadosAnalise`, filtros (`anSel` = `{div: Set}`, `anKeys`, `anDiv`, `anAberto`, `anSetDiv`, `anToggle`, `anTodos`), radar, `renderAnalise` |
 | `catalogo.js` | `GRUPOS`, `catalogo`, `catAcha`, `avisoFora`, `setCatalogo`, `renderCatalogo`, campo Nome, modal do catálogo, `importarCat`, padronização |
-| `musculos.js` | `MUSC_VER`, `MUSC_URL`, `MUSC_MAP`, `MUSC_OK`, `muscDados`, `muscCache`, `muscTentou`, `muscEspera`, `muscTentativas`, `muscLer`, `muscBox`, `muscRedesenhar`, `muscAguardar`, `muscCarregar`, `musc`; envolve `window.setCatalogo` |
+| `musculos.js` | `MUSC_VER`, `MUSC_URL`, `MUSC_MAP`, `MUSC_OK`, `muscDados`, `muscCache`, `muscTentou`, `muscEspera`, `muscTentativas`, `muscLer`, `muscUni`, `muscBox`, `muscVb`, `muscRedesenhar`, `muscAguardar`, `muscCarregar`, `musc`; envolve `window.setCatalogo` |
 | `backup.js` | `ehMovel`, `baixar`, `compartilhar`, `exportar`, `exportarHist`, `importar` |
 | `agenda.js` | Agenda (`SEMANA`, `MESES`, `agMes`, `agAberto`, `dk`, `diaSessao`, `diasFeitos`, `sequencia`, `semanaAtual`, `diasSemana`, `resumoSemana`, `avisoPlano`, `renderAgenda`, `togPlano`, `togExc`, `agNav`); janela (`celeFeita`, `celeBlob`, `celebrar`, `fecharCele`, `imgCele`, `compartilharCele`); tela ligada (`WKEY`, `wLock`, `wPed`, `telaLigada`, `atualizarWake`, `setTelaLigada`, `renderWakeUI`, `visibilitychange`) |
 | `firebase.js` | Auth, Firestore, App Check, IA. Expõe funções em `window.*` |
-| `style.css` | Tema escuro, mobile-first. Agenda/resumo/janela; `.exrow`, `.exbody`, `.musc` (`.p` azul, `.s` azul translúcido); `.lic` |
+| `style.css` | Tema escuro, mobile-first. Agenda/resumo/janela; `.exrow`, `.exrow>.drag`, `.exbody`, `.musc` (`.p` azul, `.s` azul translúcido); bloqueio (`.card.blk`, `.blq`, `.ic.on`); filtro da análise (`.agcfg.anf`); `.lic` |
 
 - O repositório tem **apenas** esses 12 arquivos. Não há manifest, ícone nem service worker.
 - **Comunicação entre arquivos:** scripts comuns, globais compartilhadas. Chamadas protegidas: `window.renderAgenda&&`, `window.atualizarWake&&`, `window.renderWakeUI&&`, `window.celebrar`, `window.musc?`.
@@ -92,29 +94,34 @@
 { divs:['A','B'], A:[exercicio], B:[...], C:[], D:[], E:[], hist:[sessao],
   plano:[1,3,5],                 // dias da semana de academia (0 = domingo … 6 = sábado)
   excecoes:['2026-11-02'] }      // feriados/exceções (AAAA-MM-DD, horário local)
-exercicio = { name, sets, reps, weight, rest, series:[{p, w, r}], nomeOriginal?, aq? }
+exercicio = { name, sets, reps, weight, rest, series:[{p, w, r}], nomeOriginal?, aq?, bl? }
 sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
               ex:[{...exercicio, plan:[planejado], series:[executado], feitas, tempos[], descansos[]}] }
 ```
 - `id` vem de `novoId()`. `ts` = `Date.now()` ao salvar (sessões antigas não têm).
 - `nomeOriginal` (opcional): primeiro nome antes da troca para o do catálogo. Nunca é sobrescrito.
 - `aq` (opcional): aquecimento. Fica no histórico, fora das análises e da IA.
+- `bl` (opcional, `true`): bloqueado. Fica no treino, mas **não** entra na sequência, no histórico nem nas análises. Só sai quando o usuário desbloqueia (manual). Removido do objeto ao desbloquear.
 - No histórico, `series` = executado e `plan` = planejado (antigas sem `plan`).
 - **Ordem cronológica** = posição em `hist`. Não ordenar pelo texto de `data`.
 - `plano` e `excecoes` vão para a nuvem junto com `dados`.
 - **Tela ligada:** `localStorage['treinos_tela']`, por aparelho.
 - **Grupos do catálogo:** peito, costas, ombros, trapezio, biceps, triceps, pernas, gluteos, panturrilha, abdomen, antebraco (`GRUPOS`). Exercícios **não** guardam músculos: vêm do catálogo (`catAcha(name)` → `grupo`, `secundarios`).
 
+### Bloqueio de exercício (`treino.js`)
+- Cadeado no cartão (`togBloq(i)`); bloqueado: `.card.blk` (apagado, nome riscado) + faixa `.blq` com "Desbloquear". Também aparece no ⓘ.
+- `proxAtivo(i)`/`ultimoAtivo()`; `iniciarSessao`, `proxima`, `ultimaSerie` pulam bloqueados; `acao` (descanso) vai para `fim` se não houver próximo ativo.
+- Durante a sessão: não bloqueia exercício com série feita nem o último ativo; bloquear o atual pula para o próximo (ou `fim`); desbloquear com `fase='fim'` retoma; `pilha` é zerada.
+- `encerrar(true)` não grava bloqueados; `atualizarPlano` os ignora; `histEx` ignora `bl` por segurança.
+
 ### Miniatura dos músculos (`musculos.js`)
 - Download do desenho **ao abrir o app** (`DOMContentLoaded`), sem esperar o catálogo.
-- `musc(e)`: sem desenho → dispara `muscCarregar()` e devolve `''`. Busca o catálogo com `typeof catAcha==='function'` (não usa `window.catAcha`). Exercício não encontrado → `muscAguardar()` (redesenha a cada 1 s, no máximo 15 vezes) e devolve `''`.
-- `muscCarregar()`: baixa frente e costas; ao terminar chama `muscRedesenhar()` (`render()` protegido por try). Em falha, registra `Músculos: …` e libera nova tentativa.
-- `setCatalogo` é envolvido em `window.setCatalogo` para redesenhar quando o catálogo chega. **Só funciona se `setCatalogo` for declarado com `function`** (não confirmado). O plano B é `muscAguardar`.
-- **Causa da falha na v=8:** `render()` rodava antes de o catálogo chegar da nuvem, e a aba Treino não era redesenhada depois.
-- `muscLer` separa por `slug:` e pega traçados `"M…"` (filtro `MUSC_OK`). `muscBox` calcula o `viewBox` com `getBBox()`.
+- `musc(e)`: sem desenho → `muscCarregar()` e `''`. Catálogo via `typeof catAcha==='function'`. Não encontrado → `muscAguardar()` (1 s, até 15×).
+- **Zoom (v=10):** `muscBox` guarda o retângulo de cada slug (`bx`) e a altura do corpo (`H`). `muscVb(l,pri)` recorta na união dos músculos **principais** do lado (margem 30%, altura mínima 35% do corpo, proporção largura/altura entre 0,6 e 1,2). Só aparecem os lados onde o principal existe; sem correspondência → corpo inteiro.
+- `setCatalogo` envolvido em `window.setCatalogo` (só funciona se for `function`; não confirmado). Plano B: `muscAguardar`.
 - `MUSC_MAP`: peito→chest; costas→upper-back, lower-back; ombros→deltoids; trapezio→trapezius; biceps; triceps; pernas→quadriceps, hamstring, adductors; gluteos→gluteal; panturrilha→calves; abdomen→abs, obliques; antebraco→forearm.
 - Cores: `.p` = `--pri`; `.s` = `#3b82f673`; demais `#2a2f3a`. Cache por `grupo|secundarios`.
-- 64 px de altura (56 px em ≤360 px), à esquerda, centralizada; `pointer-events:none`.
+- 64 px de altura (56 px em ≤360 px); `pointer-events:none`. Alça `.drag` à esquerda da miniatura.
 
 ### Licenças (`index.html` → `#dlgLic`)
 - Cartão "Licenças e créditos" em Ajustes abre `#dlgLic` (fecha no botão ou tocando fora). Funcionando.
@@ -137,13 +144,13 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 - `atualizarWake()` com opção ligada + treino em andamento + página visível. `renderWakeUI()` preenche `#fWake`/`#wakeInfo`.
 
 ### Cartão do exercício (aba Treino)
-- Miniatura dos músculos + alça, nome, ⓘ/lápis/lixeira, círculos (reps + kg) e tempos.
+- Alça (esquerda) + miniatura dos músculos + nome, cadeado/ⓘ/lápis/lixeira, faixa de bloqueio, círculos (reps + kg) e tempos.
 
 ### Modal do exercício: séries (`cadastro.js`)
 - `fSer` (`{p, w, r, wm}`), `gerarSeries()`, `lerSeries()`, `autoPeso(ev)`; grava só no `saveForm`.
 
 ### Informações do exercício (`treino.js`)
-- `infoEx(i)`: grupo principal, secundários, "Como executar", aviso fora do catálogo, aquecimento.
+- `infoEx(i)`: grupo principal, secundários, "Como executar", aviso fora do catálogo, aquecimento, bloqueio.
 
 ### Aquecimento
 - `#fAq`; `tagAq(e)`; `encerrar` leva `aq`; `togAq(k,n)`; `histEx()` ignora `aq`; `padLista` chave `nome|aq`.
@@ -157,13 +164,15 @@ sessao    = { id, ts, tipo:'A', data:'dd/mm/aaaa, hh:mm:ss', dur:seg,
 - `compartilhar(obj,nome)` no celular; `baixar()` no computador. `importar(inp)` com confirmação (`plano`/`excecoes`: não confirmado).
 
 ### Execução e confirmação de série (`treino.js`)
-- Fases `serie` → `descanso` → … → `fim`. "Descanso" registra `done[div+i][j]={t,d:null,p,w}` e abre `dlgSerie` sem parar o cronômetro. "Voltar" desfaz. `atualizarPlano` em `encerrar(true)`.
+- Fases `serie` → `descanso` → … → `fim`. "Descanso" registra `done[div+i][j]={t,d:null,p,w}` e abre `dlgSerie` sem parar o cronômetro. "Voltar" desfaz. `atualizarPlano` em `encerrar(true)`. Bloqueados são pulados.
 
 ### Histórico na nuvem (`firebase.js`)
 - `treinos_teste/{uid}.dados` + `treinos_teste/{uid}/sessoes/{id}`; fila `localStorage['treinos_pend']`; `reenviarPendentes()`; `mesclar()` por `id`.
 
 ### Análises (`analises.js`)
-- `histEx()` por nome, `feitas > 0`, sem `aq`. IA: 1ª × última. Radar: 3 últimas. Comparação: penúltima × última.
+- `histEx()` por nome, `feitas > 0`, sem `aq` nem `bl`. IA: 1ª × última. Radar: 3 últimas. Comparação: penúltima × última.
+- **Filtro de exercícios** recolhido em `<details class="agcfg anf">` "Exercícios do gráfico (X de Y)"; aberto/fechado em `anAberto`.
+- `anSel[anDiv]` criado na 1ª vez que a divisão é mostrada: desmarca quem aparece em ≤1 das 3 últimas sessões da divisão (só se houver 2+ sessões). `setData` zera (`anSel=null`).
 
 ## 5. Firebase
 - **Projeto:** `treinos-teste`, plano **Spark**. Sem Blaze.
@@ -216,13 +225,15 @@ service cloud.firestore {
 ## 6. Publicação
 - **Repositório:** https://github.com/jpedrosntg/treinos — **GitHub Pages** `https://jpedrosntg.github.io/treinos/`.
 - Upload pelo site do GitHub. Regras pelo Console.
-- **Ajuste de 31/10/2026 (3º):** subir juntos `musculos.js` e `index.html` (`v=9`).
-- **A cada publicação:** aumentar `?v=N` (próximo: `v=10`).
+- **Ajuste de 12/11/2026:** subir juntos `treino.js`, `analises.js`, `musculos.js`, `style.css` e `index.html` (`v=10`).
+- **A cada publicação:** aumentar `?v=N` (próximo: `v=11`).
 - Testes não são feitos antes de publicar. Um amigo cuida do visual pelo GitHub.
 
 ## 7. Pendências conhecidas
-- [ ] Testar a miniatura dos músculos na v=9; se não aparecer, coletar as mensagens `Músculos:` do console e pedir `catalogo.js` e `firebase.js`.
+- [ ] Testar v=10: bloqueio (antes e durante o treino), filtro recolhido, zoom da miniatura, alça à esquerda.
+- [ ] Confirmar se a miniatura aparece (v=9/10); se não, coletar mensagens `Músculos:` do console e pedir `catalogo.js` e `firebase.js`.
 - [ ] Confirmar se `setCatalogo` e `catAcha` são declarados com `function` ou `const` no `catalogo.js`.
+- [ ] Verificar se o `renderCad` (`cadastro.js`) deve mostrar o bloqueio.
 - [ ] Conferir o texto da licença do Lucide e fixar a versão do Lucide.
 - [ ] Verificar se termos de reCAPTCHA/Google precisam de aviso no app.
 - [ ] Testar resumo seg–dom azul sem datas e o botão Compartilhar (iPhone, Android, computador).
@@ -244,7 +255,9 @@ service cloud.firestore {
 - Código **dividido por área**; arquivo novo só para área nova (ex.: `musculos.js`).
 - Explicações detalhadas, em linguagem simples. Preservar visual e funcionamento.
 - Sem Blaze, sem PWA, sem sair do GitHub Pages, **sem notificações push**, **sem build**.
-- Cartão do exercício: miniatura dos músculos + nome + círculos; detalhes no ⓘ.
+- Cartão do exercício: alça à esquerda + miniatura (zoom no grupo principal) + nome + círculos; detalhes no ⓘ.
+- Bloqueio de exercício: **manual** (só sai ao desbloquear); tratado como excluído naquele treino.
+- Filtro de exercícios da análise recolhido por padrão.
 - Código de terceiros: usar só dados (traçados), nunca executar código baixado; versão fixa; licença exibida em Ajustes.
 - Sempre enviar este `CONTEXTO.md` atualizado.
 - "Descanso" inicia na hora; confirmação nunca bloqueia o cronômetro.
@@ -265,5 +278,6 @@ service cloud.firestore {
 | 30/10/2026 | Etapas 1–3: ⓘ, agenda, sequência, tela ligada, janela ao salvar |
 | 30/10/2026 | Agenda em Ajustes; cartão enxuto; `?v=5`. Resumo azul sem datas; Compartilhar PNG; `?v=6` |
 | 31/10/2026 | `musculos.js` (miniatura dos músculos, react-native-body-highlighter 3.1.3, MIT); `treino.js` (`.exrow`/`.exbody` + `musc`); `index.html` (`#dlgLic`, script novo, `?v=7`); `style.css` (`.musc`, `.lic`) |
-| 31/10/2026 | Licenças funcionando. Miniatura não aparecia (`telaAtual` inexistente em `muscCarregar`): `render()` direto, logs `Músculos:` e nova tentativa em falha; `?v=8`. Arquivos: `musculos.js`, `index.html` |
-| 31/10/2026 | Miniatura: desenho baixado ao abrir; `typeof catAcha`; redesenho quando o catálogo chega (`window.setCatalogo` + `muscAguardar`, até 15×); `?v=9`. Arquivos: `musculos.js`, `index.html` |
+| 31/10/2026 | Licenças funcionando. Miniatura: `render()` direto, logs `Músculos:` e nova tentativa em falha; `?v=8` |
+| 31/10/2026 | Miniatura: desenho baixado ao abrir; `typeof catAcha`; redesenho quando o catálogo chega (`window.setCatalogo` + `muscAguardar`); `?v=9` |
+| 12/11/2026 | Bloqueio de exercício (`bl`, `togBloq`); filtro da análise recolhido com padrão "≤1 dos 3 últimos" desmarcado (`anSel` por divisão); miniatura com zoom no grupo principal (`muscVb`); alça à esquerda; correção do contexto (`base.js` tem `telaAtual`); `?v=10`. Arquivos: `treino.js`, `analises.js`, `musculos.js`, `style.css`, `index.html` |

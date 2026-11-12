@@ -1,18 +1,42 @@
 // ===== Sessão =====
 function resetSessao(){ clearInterval(sInt); sessao='nao'; sIni=null; sMsg=''; pilha=[]; pend=null; const m=$('dlgSerie'); if(m) m.classList.remove('on'); window.atualizarWake&&atualizarWake(); }
 function botaoSessao(){ sessao==='andamento'?$('dlgFim').classList.add('on'):iniciarSessao(); }
+// Bloqueio (bl): exercício fica no treino, mas sai da sequência, do histórico e das análises
+function proxAtivo(i){ const ex=data[cur]||[]; while(i<ex.length&&ex[i].bl) i++; return i; }
+function ultimoAtivo(){ const ex=data[cur]||[]; for(let i=ex.length-1;i>=0;i--) if(!ex[i].bl) return i; return -1; }
 function iniciarSessao(){
   if(!(data[cur]||[]).length) return alert('Adicione exercícios ao Treino '+cur+' antes de iniciar.');
+  if(ultimoAtivo()<0) return alert('Todos os exercícios do Treino '+cur+' estão bloqueados. Desbloqueie ao menos um.');
   Object.keys(done).filter(k=>k[0]===cur).forEach(k=>delete done[k]);
-  pos={i:0,j:0}; fase='serie'; sessao='andamento'; sIni=Date.now(); pilha=[]; pend=null;
+  pos={i:proxAtivo(0),j:0}; fase='serie'; sessao='andamento'; sIni=Date.now(); pilha=[]; pend=null;
   clearInterval(sInt); sInt=setInterval(status,1000);
   startTimer(); render();
+}
+function togBloq(i){
+  const ex=data[cur]||[], e=ex[i]; if(!e) return;
+  const on=sessao==='andamento';
+  if(!e.bl&&on&&(done[cur+i]||[]).some(feita)) return alert('Este exercício já tem séries feitas nesta sessão. Use "Voltar" para desfazer antes de bloquear.');
+  if(!e.bl&&on&&ex.filter(x=>!x.bl).length<=1) return alert('Não é possível bloquear o último exercício ativo durante o treino.');
+  if(e.bl) delete e.bl; else e.bl=true;
+  if(on){
+    pilha=[];
+    if(e.bl&&i===pos.i){
+      const n=proxAtivo(i);
+      if(n<ex.length) pos={i:n,j:0};
+      else { const u=ultimoAtivo(); pos={i:u,j:ex[u].sets-1}; fase='fim'; stopTimer(); }
+    } else if(fase==='descanso'&&ultimaSerie()){
+      const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000);
+      fase='fim'; stopTimer();
+    } else if(fase==='fim'&&!ultimaSerie()){ pos=proxima(); fase='serie'; startTimer(); }
+  }
+  save(); render();
 }
 // Leva para o treino configurado as reps e cargas executadas (confirmadas) na sessão.
 // Só muda séries feitas e com valores diferentes; o descanso (r) fica igual. Retorna quantos exercícios mudaram.
 function atualizarPlano(div){
   let n=0;
   (data[div]||[]).forEach((e,i)=>{
+    if(e.bl) return;
     const d=done[div+i]||[], sr=series(e); let mud=false;
     sr.forEach((s,j)=>{ const v=d[j];
       if(!feita(v)||v.p==null) return;
@@ -29,11 +53,13 @@ function encerrar(salvar){
   if(fase==='descanso'){ const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000); }
   let nAt=0, sid=null; const div=cur;
   if(salvar){
-    const ex=data[cur].map((e,i)=>{ const d=done[cur+i]||[], plan=series(e);
+    // Bloqueados não vão para o histórico (como se tivessem sido excluídos naquele dia)
+    const ex=data[cur].map((e,i)=>{ if(e.bl) return null;
+      const d=done[cur+i]||[], plan=series(e);
       return {...e,plan,series:plan.map((s,j)=>feita(d[j])&&d[j].p!=null?{...s,p:d[j].p,w:d[j].w}:s),
         feitas:d.filter(feita).length,
         tempos:Array.from({length:e.sets},(_,j)=>feita(d[j])?d[j].t:null),
-        descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; });
+        descansos:Array.from({length:e.sets},(_,j)=>feita(d[j])&&d[j].d!=null?d[j].d:null)}; }).filter(Boolean);
     const s={id:novoId(),ts:Date.now(),tipo:cur,data:new Date().toLocaleString('pt-BR'),dur:Math.round((Date.now()-sIni)/1000),ex};
     data.hist.push(s); sid=s.id;
     nAt=atualizarPlano(cur);
@@ -65,6 +91,7 @@ function render(){
   if(!data.divs.includes(cur)) cur=data.divs[0]||'A';
   const ex=data[cur]||[], on=sessao==='andamento';
   if(pos.i>=ex.length) pos={i:0,j:0};
+  if(!on&&ex[pos.i]&&ex[pos.i].bl){ const n=proxAtivo(0); pos={i:n<ex.length?n:0,j:0}; }
   if(ex[pos.i]&&pos.j>=ex[pos.i].sets) pos.j=ex[pos.i].sets-1;
 
   $('semTreino').style.display=data.divs.length?'none':'block';
@@ -72,16 +99,16 @@ function render(){
 
   $('tabs').innerHTML=data.divs.map(t=>`<button class="${t==cur?'on':''}" onclick="trocar('${t}')">${data.divs.length>3?t:'Treino '+t}</button>`).join('');
   $('list').className=on?'':'bloq';
-  // Cartão: miniatura dos músculos (musculos.js) + nome + círculos
+  // Cartão: alça (esquerda) + miniatura dos músculos (musculos.js) + nome + círculos
   $('list').innerHTML=ex.map((e,i)=>{
-    const d=done[cur+i]||[]; let s='';
+    const d=done[cur+i]||[], bl=!!e.bl; let s='';
     for(let j=0;j<e.sets;j++){ const sj=serie(e,j), v=d[j], ok=feita(v);
       const rp=ok&&v.p!=null?v.p:sj.p, rw=ok&&v.w!=null?v.w:sj.w;
-      s+=`<span class="${ok?'ok':''} ${on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${esc(rp)||j+1}<small>${rw}kg</small></span>`; }
+      s+=`<span class="${ok?'ok':''} ${!bl&&on&&fase!=='fim'&&i==pos.i&&j==pos.j?'cur':''}">${esc(rp)||j+1}<small>${rw}kg</small></span>`; }
     const tp=d.map((v,j)=>feita(v)?linhaTempo(j,v.t,v.d):null).filter(Boolean).join('<br>');
-    return `<div class="card" data-i="${i}"><div class="exrow">${window.musc?musc(e):''}<div class="exbody"><div class="top"><div style="display:flex;align-items:center;min-width:0">
-      <span class="drag">${ic('grip-vertical')}</span><div class="nm">${esc(e.name)}</div></div>
-      <div style="white-space:nowrap"><button class="ic" aria-label="Informações" onclick="infoEx(${i})">${ic('info')}</button><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
+    return `<div class="card${bl?' blk':''}" data-i="${i}"><div class="exrow"><span class="drag">${ic('grip-vertical')}</span>${window.musc?musc(e):''}<div class="exbody"><div class="top"><div style="min-width:0"><div class="nm">${esc(e.name)}</div></div>
+      <div style="white-space:nowrap"><button class="ic${bl?' on':''}" aria-label="${bl?'Desbloquear':'Bloquear'}" onclick="togBloq(${i})">${ic(bl?'lock':'lock-open')}</button><button class="ic" aria-label="Informações" onclick="infoEx(${i})">${ic('info')}</button><button class="ic" aria-label="Editar" onclick="openForm(${i})">${ic('pencil')}</button><button class="ic" aria-label="Excluir" onclick="del(${i})">${ic('trash-2')}</button></div></div>
+      ${bl?`<div class="blq">${ic('lock')}Bloqueado • fora da sequência, do histórico e das análises<button class="chip lk" onclick="togBloq(${i})">Desbloquear</button></div>`:''}
       <div class="ser">${s}</div>${tp?`<div class="tempos">${ic('timer')}${tp}</div>`:''}</div></div></div>`;
   }).join('')||'<div class="info">Nenhum exercício no treino '+cur+'.</div>';
 
@@ -106,12 +133,13 @@ function infoEx(i){
     ?`<div class="kv"><div><span>Grupo principal</span><b>${g(c.grupo)}</b></div>
       <div><span>Secundários</span><b>${c.secundarios.length?c.secundarios.map(g).join(', '):'—'}</b></div></div>
       <label>Como executar</label><div class="info" style="white-space:pre-line">${c.descricao?esc(c.descricao):'Sem instruções cadastradas.'}</div>`
-    :`<div class="info aviso">${ic('triangle-alert')}Este exercício não está no catálogo.</div>`)+tagAq(e);
+    :`<div class="info aviso">${ic('triangle-alert')}Este exercício não está no catálogo.</div>`)+tagAq(e)
+    +(e.bl?`<div class="info">${ic('lock')}Bloqueado • fora da sequência, do histórico e das análises</div>`:'');
   $('dlgInfo').classList.add('on');
 }
 
-function ultimaSerie(){ const ex=data[cur]; return pos.i>=ex.length-1&&pos.j>=ex[pos.i].sets-1; }
-function proxima(){ const ex=data[cur]; return pos.j+1<ex[pos.i].sets?{i:pos.i,j:pos.j+1}:{i:pos.i+1,j:0}; }
+function ultimaSerie(){ const ex=data[cur]; return pos.i>=ultimoAtivo()&&pos.j>=ex[pos.i].sets-1; }
+function proxima(){ const ex=data[cur]; return pos.j+1<ex[pos.i].sets?{i:pos.i,j:pos.j+1}:{i:proxAtivo(pos.i+1),j:0}; }
 function guardar(){ pilha.push({pos:{...pos},fase,target,el:decorrido(),done:JSON.parse(JSON.stringify(done))}); }
 function acao(){
   if(sessao!=='andamento') return aviso();
@@ -127,7 +155,9 @@ function acao(){
   } else if(fase==='descanso'){
     guardar();
     const v=(done[cur+pos.i]||[])[pos.j]; if(v) v.d=Math.floor(decorrido()/1000);
-    pos=proxima(); fase='serie'; startTimer();
+    const n=proxima();
+    if(n.i>=ex.length){ fase='fim'; stopTimer(); }
+    else { pos=n; fase='serie'; startTimer(); }
   } else return $('dlgFim').classList.add('on');
   render();
 }

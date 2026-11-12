@@ -17,13 +17,27 @@ function muscLer(txt){
   });
   return out;
 }
+// União de retângulos {x,y,r,b}
+const muscUni=(a,b)=>!a?b:{x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),r:Math.max(a.r,b.r),b:Math.max(a.b,b.b)};
+// Calcula o viewBox do corpo inteiro e o retângulo de cada músculo (slug)
 function muscBox(partes){
   const ns='http://www.w3.org/2000/svg', s=document.createElementNS(ns,'svg'), g=document.createElementNS(ns,'g');
   s.setAttribute('style','position:absolute;width:0;height:0;visibility:hidden');
-  g.innerHTML=partes.map(x=>x.p.map(d=>`<path d="${d}"/>`).join('')).join('');
   s.appendChild(g); document.body.appendChild(s);
-  const b=g.getBBox(); s.remove();
-  return `${b.x-4} ${b.y-4} ${b.width+8} ${b.height+8}`;
+  const gs=partes.map(x=>{ const e=document.createElementNS(ns,'g'); e.innerHTML=x.p.map(d=>`<path d="${d}"/>`).join(''); g.appendChild(e); return e; });
+  const b=g.getBBox(), bx={};
+  partes.forEach((x,n)=>{ const r=gs[n].getBBox(); if(r.width||r.height) bx[x.s]=muscUni(bx[x.s],{x:r.x,y:r.y,r:r.x+r.width,b:r.y+r.height}); });
+  s.remove();
+  return {vb:`${b.x-4} ${b.y-4} ${b.width+8} ${b.height+8}`,bx,H:b.height};
+}
+// Recorte com foco nos músculos principais deste lado; null = grupo não aparece neste lado
+function muscVb(l,slugs){
+  let u=null; slugs.forEach(s=>{ if(l.bx[s]) u=muscUni(u,l.bx[s]); });
+  if(!u) return null;
+  let w=(u.r-u.x)*1.3, h=Math.max((u.b-u.y)*1.3,l.H*.35);
+  const cx=(u.x+u.r)/2, cy=(u.y+u.b)/2;
+  if(w<h*.6) w=h*.6; if(h<w/1.2) h=w/1.2;
+  return `${(cx-w/2).toFixed(1)} ${(cy-h/2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
 }
 // Redesenha a aba Treino sem nunca quebrar o app
 function muscRedesenhar(){ try{ render(); }catch(e){ console.warn('Músculos: render',e); } }
@@ -38,7 +52,7 @@ async function muscCarregar(){
     const txt=await Promise.all(['bodyFront','bodyBack'].map(l=>
       fetch(MUSC_URL(l)).then(r=>{ if(!r.ok) console.warn('Músculos: '+l+' HTTP '+r.status); return r.ok?r.text():''; })
         .catch(e=>{ console.warn('Músculos: falha ao baixar '+l,e); return ''; })));
-    const lados=txt.map(muscLer).filter(p=>p.length).map(p=>({p,vb:muscBox(p)}));
+    const lados=txt.map(muscLer).filter(p=>p.length).map(p=>({p,...muscBox(p)}));
     if(!lados.length){ muscTentou=false; return console.warn('Músculos: desenho não carregado'); }
     muscDados=lados; muscCache={};
     muscRedesenhar();
@@ -52,8 +66,10 @@ function musc(e){
   const pri=new Set(MUSC_MAP[c.grupo]||[]), ss=new Set(sec.flatMap(g=>MUSC_MAP[g]||[]));
   const cl=s=>pri.has(s)?' class="p"':ss.has(s)?' class="s"':'';
   const nome=GRUPOS[c.grupo]||c.grupo;
-  return muscCache[k]=`<div class="musc" role="img" aria-label="Músculos: ${esc(nome)}">${muscDados.map(l=>
-    `<svg viewBox="${l.vb}" aria-hidden="true">${l.p.map(x=>`<g${cl(x.s)}>${x.p.map(d=>`<path d="${d}"/>`).join('')}</g>`).join('')}</svg>`).join('')}</div>`;
+  // Só os lados onde o grupo principal aparece, com zoom nele; sem correspondência → corpo inteiro
+  const vbs=muscDados.map(l=>muscVb(l,pri)), foco=vbs.some(Boolean);
+  return muscCache[k]=`<div class="musc" role="img" aria-label="Músculos: ${esc(nome)}">${muscDados.map((l,n)=>
+    foco&&!vbs[n]?'':`<svg viewBox="${foco?vbs[n]:l.vb}" aria-hidden="true">${l.p.map(x=>`<g${cl(x.s)}>${x.p.map(d=>`<path d="${d}"/>`).join('')}</g>`).join('')}</svg>`).join('')}</div>`;
 }
 // Quando o catálogo chegar da nuvem, redesenha os cartões (funciona se setCatalogo for "function")
 try{

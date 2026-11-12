@@ -50,6 +50,14 @@ body.navOn .bnav{display:flex}
 @keyframes phIn{from{opacity:0;transform:scaleY(.6)}to{opacity:1;transform:none}}
 body.arrastando{user-select:none;-webkit-user-select:none}
 .ic{background:none;border:0;color:#888;padding:8px;display:inline-flex;border-radius:8px}
+.ic.on{color:#f59e0b}
+
+/* Exercício bloqueado (fora da sequência, do histórico e das análises) */
+.card.blk .musc,.card.blk .ser,.card.blk .nm{opacity:.4}
+.card.blk .nm{text-decoration:line-through}
+.blq{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:8px;color:#f59e0b;font-size:12px}
+.blq svg.lucide{width:14px;height:14px}
+.blq .chip.lk{padding:2px 0;font-size:12px}
 
 /* Botões */
 .btn{width:100%;height:44px;padding:0 16px;border:0;border-radius:12px;font-size:16px;font-weight:600;font-family:inherit;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -110,6 +118,10 @@ body.arrastando{user-select:none;-webkit-user-select:none}
 .chip{border:1px solid #2a2f3a;background:#1d2129;color:#9aa;border-radius:9999px;padding:8px 12px;font-size:14px;font-family:inherit}
 .chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
 .chip.lk{background:none;border:0;color:var(--pri);padding:4px 8px 4px 0;font-weight:600}
+.agcfg.anf{margin-top:0;border-top:0}
+.agcfg.anf summary{padding:0;font-size:16px}
+.agcfg.anf summary svg.lucide:last-child{margin-left:auto;transition:transform .2s}
+.agcfg.anf[open] summary svg.lucide:last-child{transform:rotate(180deg)}
 .radar{width:100%;max-width:420px;display:block;margin:12px auto 0}
 .radar .rg{fill:none;stroke:#374151;stroke-width:1}
 .radar text{fill:#cbd;font-size:12px;font-family:inherit}
@@ -217,10 +229,12 @@ textarea{margin-top:8px;resize:vertical}
 .aluno.eu{border-color:#f59e0b}
 .voltar{background:#2a2f3a;color:#fff;border:0;border-radius:12px;height:44px;padding:0 16px;width:100%;font-size:14px;font-family:inherit;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
 
-/* Miniatura dos músculos no cartão do exercício (frente + costas) */
+/* Cartão do exercício: alça (esquerda) + miniatura dos músculos (com zoom no grupo) + conteúdo */
 .exrow{display:flex;align-items:center;gap:12px}
+.exrow>.drag{align-self:stretch;align-items:center;padding:0 4px 0 0;margin-right:-6px}
 .exbody{flex:1;min-width:0}
 .exbody .nm{min-width:0;overflow-wrap:anywhere}
+.exbody .ic{padding:6px}
 .musc{flex:none;display:flex;gap:2px;height:64px;align-self:center;pointer-events:none}
 .musc svg{height:100%;width:auto}
 .musc path{fill:#2a2f3a}

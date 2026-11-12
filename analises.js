@@ -7,7 +7,7 @@ function histEx(){
   const ex={};
   data.hist.forEach((h,k)=>{
     (h.ex||[]).forEach(e=>{
-      if(!e.feitas||e.aq) return;
+      if(!e.feitas||e.aq||e.bl) return;
       const nome=String(e.name||'').trim(), key=nome.toLowerCase(); if(!key) return;
       const idx=(e.tempos||[]).map((t,j)=>feita(t)?j:-1).filter(j=>j>=0);
       const js=idx.length?idx:Array.from({length:e.feitas},(_,j)=>j);
@@ -43,11 +43,12 @@ function linhaComp(lbl,a,b,u,dir){
   return `<div><span>${lbl}</span><b class="${c}">${f(a)} → ${f(b)} ${ic(i)}</b></div>`;
 }
 
-// Filtros: divisão (anDiv) e exercícios (anSel; null = todos selecionados)
-let anSel=null, anKeys=[], anDiv=null;
+// Filtros: divisão (anDiv) e exercícios (anSel = {divisão: Set}; null = recalcular padrão)
+// anAberto = lista de exercícios expandida
+let anSel=null, anKeys=[], anDiv=null, anAberto=false;
 function anSetDiv(d){ anDiv=d; renderAnalise(); }
-function anToggle(i){ const k=anKeys[i]; if(!k) return; anSel.has(k)?anSel.delete(k):anSel.add(k); renderAnalise(); }
-function anTodos(v){ anKeys.forEach(k=>v?anSel.add(k):anSel.delete(k)); renderAnalise(); }
+function anToggle(i){ const k=anKeys[i], S=anSel&&anSel[anDiv]; if(!k||!S) return; S.has(k)?S.delete(k):S.add(k); renderAnalise(); }
+function anTodos(v){ const S=anSel&&anSel[anDiv]; if(!S) return; anKeys.forEach(k=>v?S.add(k):S.delete(k)); renderAnalise(); }
 
 // Métrica do radar: volume (Σ peso×reps). Exercícios sem carga (volume sempre 0) usam total de reps.
 const usaVol=o=>o.s.some(x=>x.volume>0);
@@ -120,7 +121,6 @@ function renderAnalise(){
     box.innerHTML=`<div class="card info">${ic('trending-down')}Ainda não há dados para análise. Salve pelo menos uma sessão no histórico (há ${data.hist.length} sessão(ões)).</div>`;
     return;
   }
-  if(!anSel) anSel=new Set(Object.keys(todos));
   // Divisões com sessões no histórico; padrão = divisão do treino mais recente
   const divs=[...new Set(data.hist.map(h=>h.tipo).filter(Boolean))].sort();
   if(!divs.includes(anDiv)) anDiv=data.hist.at(-1)?.tipo||divs[0];
@@ -129,15 +129,25 @@ function renderAnalise(){
   const ex={};
   Object.entries(todos).forEach(([k,o])=>{ const s=o.s.filter(x=>x.tipo===anDiv); if(s.length) ex[k]={nome:o.nome,s}; });
   anKeys=Object.keys(ex).sort((a,b)=>ex[a].nome.localeCompare(ex[b].nome));
+  // 3 sessões mais recentes da divisão (posições no histórico)
+  const ult=data.hist.map((h,k)=>h.tipo===anDiv?k:-1).filter(k=>k>=0).slice(-3);
+  // Padrão: desmarca quem aparece em só 1 (ou nenhum) dos 3 últimos treinos (se houver 2+ sessões)
+  if(!anSel) anSel={};
+  if(!anSel[anDiv]) anSel[anDiv]=new Set(anKeys.filter(k=>ult.length<2||ex[k].s.filter(x=>ult.includes(x.k)).length>1));
+  const S=anSel[anDiv];
 
   let h=`<div class="card"><div class="nm">${ic('layout-grid')}Divisão</div>
     <div class="tabs" style="margin:12px 0 0">${divs.map(d=>`<button class="${d===anDiv?'on':''}" onclick="anSetDiv('${esc(d)}')">${divs.length>3?esc(d):'Treino '+esc(d)}</button>`).join('')}</div>
     <div class="info">Mostrando o <b>Treino ${esc(anDiv)}</b> • ${nSess} sessão(ões)</div></div>`;
   if(!anKeys.length){ box.innerHTML=h+`<div class="card info">Nenhum exercício concluído nas sessões do Treino ${esc(anDiv)}.</div>`; return; }
-  h+=`<div class="card"><div class="nm">${ic('list-filter')}Exercícios do Treino ${esc(anDiv)}</div>
-    <div class="chips">${anKeys.map((k,i)=>`<button class="chip${anSel.has(k)?' on':''}" onclick="anToggle(${i})">${esc(ex[k].nome)}</button>`).join('')}</div>
-    <div class="chips"><button class="chip lk" onclick="anTodos(true)">Todos</button><button class="chip lk" onclick="anTodos(false)">Nenhum</button></div></div>`;
-  const sel=anKeys.filter(k=>anSel.has(k));
+  const nSel=anKeys.filter(k=>S.has(k)).length;
+  h+=`<div class="card"><details class="agcfg anf"${anAberto?' open':''} ontoggle="anAberto=this.open">
+    <summary>${ic('list-filter')}Exercícios do gráfico (${nSel} de ${anKeys.length})${ic('chevron-down')}</summary>
+    <div class="chips">${anKeys.map((k,i)=>`<button class="chip${S.has(k)?' on':''}" onclick="anToggle(${i})">${esc(ex[k].nome)}</button>`).join('')}</div>
+    <div class="chips"><button class="chip lk" onclick="anTodos(true)">Todos</button><button class="chip lk" onclick="anTodos(false)">Nenhum</button></div>
+    ${ult.length>=2?'<div class="info">Começam desmarcados os exercícios que apareceram em só 1 dos 3 últimos treinos.</div>':''}
+  </details></div>`;
+  const sel=anKeys.filter(k=>S.has(k));
   if(!sel.length){ box.innerHTML=h+'<div class="card info">Selecione ao menos um exercício.</div>'; return; }
   h+=radar(ex,sel,anDiv);
   const comp=sel.filter(k=>ex[k].s.length>1), insuf=sel.filter(k=>ex[k].s.length<2);
